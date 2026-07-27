@@ -1,0 +1,23 @@
+for per ##数据包版本选择:
+    #游戏版本选择
+
+
+当前切文件夹的时候，当前元素会自动取消选择，而且返回上级目录时不会再次显示，需要做刷新系统
+
+把返回上一级目录改成图片，同时添加定位按钮
+
+
+元素管理器：增加定位按钮，上一级按钮，以及更多按钮：删除/重命名目录
+
+增加商店所有者功能
+
+切换元素的时候也重置page，并且在加载新page之前先读取文件
+
+
+item文件结构：
+{"item":"string","display":{"selected":0,"element":"path"},"trigger":[{"mode":{"selected":0,"filter":{"selected":0,"options":[0,0]}},"execute":{"selected":0,"selections":["command","function"]}}]}
+键命名规则：
+下拉式选择框：options
+单选框：selections
+多元素编辑框：items
+存储被选择栏位的编号：selected

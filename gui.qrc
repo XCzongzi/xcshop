@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/gui/titleBar/close.png</file>
+        <file>assets/gui/titleBar/maximize.png</file>
+        <file>assets/gui/titleBar/minimize.png</file>
+        <file>assets/gui/titleBar/restore.png</file>
+        <file>assets/gui/typeBar/Total.png</file>
+        <file>assets/gui/typeBar/UI.png</file>
+        <file>assets/gui/typeBar/Item.png</file>
+        <file>assets/gui/typeBar/Cost.png</file>
+        <file>assets/gui/typeBar/Display.png</file>
+        <file>assets/gui/element/Bar/newFile.png</file>
+        <file>assets/gui/element/Bar/newMenu.png</file>
+        <file>assets/gui/element/UI.png</file>
+        <file>assets/gui/element/File.png</file>
+        <file>assets/gui/controls/expand_up.png</file>
+        <file>assets/gui/controls/expand_down.png</file>
+        <file>assets/gui/png/background1.png</file>
+        <file>assets/gui/png/about.png</file>
+        <file>assets/gui/png/logo.png</file>
+        <file>assets/gui/controls/new_project.png</file>
+        <file>assets/gui/controls/open_project.png</file>
+        <file>assets/gui/controls/about.png</file>
+        <file>assets/gui/controls/settings.png</file>
+        <file>assets/minecraft/items/ForeverIds-main/items/items.min.json</file>
+    </qresource>
+</RCC>

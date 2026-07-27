@@ -1,0 +1,21 @@
+# CMake / Qt build output
+/build/
+/out/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/compile_commands.json
+/.qt/
+
+# IDE and local tooling
+/.vs/
+/.idea/
+/.vscode/*
+!/.vscode/extensions.json
+/.qmlls.ini
+*.user
+*.user.*
+
+# Local application data
+/settings.json
+/item-mappings.json

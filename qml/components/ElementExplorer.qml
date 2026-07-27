@@ -1,0 +1,141 @@
+import QtQuick
+import xcshop
+
+
+Rectangle{
+    property int barWidth
+    property bool isShowing: false
+    property string currentFilePath: ""
+    property string pendingFolder: ""
+    id: root
+    property bool started: Global.get_fileName() != ""
+    width: isShowing ?  started ? barWidth : parent.width - 120  : 0
+    height: parent.height
+    x:65
+    color: Colors.foreground
+    clip: true
+    enabled: isShowing
+
+
+    property double contentOpacity: 1
+    function floderSwitch(){
+        root.contentOpacity = 0
+        treeAnim.start()
+    }
+    function floderReset(){
+        root.contentOpacity = 0
+        timer.start()
+    }
+    function openElementFolder(folder){
+        pendingFolder = ""
+        xcFileTree.currentFolder = folder || ""
+        root.floderSwitch()
+    }
+
+    Timer{       //似乎Global.current_element和xcFileTree.currentFolder一起改变的话会出问题，所以这边用Timer防止出问题
+        id: timer
+        interval: 1
+        onTriggered:{
+            xcFileTree.currentFolder = root.pendingFolder
+            root.pendingFolder = ""
+            if(Global.current_element != "Total")treeAnim.start()
+        }
+        
+    }
+    NumberAnimation{
+        id: treeAnim
+        target: root
+        property: "contentOpacity"
+        duration: 120
+        to: 1
+    }
+
+    Rectangle{
+        id:edge
+        width: 1
+        height: root.height
+        x: root.width - width
+        color: '#3d000000'
+
+        MouseArea{      //大小调整
+            visible: root.isShowing && root.started
+            height: parent.height
+            width: parent.width - x
+            x: -2
+            onPressed: widthAnim.enabled = false
+            onPositionChanged: {
+                if(pressed){
+                    root.barWidth = Math.max(Math.min(mouseX + root.width, Global.window_width - 100), 150)
+                }
+            }
+            onReleased: widthAnim.enabled = true
+            cursorShape: Qt.SizeHorCursor
+        }
+    }
+    
+
+    Behavior on width { 
+        id: widthAnim
+        enabled: false
+        SpringAnimation { 
+            spring: 1.5
+            damping: 0.2 
+            epsilon: 0.01
+        } 
+    }
+
+
+   function barShow(animation = true){
+        widthAnim.enabled = animation
+        isShowing = true
+   }
+   function barHide(animation = true){
+        widthAnim.enabled = animation
+        isShowing = false
+   }
+
+
+    FileCtrlBar{
+        z: 2
+        height: 32
+        width:root.width - 3
+        onBackbtnClicked: xcFileTree.directionBack()
+        hideBackBtn: !xcFileTree.currentFolder
+        filePath: Global.project_location + "/" + Global.current_element + xcFileTree.currentFolder
+    }
+
+    Rectangle{
+        x: 3
+        y: 32
+        width: root.width - 9
+        height: 1
+        color: Qt.lighter("gray",1.5)
+    }
+
+    XCText{
+        id:xcPathText
+        x: 5
+        y: 36
+        xcText: "project:/" + Global.current_element + xcFileTree.currentFolder
+        xcFontSize: 12
+        onCenter:false
+        width: parent.width - x - 3
+        elide: Text.ElideLeft
+        textColor: Qt.lighter("gray",1.5)
+        opacity: root.contentOpacity
+    }
+    
+    XCFileTreeBar{
+        id:xcFileTree
+        width: root.width - 3
+        y:xcPathText.y + xcPathText.height + 2
+        height: root.height - y - 2
+        opacity: root.contentOpacity
+        onFloderSwitched:{
+            root.floderSwitch()
+        }
+        onFileSwitched:{
+            root.started = Global.get_fileName() != ""
+        }
+    }
+}

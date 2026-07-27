@@ -1,0 +1,56 @@
+import QtQuick
+import QtQuick.Controls
+
+
+
+TextField{
+    id: root
+    height: 32
+
+    property int autoSaveType: 0    //0.不自动保存 1.修改文件名 2.保存键值对
+    property bool isWrap: false // 默认为非自动换行
+    wrapMode: isWrap? TextEdit.Wrap : TextEdit.NoWrap // 自动换行((No)Warp)
+    verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
+
+    color: Colors.text
+    selectionColor: Colors.fired
+    autoScroll: true
+    leftPadding: 10
+    rightPadding: 10
+    topPadding: root.isWrap ? 8 : 0
+    bottomPadding: root.isWrap ? 8 : 0
+    placeholderTextColor: Colors.changeA(Colors.banned, 0.78)
+
+    background: Rectangle {
+        color: root.activeFocus ? Colors.changeA(Colors.background, 0.72)
+                                : Colors.changeA(Colors.background, root.isWrap ? 0.50 : 0.36)
+        radius: 7
+        clip: true
+        border.width: 1
+        border.color: root.activeFocus ? Colors.changeA(Colors.border, 0.82)
+                                       : Colors.changeA(Colors.text, 0.10)
+
+        Behavior on color { ColorAnimation { duration: 130 } }
+        Behavior on border.color { ColorAnimation { duration: 130 } }
+
+        Rectangle{
+            visible: root.activeFocus
+            width: parent.width - 14
+            height: 2
+            x: 7
+            y: parent.height - height - 3
+            radius: 1
+            color: Colors.border
+        }
+    }
+    
+    font.family: "微软雅黑"
+    font.pixelSize: 16
+
+    onAccepted: {
+        if(root.autoSaveType == 1){
+            Global.file_modify_name(root.text)
+        }
+        Console.output(root.text)
+    }
+}
