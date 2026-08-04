@@ -10,7 +10,7 @@ BasePage {
         x: 20
         y: 16
         width: parent.width - 40
-        height: Math.max(210, parent.height - y - 20)
+        contentHeight: Math.max(210, parent.height - y - 20)
 
         Rectangle {
             anchors.centerIn: parent

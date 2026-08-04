@@ -4,8 +4,8 @@ import QtQuick
 
 ContentBar{
     id: root
-    expandAnimationEnabled: false
-    height: 32
+    expanded: true
+    contentHeight: 32
     width: parent.width - x - 8
     y: 39
     color: Colors.background

@@ -7,6 +7,13 @@ Item{
     property string content
     signal accepted()
 
+    Behavior on height {
+            NumberAnimation{
+                duration: 120
+                easing.type: Easing.InOutQuad
+            }
+        }
+
     function getContent(){//事实获取编辑框的文本，即使用户还没有提交
         return textField.text
     }
@@ -20,12 +27,6 @@ Item{
         width: parent.width
         height: parent.height - 35
         placeholderText: root.placeholderText
-        Behavior on height {
-            NumberAnimation{
-                duration: 120
-                easing.type: Easing.InOutQuad
-            }
-        }
         onEditingFinished:{
             root.content = text     //将用户提交的文本同步到content变量
             root.accepted()
@@ -41,7 +42,6 @@ Item{
             btnSize: 32
             imgSize: 24
             btnRadius: 3
-            //最小化按钮
             imageSource: "qrc:/assets/gui/controls/expand_up.png"
             onClicked: root.height = Math.max(root.height - 128, 128)
         }
@@ -50,7 +50,6 @@ Item{
             btnSize: 32
             imgSize: 24
             btnRadius: 3
-            //最小化按钮
             imageSource: "qrc:/assets/gui/controls/expand_down.png"
             onClicked: root.height = root.height + 128
         }

@@ -5,27 +5,25 @@ import xcshop
 FocusScope{
     id: root
 
-    property bool deferInitialExpand: false
+    property bool delayExpand: false
 
     property int min_width: -1
-    property bool expandAnimationEnabled: true  //创建完成后将自动变为false并将高度动画切换到一般模式
-    property bool resizeAnimationEnabled: true
-    property int height_expand    //用于初始创建动画
+    property bool expanded: false  //展开动画播放完毕后，此项将设为真。若此项初始时便为真，则意为取消动画
+    property int contentHeight
     property color color: Colors.changeA(Colors.foreground, 0.72)
     height: 0
     clip: true
     enabled: height > 0
 
-    Behavior on height {    //创建完毕后的一般高度动画
-        enabled: !root.expandAnimationEnabled && root.resizeAnimationEnabled
-        NumberAnimation{
-            duration: 120
-            easing.type: Easing.InOutQuad
-        }
+    Binding{    //展开动画播放后，实时更新组件高度
+        target: root
+        property: "height"
+        value: root.contentHeight
+        when: root.expanded
+        restoreMode: Binding.RestoreNone
     }
 
-    function startExpandAnimation(){
-        if(!root.expandAnimationEnabled || expandAnimation.running)return
+    function expand(){
         expandAnimation.start()
     }
 
@@ -48,26 +46,27 @@ FocusScope{
         }
         
 
-
-        
-
         //展开动画（创建时）
             NumberAnimation{
                 id: expandAnimation
                 target: root
                 property: "height"
                 from: 0
-                to: root.height
+                to: root.contentHeight
                 duration: 420
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: [1.00, 0.00, 0.40, 1.33,1,1]
                 onFinished: {
-                    root.expandAnimationEnabled = false
+                    root.expanded = true
                 }
             }
         Component.onCompleted: {
-            if(root.expandAnimationEnabled && !root.deferInitialExpand)
-                root.startExpandAnimation()
+            if(!root.delayExpand && !root.expanded)expandAnimation.start()
+            if(root.expanded){
+                root.expanded = false   //这样可以暂时取消高度动画
+                root.height = root.contentHeight
+                root.expanded = true
+            }
         }
 
 

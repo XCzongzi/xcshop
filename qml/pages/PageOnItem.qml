@@ -19,13 +19,9 @@ BaseIOPage {
         
         
         Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
-            displayInput.startExpandAnimation() 
-            
-            triggerBar_add.height = 100
-            triggerBar_text.visible = false
-            triggerBox.visible = true
-            triggerInput.startExpandAnimation() 
-            })
+            displayInput.expand()
+            triggerInput.expand()
+        })
 
         //Repeater中动态加载的组件的数据也需要使用函数来更新
         //由于数据是存储在数组中的，而Repeater使用的模型又是ListModel，所以需要先把数组中的数据同步到ListModel当中
@@ -86,19 +82,19 @@ BaseIOPage {
             }
         }
         min_width: 400
-        height: itemInput_field.y + itemInput_field.height + 18
+        contentHeight: itemInput_field.y + itemInput_field.height + 18
     }
     ContentBar{
         id: displayInput
         // 等待文件数据读入后，再按保存的展示选项播放展开动画。
-        deferInitialExpand: true
+        delayExpand: true
         //
         x: 16
         y: itemInput.y + itemInput.height + 8
         width: root.layout ? (root.width - root.combined_width) / 2 + min_width : parent.width - 32
         //
         min_width: itemInput.min_width
-        height: displayInput_selection.selected == 1
+        contentHeight: displayInput_selection.selected == 1
                 ? displayInput_input.y + displayInput_input.height + 24
                 : displayInput_selection.y + displayInput_selection.height + 22
 
@@ -131,20 +127,14 @@ BaseIOPage {
     }
     ContentBar{
         id:triggerInput
-        deferInitialExpand: true
+        delayExpand: true
         //
         x: root.layout ? itemInput.x + itemInput.width + 8 : 16
         y: root.layout ? root.workspaceTop - root.height_output : displayInput.y + displayInput.height + 8
         width: root.layout ? (root.width - root.combined_width) / 2 + min_width : parent.width - 32
         //
         min_width: 520
-        resizeAnimationEnabled: false
-        height: triggerBox.visible ? triggerBox.implicitHeight + 82 : 100
-        XCText{
-            id: triggerBar_text
-            xcFontSize: 25
-            text:"加载中..."
-        }
+        contentHeight: triggerBox.y + triggerBox.height + 16
         XCText {
             x: 16
             y: 18
@@ -164,7 +154,6 @@ BaseIOPage {
         
         Column{
             id: triggerBox
-            visible: false
             width: parent.width - 32
             x: 16
             y: 68
@@ -209,7 +198,7 @@ BaseIOPage {
 
             ImageButton{
                 id: triggerBar_add
-                height: 99
+                height: 100
                 width: triggerBox.width
                 z: -999
                 btnRadius: 10
@@ -233,12 +222,4 @@ BaseIOPage {
         }
         
     }
-    function pageOnCompleted(){
-        triggerBox.forceLayout()
-    }
-    
-
-    
-    
-
 }

@@ -12,7 +12,7 @@ BasePage {
         x: 20
         y: 16 - root.height_output
         width: parent.width - 40
-        height: displayInput_textField.y + displayInput_textField.height + 18
+        contentHeight: displayInput_textField.y + displayInput_textField.height + 18
 
         XCText {
             id: displayInput_propertyText
@@ -45,7 +45,7 @@ BasePage {
         x: 20
         y: displayInput.y + displayInput.height + 12
         width: parent.width - 40
-        height: typeInput_propertyText.visible ? itemInput_field.y + itemInput_field.height + 18
+        contentHeight: typeInput_propertyText.visible ? itemInput_field.y + itemInput_field.height + 18
                                              : typeInput_radioGroup.y + typeInput_radioGroup.height + 24
 
         XCText { x: 20; y: 18; xcText: "代价类型"; xcFontSize: 17; onCenter: false }
