@@ -49,6 +49,14 @@ qt_add_qml_module(appxcshop
         qml/Global.qml
         qml/SignalBus.qml
 
+
+        qml/components/TitleBar.qml
+        qml/components/Border.qml
+        qml/components/TypeBar.qml
+        qml/components/ElementExplorer.qml
+        qml/components/ElementRelayBar.qml
+        qml/components/FileControls.qml
+
         qml/components/base/reusable/ReusableMouseArea.qml
         qml/components/base/reusable/LightEffect.qml
         qml/components/base/reusable/XCShadow.qml
@@ -78,20 +86,16 @@ qt_add_qml_module(appxcshop
         qml/components/settings/SettingsPageHeader.qml
         qml/components/settings/SettingsCard.qml
         qml/components/settings/SettingsNavButton.qml
-        qml/components/TitleBar.qml
-        qml/components/Border.qml
-        qml/components/TypeBar.qml
-        qml/components/ElementExplorer.qml
-        qml/components/ElementRelayBar.qml
+        
         qml/components/relayBar/ElementCard.qml
         qml/components/relayBar/RelayTabCard.qml
         qml/components/relayBar/RelaySelectionMask.qml
+
         qml/components/FileSystem/XCFileTreeBar.qml
         qml/components/FileSystem/FileButton.qml
         qml/components/FileSystem/FileCtrlBar.qml
 
-        qml/pages/Controls/Pages_FileControls.qml
-        qml/pages/Controls/Pages_FileList.qml
+
         qml/pages/Controls/_Item/Item_triggerBar.qml
         
         qml/pages/BasePage.qml
@@ -108,7 +112,6 @@ qt_add_qml_module(appxcshop
         qml/pages/PageOnSettings.qml
         qml/pages/PageOnAbout.qml
 
-        qml/components/pages/start/PackSelectingBar.qml
 
         assets/js/request.js
 

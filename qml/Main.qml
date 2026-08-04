@@ -202,7 +202,7 @@ XCWindow {
         //     visible: pageLoader.item.workspace
         //     x: root.pageX + 8
         // }
-        Pages_FileControls{
+        FileControls{
             id:fileControlsBar
             visible: root.workspaceChromeVisible
             x: root.pageX
