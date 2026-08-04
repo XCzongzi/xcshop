@@ -280,7 +280,7 @@ BasePage {
                         }
                     }
                     XCText {
-                        visible: projectNameValue.length > 0 && !projectNameGood
+                        visible: root.projectNameValue.length > 0 && !root.projectNameGood
                         xcText: "项目名称不能包含 \\ / : * ? \" < > |，且不能以空格或点结尾。"
                         onCenter: false
                         xcFontSize: 12
@@ -288,7 +288,7 @@ BasePage {
                         textColor: Colors.error
                     }
                     XCText {
-                        visible: namespaceValue.length > 0 && !namespaceGood
+                        visible: root.namespaceValue.length > 0 && !root.namespaceGood
                         xcText: "命名空间格式不正确。"
                         onCenter: false
                         xcFontSize: 12

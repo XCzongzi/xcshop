@@ -36,40 +36,23 @@ BaseIOPage {
 
 
     //布局
-    property int combined_width: itemInput.min_width + triggerInput.min_width + 16 * 2 + 8
-    property int workspaceTop: 16
+    maxHeadContentCount: 2
+    headContentMinWidth: itemInput.min_width + displayInput.min_width
 
-    layout: combined_width < width
     content_height: 
             !root.layout ? 
-                workspaceTop + itemInput.height + displayInput.height + triggerInput.height + 40
-                : workspaceTop + Math.max(itemInput.height + displayInput.height + 20, triggerInput.height) + 24
+                itemInput.height + costInput.height + displayInput.height + triggerInput.height + 64
+                : Math.max(itemInput.height + costInput.height, displayInput.height + triggerInput.height) + 48
 
     //内容
     ContentBar{
         id: itemInput
         //
         x: 16
-        y: root.workspaceTop - root.height_output
-        width: root.layout ? (root.width - root.combined_width) / 2 + min_width : parent.width - 32
+        y: 16 - root.height_output
         //
-        XCText{
-            id: itemInput_propertyText
-            y: 18
-            x: 16
-            xcText: "物品ID"
-            xcFontSize: 18
-            onCenter: false
-        }
-        XCText{
-            x: 16
-            y: 46
-            xcText: "欲售出的物品ID+物品组件（默认为原版命名空间）"
-            xcFontSize: 12
-            onCenter: false
-            boldFont: false
-            textColor: Colors.banned
-        }
+        title: "物品ID"
+        subtitle: "欲售出的物品ID+物品组件（默认为原版命名空间）"
         VariableTextField{
             id: itemInput_field
             x: 16
@@ -85,20 +68,30 @@ BaseIOPage {
         contentHeight: itemInput_field.y + itemInput_field.height + 18
     }
     ContentBar{
+        id:costInput
+        x: itemInput.x
+        y: itemInput.y + itemInput.height + 8
+        min_width: itemInput.min_width
+        contentHeight: 500
+        title: "触发代价"
+        subtitle: "最终消耗为选择的多个代价元素之和"
+    }
+
+
+    ContentBar{
         id: displayInput
         // 等待文件数据读入后，再按保存的展示选项播放展开动画。
         delayExpand: true
         //
-        x: 16
-        y: itemInput.y + itemInput.height + 8
-        width: root.layout ? (root.width - root.combined_width) / 2 + min_width : parent.width - 32
+        x: root.layout ? itemInput.x + itemInput.width + 8 : 16
+        y: root.layout ? itemInput.y : costInput.y + costInput.height + 8
         //
-        min_width: itemInput.min_width
+        min_width: 520
         contentHeight: displayInput_selection.selected == 1
                 ? displayInput_input.y + displayInput_input.height + 24
                 : displayInput_selection.y + displayInput_selection.height + 22
 
-        XCText { x: 16; y: 18; xcText: "商品展示"; xcFontSize: 18; onCenter: false }
+        title: "商品展示"
         RadioGroup{
             id:displayInput_selection
             y: 54
@@ -129,28 +122,13 @@ BaseIOPage {
         id:triggerInput
         delayExpand: true
         //
-        x: root.layout ? itemInput.x + itemInput.width + 8 : 16
-        y: root.layout ? root.workspaceTop - root.height_output : displayInput.y + displayInput.height + 8
-        width: root.layout ? (root.width - root.combined_width) / 2 + min_width : parent.width - 32
+        x: displayInput.x
+        y: displayInput.y + displayInput.height + 8
         //
-        min_width: 520
+        min_width: displayInput.min_width
         contentHeight: triggerBox.y + triggerBox.height + 16
-        XCText {
-            x: 16
-            y: 18
-            xcText: "触发规则"
-            xcFontSize: 18
-            onCenter: false
-        }
-        XCText {
-            x: 16
-            y: 46
-            xcText: "分别定义物品被任意方式取得或掷出后应执行的操作"
-            xcFontSize: 12
-            onCenter: false
-            boldFont: false
-            textColor: Colors.banned
-        }
+        title: "触发规则"
+        subtitle: "分别定义物品被任意方式取得或掷出后应执行的操作"
         
         Column{
             id: triggerBox

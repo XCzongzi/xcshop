@@ -88,7 +88,7 @@ XCWindow {
         }
         TypeBar{
             id: typeBar
-            z:98
+            z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
             onTypeBtnClicked: typeName=>root.typeSwitch(typeName,false)
             bottomLeftRadius: mainWindow.visibility === Window.Maximized? 0 : Constants.window_radius
             onExtraButton_clicked:function(type) {
@@ -185,7 +185,7 @@ XCWindow {
             height: mainWindow.height - y
             width: mainWindow.width
             mainWindow: mainWindow
-            z: 99
+            z: 101
             onCloseBtnClicked:{
                 pageLoader.item.executeFromMain("notice")
             }

@@ -85,29 +85,26 @@ Rectangle{
         }
 
         Rectangle {
-            x: 8
-            y: 16
-            width: 3
-            height: 24
-            radius: 2
-            color: Colors.border
-        }
-
-        Rectangle {
             id: cardHeader
-            x: 8
-            y: 8
-            width: parent.width - 16
+            width: parent.width
             height: 32
             radius: 9
             color: Colors.changeA(Colors.background, 0.38)
             border.width: 1
             border.color: Colors.changeA(Colors.text, 0.07)
 
+            Rectangle {
+                x: 1
+                y: 4
+                width: 4
+                height: 24
+                radius: 2
+                color: Colors.border
+            }
             XCText {
                 x: 14
                 anchors.verticalCenter: parent.verticalCenter
-                xcText: "触发规则"
+                xcText: "规则"
                 onCenter: false
                 xcFontSize: 13
             }
@@ -116,9 +113,8 @@ Rectangle{
         Rectangle{
             id: ctrlBar
             z: 3
-            y: 8
             color: Colors.changeA(Colors.foreground, 0.94)
-            width: 38 + 18 + ctrlBar_text.width
+            width: 32 + 16 + ctrlBar_text.width
             height: 32
             x: parent.width - width
             radius: root.radius
@@ -142,13 +138,6 @@ Rectangle{
                 btnpressed: Colors.error
                 onClicked:deleteAnim.start()
             }
-            XCText {
-                x: 11
-                y: 0
-                xcText: "×"
-                xcFontSize: 18
-                textColor: Colors.text
-            }
             NumberAnimation{
                 id: deleteAnim
                 target: root
@@ -164,10 +153,10 @@ Rectangle{
             XCText{
                 id:ctrlBar_text
                 x: parent.width - width - 8
-                xcText: "规则 " + (root.index + 1)
+                xcText: root.index + 1
                 onCenter: false
                 onVCenter: true
-                xcFontSize: 11
+                xcFontSize: 16
                 boldFont: false
                 textColor: Colors.banned
             }

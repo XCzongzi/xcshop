@@ -8,7 +8,7 @@ Rectangle {
 
     // ===== 容器配置与持久化状态 =====
     property bool workspaceActive: false
-    property int minPanelHeight: 126
+    property int minPanelHeight: 100
     property int maxPanelHeight: 420
     property int panelHeight: Global.elementRelayHeight
     property bool resizing: false

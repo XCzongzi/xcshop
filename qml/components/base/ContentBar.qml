@@ -10,7 +10,10 @@ FocusScope{
     property int min_width: -1
     property bool expanded: false  //展开动画播放完毕后，此项将设为真。若此项初始时便为真，则意为取消动画
     property int contentHeight
+    property string title: ""
+    property string subtitle: ""
     property color color: Colors.changeA(Colors.foreground, 0.72)
+    width: parent.layout ? parent.contentWidthEnhance + min_width : parent.width - 32
     height: 0
     clip: true
     enabled: height > 0
@@ -43,6 +46,23 @@ FocusScope{
             NumberAnimation{
                 duration: 180
             }
+        }
+        XCText{
+            id: itemInput_propertyText
+            y: 18
+            x: 16
+            xcText: root.title
+            xcFontSize: 18
+            onCenter: false
+        }
+        XCText{
+            x: 16
+            y: 46
+            xcText: root.subtitle
+            xcFontSize: 12
+            onCenter: false
+            boldFont: false
+            textColor: Colors.banned
         }
         
 
