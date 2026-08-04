@@ -12,8 +12,8 @@ XCWindow{
 
     Rectangle{
         clip: true
-        y: titleBarHeight
-        height: root.height - input.height - titleBarHeight
+        y: root.titleBarHeight
+        height: root.height - input.height - root.titleBarHeight
         width: root.width
         color: root.color
         TextEdit{

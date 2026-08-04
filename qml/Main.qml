@@ -177,6 +177,7 @@ XCWindow {
                 root.openElementFromRelay(filePath)
             }
         }
+        RelaySelectionMask{}
 
         NoticeBoard{
             id:noticeBar
@@ -213,6 +214,7 @@ XCWindow {
 
         Loader{
             id:pageLoader
+            
             x: Math.max(root.pageX,65)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
             height: Math.max(0, root.height - y - elementRelayBar.height)
@@ -310,79 +312,6 @@ XCWindow {
                         default:
 
                     }
-                }
-            }
-        }
-
-        Item {
-            id: selectionMask
-            z: 98.5
-            x: 0
-            y: 0
-            width: root.width
-            height: elementRelayBar.visible ? elementRelayBar.y : root.height
-            visible: false
-            opacity: visible ? 1 : 0
-
-            property real holeX: 0
-            property real holeY: 0
-            property real holeWidth: 0
-            property real holeHeight: 0
-            property color maskColor: Colors.changeA(Colors.shadow, 0.78)
-
-            Behavior on opacity { NumberAnimation { duration: 150 } }
-
-            function updateHole(sceneRect) {
-                if (!sceneRect || sceneRect.width === undefined)
-                    return
-                var rootScene = root.mapToItem(null, 0, 0)
-                var padding = 7
-                var left = sceneRect.x - rootScene.x - padding
-                var top = sceneRect.y - rootScene.y - padding
-                var right = left + sceneRect.width + padding * 2
-                var bottom = top + sceneRect.height + padding * 2
-                holeX = Math.max(0, Math.min(width, left))
-                holeY = Math.max(0, Math.min(height, top))
-                holeWidth = Math.max(0, Math.min(width, right) - holeX)
-                holeHeight = Math.max(0, Math.min(height, bottom) - holeY)
-            }
-
-            component MaskPart: Rectangle {
-                color: selectionMask.maskColor
-                MouseArea { anchors.fill: parent; hoverEnabled: true }
-            }
-
-            MaskPart {
-                x: 0
-                y: 0
-                width: parent.width
-                height: selectionMask.holeY
-            }
-            MaskPart {
-                x: 0
-                y: selectionMask.holeY
-                width: selectionMask.holeX
-                height: selectionMask.holeHeight
-            }
-            MaskPart {
-                x: selectionMask.holeX + selectionMask.holeWidth
-                y: selectionMask.holeY
-                width: Math.max(0, parent.width - x)
-                height: selectionMask.holeHeight
-            }
-            MaskPart {
-                x: 0
-                y: selectionMask.holeY + selectionMask.holeHeight
-                width: parent.width
-                height: Math.max(0, parent.height - y)
-            }
-
-            Connections {
-                target: SignalBus
-                function onElementSelectionFocusChanged(active, sceneRect) {
-                    selectionMask.visible = active
-                    if (active)
-                        selectionMask.updateHole(sceneRect)
                 }
             }
         }

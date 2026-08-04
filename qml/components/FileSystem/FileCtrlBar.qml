@@ -13,12 +13,9 @@ Item{
     function defaultElementContent(){
         if (Global.current_element === "Item") {
             return JSON.stringify({
-                "item": "string",
-                "display": { "selected": 0, "element": "path" },
-                "trigger": [{
-                    "mode": { "selected": 0, "filter": { "selected": 0, "options": [0, 0] } },
-                    "execute": { "selected": 0, "selections": ["command", "function"] }
-                }]
+                "item": "",
+                "display": { "selected": 0, "element": "" },
+                "trigger": []
             })
         }
         return ""

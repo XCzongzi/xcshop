@@ -223,6 +223,7 @@ QtObject{
         recentProjects = records
         saveSettings()
     }
+    //普通
     function file_modify_name(text){
         Console.output("modify name")
         Console.output(Qt.resolvedUrl(get_filePath()))

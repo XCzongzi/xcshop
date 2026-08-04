@@ -21,6 +21,8 @@ QtObject{
     signal elementSelectionRequestActivated(var selectionItem)
     signal elementSelectionFocusChanged(bool active, var sceneRect)
 
+    signal elementSelectionDeselect()//点击遮罩空白处时，发送取消选择的信号到“选择元素”
+
     //元素管理器与元素中转区
     signal elementOpened(string elementType, string filePath, string elementName)
 

@@ -4,6 +4,8 @@ import xcshop
 Rectangle {
     id: root
 
+    // ===== 对外状态与事件 =====
+    // selectionId 当前表示允许接收的元素类型，而非组件实例的唯一 ID。
     property string selectionId: ""
     property string selectedElementPath: ""
     property bool waitingForSelection: false
@@ -11,6 +13,7 @@ Rectangle {
     property bool dropHovered: false
     property string validationMessage: ""
 
+    // ===== 派生展示状态 =====
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property bool highlighted: waitingForSelection || externalDragActive || dropHovered
     readonly property string selectionTypeName: {
@@ -52,6 +55,7 @@ Rectangle {
     Behavior on border.color { ColorAnimation { duration: 160 } }
     Behavior on color { ColorAnimation { duration: 160 } }
 
+    // ===== 路径校验与本地状态变更 =====
     function normalizedPath(filePath) {
         if (filePath === undefined || filePath === null)
             return ""
@@ -108,6 +112,12 @@ Rectangle {
         selectionCancelled(selectionId)
         SignalBus.elementSelectionCancelled(selectionId)
     }
+    Connections{    //连接遮罩的交互
+        target: SignalBus
+        function onElementSelectionDeselect(){
+            root.cancelElementSelection()
+        }
+    }
 
     function updateFocusGeometry() {
         if (!waitingForSelection)
@@ -121,6 +131,7 @@ Rectangle {
         })
     }
 
+    // ===== 临时反馈与选择区域定位 =====
     Timer {
         id: focusGeometryTimer
         interval: 40
@@ -135,6 +146,7 @@ Rectangle {
         onTriggered: root.validationMessage = ""
     }
 
+    // ===== SignalBus 事件接收 =====
     Connections {
         target: SignalBus
 
@@ -153,6 +165,7 @@ Rectangle {
         }
     }
 
+    // ===== 顶栏：标题、状态与选择操作 =====
     XCText {
         x: 16
         y: 14
@@ -161,6 +174,7 @@ Rectangle {
         onCenter: false
     }
 
+    // ===== 选择状态摘要 =====
     Rectangle {
         id: statusBadge
         anchors.right: selectButton.left
@@ -187,6 +201,7 @@ Rectangle {
         }
     }
 
+    // ===== 发起或取消中转区选择 =====
     TextButton {
         id: selectButton
         anchors.right: parent.right
@@ -199,9 +214,9 @@ Rectangle {
                                       : (root.hasSelection ? "重新选择" : "从中转区选择")
         textSize: 12
         boldFont: false
-        buttonColor: Colors.changeA(Colors.pressed, 0.72)
-        firedColor: Colors.changeA(Colors.fired, 0.82)
-        pressedColor: Colors.changeA(Colors.border, 0.38)
+        buttonColor: Colors.changeA(Colors.border, 0.72)
+        firedColor: Colors.changeA(Colors.border, 0.90)
+        pressedColor: Colors.changeA(Colors.border, .5)
         onClicked: {
             if (root.waitingForSelection)
                 root.cancelElementSelection()
@@ -210,6 +225,7 @@ Rectangle {
         }
     }
 
+    // ===== 拖放目标与已选元素摘要 =====
     Rectangle {
         id: dropTarget
         x: 14
@@ -222,7 +238,7 @@ Rectangle {
 
         Behavior on color { ColorAnimation { duration: 160 } }
 
-        Canvas {
+        Canvas {    //虚线边框绘制
             id: dashedBorder
             anchors.fill: parent
             property color strokeColor: root.highlighted ? Colors.border
@@ -332,6 +348,7 @@ Rectangle {
     }
 
 
+    // ===== 清除当前连接 =====
     TextButton {
         visible: root.hasSelection
         anchors.right: parent.right
@@ -350,6 +367,7 @@ Rectangle {
         onClicked: root.clearElement(true)
     }
 
+    // ===== 生命周期清理 =====
     onVisibleChanged: {
         if (!visible && waitingForSelection)
             cancelElementSelection()

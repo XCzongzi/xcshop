@@ -15,9 +15,17 @@ BaseIOPage {
         //单选框&多属性编辑栏的属性更新必须使用函数，而不能使用属性绑定
     
         displayInput_selection.selected = root.eledata.display.selected
-        var displayElementPath = root.eledata.display.element || ""
-        displayInput_input.setElement(displayElementPath === "path" ? "" : displayElementPath, false)
-        Qt.callLater(function() { displayInput.startExpandAnimation() })
+        displayInput_input.setElement(root.eledata.display.element, false)
+        
+        
+        Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
+            displayInput.startExpandAnimation() 
+            
+            triggerBar_add.height = 100
+            triggerBar_text.visible = false
+            triggerBox.visible = true
+            triggerInput.startExpandAnimation() 
+            })
 
         //Repeater中动态加载的组件的数据也需要使用函数来更新
         //由于数据是存储在数组中的，而Repeater使用的模型又是ListModel，所以需要先把数组中的数据同步到ListModel当中
@@ -26,9 +34,6 @@ BaseIOPage {
         for(var i = 0; i < eledata.trigger.length; i++ ){
             listModel.append(eledata.trigger[i])
         }
-
-
-    
 
     }
 
@@ -56,14 +61,14 @@ BaseIOPage {
             id: itemInput_propertyText
             y: 18
             x: 16
-            xcText: "物品标识"
+            xcText: "物品ID"
             xcFontSize: 18
             onCenter: false
         }
         XCText{
             x: 16
             y: 46
-            xcText: "支持原版 ID 或自定义物品标识。"
+            xcText: "欲售出的物品ID+物品组件（默认为原版命名空间）"
             xcFontSize: 12
             onCenter: false
             boldFont: false
@@ -126,6 +131,7 @@ BaseIOPage {
     }
     ContentBar{
         id:triggerInput
+        deferInitialExpand: true
         //
         x: root.layout ? itemInput.x + itemInput.width + 8 : 16
         y: root.layout ? root.workspaceTop - root.height_output : displayInput.y + displayInput.height + 8
@@ -134,16 +140,6 @@ BaseIOPage {
         min_width: 520
         resizeAnimationEnabled: false
         height: triggerBox.visible ? triggerBox.implicitHeight + 82 : 100
-
-        Timer{//这个Timer是有必要的，为了等待Repeater初始化完成后，刷新整个控件的高度绑定
-            interval: 500
-            running: true
-            onTriggered:{
-                triggerBar_add.height = 100
-                triggerBar_text.visible = false
-                triggerBox.visible = true
-            }
-        }
         XCText{
             id: triggerBar_text
             xcFontSize: 25
@@ -159,7 +155,7 @@ BaseIOPage {
         XCText {
             x: 16
             y: 46
-            xcText: "每条规则定义物品被取得或掷出后应执行的操作。"
+            xcText: "分别定义物品被任意方式取得或掷出后应执行的操作"
             xcFontSize: 12
             onCenter: false
             boldFont: false

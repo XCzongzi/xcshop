@@ -25,11 +25,7 @@ FocusScope{
     }
 
     function startExpandAnimation(){
-        if(!root.expandAnimationEnabled || expandAnimation.running)
-            return
-        var targetHeight = root.height
-        expandAnimation.from = 0
-        expandAnimation.to = targetHeight
+        if(!root.expandAnimationEnabled || expandAnimation.running)return
         expandAnimation.start()
     }
 
@@ -61,7 +57,7 @@ FocusScope{
                 target: root
                 property: "height"
                 from: 0
-                to: 0
+                to: root.height
                 duration: 420
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: [1.00, 0.00, 0.40, 1.33,1,1]

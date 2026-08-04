@@ -18,10 +18,8 @@ Rectangle{
     signal deleteAnimFinishied(int currentIndex)
     signal updateData()
 
-    Timer{//用于初始化单选框的数据
-        interval:300
-        running: true
-        onTriggered:{
+    Component.onCompleted:{
+        Qt.callLater(function(){
             trigger_radioGroup.selected = root.modelData.mode.selected
             comboBox_root.selected = root.modelData.mode.filter.selected
             
@@ -29,7 +27,7 @@ Rectangle{
             comboBox_numfilter.selected = optionData == -1 ? 0 : optionData == -2 ? 1 : 2
             //若读取到的optionData为-1，就是左键检测；-2即右键检测；除此之外就是自定义的内容
             execute_radioGroup.selected = root.modelData.execute.selected
-        }
+        })
     }
 
     //删除动画：

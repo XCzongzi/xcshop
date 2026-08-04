@@ -83,6 +83,9 @@ qt_add_qml_module(appxcshop
         qml/components/TypeBar.qml
         qml/components/ElementExplorer.qml
         qml/components/ElementRelayBar.qml
+        qml/components/relayBar/ElementCard.qml
+        qml/components/relayBar/RelayTabCard.qml
+        qml/components/relayBar/RelaySelectionMask.qml
         qml/components/FileSystem/XCFileTreeBar.qml
         qml/components/FileSystem/FileButton.qml
         qml/components/FileSystem/FileCtrlBar.qml
@@ -116,6 +119,7 @@ qt_add_qml_module(appxcshop
     RESOURCES
         gui.qrc
         js.qrc
+        js/ElementRelayState.js
     SOURCES
         src/XCFile.cpp
         src/main.cpp

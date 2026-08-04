@@ -43,7 +43,7 @@ Rectangle {
         Rectangle {
             id: selectedHighlight
             visible: root.selected >= 0 && root.selected < optionRepeater.count
-            x: root.selected >= 0 && root.selected < optionRepeater.count ? optionRepeater.itemAt(root.selected).x + 2 : 0
+            x: root.selected >= 0 && root.selected < optionRepeater.count ? optionRepeater.itemAt(root.selected).x + 4 : 0
             anchors.verticalCenter: parent.verticalCenter
             width: root.selected >= 0 && root.selected < optionRepeater.count ? optionRepeater.itemAt(root.selected).width : 0
             height: parent.height - 4
