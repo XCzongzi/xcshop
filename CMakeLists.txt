@@ -80,6 +80,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/ScrollBar.qml
         qml/components/base/MultiPropertyEdit.qml
         qml/components/base/ElementSelection.qml
+        qml/components/base/ElementSelectionCompact.qml
         qml/components/base/LargeIconButton.qml
         qml/components/base/IconButton.qml
 

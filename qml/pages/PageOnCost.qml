@@ -62,7 +62,7 @@ BasePage {
             visible: typeInput_radioGroup.selected !== 0
             x: 20
             y: typeInput_radioGroup.y + typeInput_radioGroup.height + 12
-            xcText: typeInput_radioGroup.selected === 1 ? "物品标识" : typeInput_radioGroup.selected === 2 ? "计分板名称" : "目标选择器"
+            xcText: typeInput_radioGroup.selected === 1 ? "物品标识" : typeInput_radioGroup.selected === 2 ? "计分板名称" : "目标选择器（仅筛选，不会进行扣除）"
             xcFontSize: 15
             onCenter: false
         }

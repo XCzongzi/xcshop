@@ -75,6 +75,58 @@ BaseIOPage {
         contentHeight: 500
         title: "触发代价"
         subtitle: "最终消耗为选择的多个代价元素之和"
+        Column{
+            spacing: 8
+            x: 16
+            y: 64
+            width: parent.width - 128
+            XCText{
+                text: "设置购买此物的价格"
+            }
+            Repeater{
+                model: 3
+                delegate: Row{
+                    height: 48
+                    spacing: 4
+                    ImageButton{
+                        btnSize: 32
+                        radius: 8
+                        btnbackground: Colors.changeA(Colors.error, 0.72)
+                        btnfired: Colors.changeA(Colors.error, 0.90)
+                        btnpressed: Colors.error
+                    }
+                    ElementSelectionCompact{
+                        selectionId: "cost"
+                        width: costInput.width - 256
+                    }
+                    XCTextField{
+                        width: 32
+                    }
+                }
+            }
+            TextButton{
+                id: costInput_add
+                height: 32
+                width: 150
+                z: -999
+                radius: 8
+                buttonColor: Colors.changeA(Colors.background, 0.38)
+                firedColor: Colors.changeA(Colors.fired, 0.72)
+                pressedColor: Colors.changeA(Colors.border, 0.55)
+
+                text: "＋  添加代价元素"
+                textSize: 14
+                textColor: Colors.banned
+                boldFont: false
+
+                onClicked:{
+                    // root.eledata.trigger.push(
+                    //     {"mode":{"selected":0,"filter":{"selected":0,"options":[-1,0]}},"execute":{"selected":0,"selections":["",""]}}
+                    //     ); root.updateDataOut()
+                    // listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
+                }
+            }
+        }
     }
 
 
@@ -126,7 +178,7 @@ BaseIOPage {
         y: displayInput.y + displayInput.height + 8
         //
         min_width: displayInput.min_width
-        contentHeight: triggerBox.y + triggerBox.height + 16
+        contentHeight: triggerBar_add.y + triggerBar_add.height + 16
         title: "触发规则"
         subtitle: "分别定义物品被任意方式取得或掷出后应执行的操作"
         
@@ -172,24 +224,29 @@ BaseIOPage {
                     }
                 }
             }
-            
-
-            ImageButton{
+        }
+        TextButton{
                 id: triggerBar_add
                 height: 100
                 width: triggerBox.width
-                z: -999
-                btnRadius: 10
-                btnbackground: Colors.changeA(Colors.background, 0.38)
-                btnfired: Colors.changeA(Colors.fired, 0.72)
-                btnpressed: Colors.changeA(Colors.border, 0.55)
-                XCText {
-                    anchors.centerIn: parent
-                    xcText: "＋  添加触发规则"
-                    xcFontSize: 14
-                    textColor: Colors.banned
-                    boldFont: false
+                y: triggerBox.y + triggerBox.height + triggerBox.spacing
+                x: 16
+                radius: 10
+                buttonColor: Colors.changeA(Colors.background, 0.38)
+                firedColor: Colors.changeA(Colors.fired, 0.72)
+                pressedColor: Colors.changeA(Colors.border, 0.55)
+
+                text: "＋  添加触发规则"
+                textSize: 14
+                textColor: Colors.banned
+                boldFont: false
+
+                Behavior on y{
+                    NumberAnimation{
+                        duration: 120
+                    }
                 }
+
                 onClicked:{
                     root.eledata.trigger.push(
                         {"mode":{"selected":0,"filter":{"selected":0,"options":[-1,0]}},"execute":{"selected":0,"selections":["",""]}}
@@ -197,7 +254,5 @@ BaseIOPage {
                     listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
                 }
             }
-        }
-        
     }
 }

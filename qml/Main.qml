@@ -232,7 +232,6 @@ XCWindow {
                 hoverEnabled: true
                 z: 999
             }
-
             property var page   //销毁动画
             NumberAnimation{
                 id: opcAnim
