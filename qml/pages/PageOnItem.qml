@@ -19,6 +19,7 @@ BaseIOPage {
         
         
         Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
+            costInput.expand()
             displayInput.expand()
             triggerInput.expand()
         })
@@ -26,6 +27,13 @@ BaseIOPage {
         //Repeater中动态加载的组件的数据也需要使用函数来更新
         //由于数据是存储在数组中的，而Repeater使用的模型又是ListModel，所以需要先把数组中的数据同步到ListModel当中
         //并且在后续修改过程中，需要将数组与model中的数据同步更新
+
+        if (!Array.isArray(root.eledata.cost))
+            root.eledata.cost = []
+
+        for(var i = 0; i < root.eledata.cost.length; i++ ){
+            costListModel.append(root.eledata.cost[i])
+        }
 
         for(var i = 0; i < eledata.trigger.length; i++ ){
             listModel.append(eledata.trigger[i])
@@ -69,38 +77,79 @@ BaseIOPage {
     }
     ContentBar{
         id:costInput
+        delayExpand: true
         x: itemInput.x
         y: itemInput.y + itemInput.height + 8
         min_width: itemInput.min_width
-        contentHeight: 500
+        contentHeight: costInput_box.y + costInput_box.height + 16
         title: "触发代价"
         subtitle: "最终消耗为选择的多个代价元素之和"
         Column{
+            id: costInput_box
             spacing: 8
             x: 16
             y: 64
-            width: parent.width - 128
+            width: parent.width - 32
+            Rectangle{
+                width: parent.width
+                height: 1
+                color: Colors.banned
+            }
             XCText{
-                text: "设置购买此物的价格"
+                text: "设置购买此物所需的价格"
+                onCenter: false
+                y: 8
+            }
+            ListModel{
+                id: costListModel
             }
             Repeater{
-                model: 3
+                id: costRepeater
+                width: parent.width
+                model: costListModel
                 delegate: Row{
+                    required property var model
                     height: 48
                     spacing: 4
                     ImageButton{
+                        anchors.verticalCenter: parent.verticalCenter
                         btnSize: 32
                         radius: 8
                         btnbackground: Colors.changeA(Colors.error, 0.72)
                         btnfired: Colors.changeA(Colors.error, 0.90)
                         btnpressed: Colors.error
+                        onClicked: {
+                            root.eledata.cost.splice(model.index, 1)
+                            root.updateDataOut()
+                            costListModel.remove(model.index, 1)
+                        }
                     }
                     ElementSelectionCompact{
+                        id: costSelection
                         selectionId: "cost"
-                        width: costInput.width - 256
+                        width: costInput_box.width - 72
+                        onElementSelected: function(filePath) {
+                            root.eledata.cost[model.index].element = filePath
+                            root.updateDataOut()
+                        }
+                        onSelectionCleared: {
+                            root.eledata.cost[model.index].element = ""
+                            root.updateDataOut()
+                        }
                     }
                     XCTextField{
+                        id: costAmount
+                        anchors.verticalCenter: parent.verticalCenter
                         width: 32
+                        horizontalAlignment: TextInput.AlignHCenter
+                        text: root.eledata.cost[model.index].amount
+                        onEditingFinished: {
+                            root.eledata.cost[model.index].amount = +text
+                            root.updateDataOut()
+                        }
+                    }
+                    Component.onCompleted: {
+                        costSelection.setElement(root.eledata.cost[model.index].element, false)
                     }
                 }
             }
@@ -120,10 +169,9 @@ BaseIOPage {
                 boldFont: false
 
                 onClicked:{
-                    // root.eledata.trigger.push(
-                    //     {"mode":{"selected":0,"filter":{"selected":0,"options":[-1,0]}},"execute":{"selected":0,"selections":["",""]}}
-                    //     ); root.updateDataOut()
-                    // listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
+                    root.eledata.cost.push({"element":"", "amount":1})
+                    root.updateDataOut()
+                    costListModel.append(root.eledata.cost[root.eledata.cost.length - 1])
                 }
             }
         }

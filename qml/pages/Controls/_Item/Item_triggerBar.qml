@@ -224,7 +224,7 @@ Rectangle{
                         id: field_numfilter
                         visible: comboBox_numfilter.selected == 2
                         x: comboBox_numfilter.width + 12
-                        width: 32
+                        width: 64
                         horizontalAlignment: TextInput.AlignHCenter
                         text: comboBox_numfilter.selected == 2 ? root.modelData.mode.filter.options[0] : "0"
                         onEditingFinished:{
