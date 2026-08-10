@@ -107,49 +107,31 @@ BaseIOPage {
                 id: costRepeater
                 width: parent.width
                 model: costListModel
-                delegate: Row{
+                delegate: Item_costBar {
+                    width: parent.width
                     required property var model
-                    height: 48
-                    spacing: 4
-                    ImageButton{
-                        anchors.verticalCenter: parent.verticalCenter
-                        btnSize: 32
-                        radius: 8
-                        btnbackground: Colors.changeA(Colors.error, 0.72)
-                        btnfired: Colors.changeA(Colors.error, 0.90)
-                        btnpressed: Colors.error
-                        onClicked: {
+                    z: -model.index
+                    index: model.index
+                    modelData: root.eledata.cost[model.index]
+                    onDeleteClicked: {
+                        if (model.index < costListModel.count - 1) {
+                            costRepeater.itemAt(model.index + 1).nearest = true
+                            for (var i = model.index + 1; i < costListModel.count; i++)
+                                costRepeater.itemAt(i).afterDeleting(height, model.index)
+                        } else {
                             root.eledata.cost.splice(model.index, 1)
                             root.updateDataOut()
                             costListModel.remove(model.index, 1)
                         }
                     }
-                    ElementSelectionCompact{
-                        id: costSelection
-                        selectionId: "cost"
-                        width: costInput_box.width - 32 - parent.spacing * 2 - costAmount.width
-                        onElementSelected: function(filePath) {
-                            root.eledata.cost[model.index].element = filePath
-                            root.updateDataOut()
-                        }
-                        onSelectionCleared: {
-                            root.eledata.cost[model.index].element = ""
-                            root.updateDataOut()
-                        }
+                    onDeleteAnimFinishied: {
+                        root.eledata.cost.splice(currentIndex, 1)
+                        root.updateDataOut()
+                        costListModel.remove(currentIndex, 1)
                     }
-                    XCTextField{
-                        id: costAmount
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Math.max(32, contentWidth + leftPadding + rightPadding)
-                        horizontalAlignment: TextInput.AlignHCenter
-                        text: root.eledata.cost[model.index].amount
-                        onEditingFinished: {
-                            root.eledata.cost[model.index].amount = text
-                            root.updateDataOut()
-                        }
-                    }
-                    Component.onCompleted: {
-                        costSelection.setElement(root.eledata.cost[model.index].element, false)
+                    onUpdateData: {
+                        root.eledata.cost[model.index] = modelData
+                        root.updateDataOut()
                     }
                 }
             }

@@ -98,6 +98,7 @@ qt_add_qml_module(appxcshop
 
 
         qml/pages/Controls/_Item/Item_triggerBar.qml
+        qml/pages/Controls/_Item/Item_costBar.qml
         
         qml/pages/BasePage.qml
         qml/pages/BaseIOPage.qml
