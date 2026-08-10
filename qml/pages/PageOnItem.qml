@@ -127,7 +127,7 @@ BaseIOPage {
                     ElementSelectionCompact{
                         id: costSelection
                         selectionId: "cost"
-                        width: costInput_box.width - 72
+                        width: costInput_box.width - 32 - parent.spacing * 2 - costAmount.width
                         onElementSelected: function(filePath) {
                             root.eledata.cost[model.index].element = filePath
                             root.updateDataOut()
@@ -140,11 +140,11 @@ BaseIOPage {
                     XCTextField{
                         id: costAmount
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 32
+                        width: Math.max(32, contentWidth + leftPadding + rightPadding)
                         horizontalAlignment: TextInput.AlignHCenter
                         text: root.eledata.cost[model.index].amount
                         onEditingFinished: {
-                            root.eledata.cost[model.index].amount = +text
+                            root.eledata.cost[model.index].amount = text
                             root.updateDataOut()
                         }
                     }
@@ -169,7 +169,7 @@ BaseIOPage {
                 boldFont: false
 
                 onClicked:{
-                    root.eledata.cost.push({"element":"", "amount":1})
+                    root.eledata.cost.push({"element":"", "amount":"1"})
                     root.updateDataOut()
                     costListModel.append(root.eledata.cost[root.eledata.cost.length - 1])
                 }
