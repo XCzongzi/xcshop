@@ -37,6 +37,13 @@ set_source_files_properties(appxcshop
     qml/Temp/Console.qml    # 控制台，临时
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
+set_source_files_properties(
+    js/syntax/ItemSyntaxHighlighter.js
+    js/syntax/ItemSyntaxParser.js
+    js/syntax/mode-1.js
+    js/syntax/mode-2.js
+    PROPERTIES QT_QML_SKIP_QMLDIR_ENTRY TRUE)
+
 
 
 qt_add_qml_module(appxcshop
@@ -76,6 +83,10 @@ qt_add_qml_module(appxcshop
         qml/components/base/ComboBox.qml
         qml/components/base/BranchBar.qml
         qml/components/base/VariableTextField.qml
+        js/syntax/ItemSyntaxHighlighter.js
+        js/syntax/ItemSyntaxParser.js
+        js/syntax/mode-1.js
+        js/syntax/mode-2.js
         qml/components/base/VariableTextArea.qml
         qml/components/base/ScrollBar.qml
         qml/components/base/MultiPropertyEdit.qml

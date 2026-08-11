@@ -71,7 +71,7 @@ BaseIOPage {
             onAccepted:{
                 root.eledata.item = content; root.updateDataOut()
             }
-            syntaxHighlightMode:2
+            syntaxHighlightMode: 1
         }
         min_width: 400
         contentHeight: itemInput_field.y + itemInput_field.height + 18
