@@ -71,6 +71,7 @@ BaseIOPage {
             onAccepted:{
                 root.eledata.item = content; root.updateDataOut()
             }
+            syntaxHighlightMode:2
         }
         min_width: 400
         contentHeight: itemInput_field.y + itemInput_field.height + 18
@@ -234,6 +235,7 @@ BaseIOPage {
                     index: model.index
                     modelData: root.eledata.trigger[model.index]
                     onDeleteClicked:{
+                        triggerBar_add_y_animation.enable()
                         if(model.index < listModel.count - 1){//判断是否为最后一个栏位，以确认是否启用上滑动画
                             triggerRepeater.itemAt(model.index + 1).nearest = true
                             for(var i = model.index + 1; i < listModel.count; i++){
@@ -254,12 +256,15 @@ BaseIOPage {
                     }
                 }
             }
+            onHeightChanged:{
+                triggerBar_add_y_animation.start()
+            }
         }
         TextButton{
                 id: triggerBar_add
                 height: 100
                 width: triggerBox.width
-                y: triggerBox.y + triggerBox.height + triggerBox.spacing
+                y: 80
                 x: 16
                 radius: 10
                 buttonColor: Colors.changeA(Colors.background, 0.38)
@@ -271,18 +276,26 @@ BaseIOPage {
                 textColor: Colors.banned
                 boldFont: false
 
-                Behavior on y{
-                    NumberAnimation{
-                        duration: 120
+                NumberAnimation{
+                    id: triggerBar_add_y_animation
+                    target: triggerBar_add
+                    property: "y"
+                    to: triggerBox.y + triggerBox.height + triggerBox.spacing
+                    duration: 0
+                    onFinished: duration = 0
+                    function enable(){
+                        duration = 120
                     }
                 }
 
                 onClicked:{
+                    triggerBar_add_y_animation.enable()
                     root.eledata.trigger.push(
                         {"mode":{"selected":0,"filter":{"selected":0,"options":[-1,0]}},"execute":{"selected":0,"selections":["",""]}}
                         ); root.updateDataOut()
                     listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
                 }
             }
+        
     }
 }

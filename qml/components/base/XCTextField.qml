@@ -44,7 +44,7 @@ TextField{
         }
     }
     
-    font.family: "微软雅黑"
+    font.family: "Consolas"
     font.pixelSize: 16
 
     onAccepted: {
