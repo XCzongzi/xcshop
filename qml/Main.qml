@@ -10,6 +10,8 @@ import xcshop 1.0
 XCWindow {
     id: mainWindow
 
+    titleBarColorFilling: pageLoader.sourceComponent !== Constants.pageOnStart
+
     Component.onCompleted: {
         Global.loadSettings()
         //连接信号
@@ -70,7 +72,7 @@ XCWindow {
         property bool settingsFromWorkspace: false
         property int margins: mainWindow.visibility === Window.Maximized? 0 : Constants.margins
         x: margins + 1
-        y: margins + 1 + mainWindow.titleBar_height
+        y: margins + mainWindow.titleBar_height
         width: mainWindow.width - 2*margins - 2
         height: mainWindow.height - 2*margins - 2 - mainWindow.titleBar_height
         clip: true

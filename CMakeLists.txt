@@ -123,6 +123,9 @@ qt_add_qml_module(appxcshop
         qml/pages/PageOnCost.qml
         qml/pages/PageOnDisplay.qml
         qml/pages/PageOnSettings.qml
+        qml/pages/settings/SettingsInterface.qml
+        qml/pages/settings/SettingsTemplates.qml
+        qml/pages/settings/SettingsItems.qml
         qml/pages/PageOnAbout.qml
 
 

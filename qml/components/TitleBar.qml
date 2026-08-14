@@ -8,6 +8,7 @@ Rectangle {
     property bool showControls: true
     property Window mainWindow
     property int margins: root.mainWindow.visibility === Window.Maximized? 0 : Constants.margins
+    property bool colorFilling: true
     
     signal closeClicked()
     signal maximizeClicked()
@@ -17,15 +18,14 @@ Rectangle {
     y: root.margins
     width: parent.width - root.margins * 2
     height: 36
-    color: Colors.transparent
 
-    opacity: 0
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 500
+    color: colorFilling? Colors.background_n : Colors.transparent
+
+    Behavior on color{
+        ColorAnimation{
+            duration: 200
         }
     }
-    Component.onCompleted: opacity = 1
 
 
     XCText{

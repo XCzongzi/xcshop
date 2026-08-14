@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
@@ -12,6 +13,7 @@ Window {
     visible: true
     title: qsTr("xcshop")
 
+
     readonly property int titleBarHeight: titleBar.height
     readonly property Image background: backgroundImage
     readonly property int titleBar_height: titleBar.height
@@ -19,6 +21,18 @@ Window {
     property color backgroundColor: Global.backgroundColor
     property string backgroundSource: Global.backgroundImage
     property real backgroundBlur: Global.backgroundBlur
+
+    property bool titleBarColorFilling: true
+
+    property var flowColors: {
+        var palettes = {
+            aurora: ["#a445d5", "#009dff", "#00d3a7"],
+            ocean: ["#3157d5", "#00a8d6", "#36d1a4"],
+            sunset: ["#d94d86", "#ff7a45", "#f5c451"],
+            grape: ["#773fce", "#b34bd5", "#e05f9f"]
+        }
+        return palettes[Global.flowPalette] || palettes.aurora
+    }
 
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint
 
@@ -62,7 +76,7 @@ Window {
                     width: parent.width * 0.85
                     height: width
                     radius: width / 2
-                    color: "#a445d5"
+                    color: root.flowColors[0]
                     x: -width * 0.2
                     y: -height * 0.35
                     SequentialAnimation on x {
@@ -76,7 +90,7 @@ Window {
                     width: parent.width * 0.75
                     height: width
                     radius: width / 2
-                    color: "#009dff"
+                    color: root.flowColors[1]
                     x: parent.width * 0.5
                     y: parent.height * 0.25
                     SequentialAnimation on y {
@@ -90,7 +104,7 @@ Window {
                     width: parent.width * 0.65
                     height: width
                     radius: width / 2
-                    color: "#00d3a7"
+                    color: root.flowColors[2]
                     x: parent.width * 0.2
                     y: parent.height * 0.55
                     SequentialAnimation on x {
@@ -152,6 +166,7 @@ Window {
             }
         }
         onMinimizeClicked: root.showMinimized()
+        colorFilling: root.titleBarColorFilling
     }
 
     Border {
