@@ -22,99 +22,29 @@ Window {
     property string backgroundSource: Global.backgroundImage
     property real backgroundBlur: Global.backgroundBlur
 
-    property bool titleBarColorFilling: true
-
-    property var flowColors: {
-        var palettes = {
-            aurora: ["#a445d5", "#009dff", "#00d3a7"],
-            ocean: ["#3157d5", "#00a8d6", "#36d1a4"],
-            sunset: ["#d94d86", "#ff7a45", "#f5c451"],
-            grape: ["#773fce", "#b34bd5", "#e05f9f"]
-        }
-        return palettes[Global.flowPalette] || palettes.aurora
-    }
+    property bool titleBarColorFilling: false
+    property int margins: visibility === Window.Maximized? 0 : Constants.margins
+    readonly property int surfaceWidth: windowSurface.width
+    readonly property int surfaceHeight: windowSurface.height
 
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint
 
     Rectangle {
         id: windowSurface
-        anchors.fill: parent
-        anchors.margins: root.visibility === Window.Maximized ? 0 : Constants.margins
-        radius: root.visibility === Window.Maximized ? 0 : Constants.window_radius
-        color: root.backgroundMode === "color" ? root.backgroundColor : Colors.background_n
-        border.color: Colors.shadow
-        border.width: 1
+        
+        x: root.margins
+        y: root.margins
+        width: root.width - 2*root.margins
+        height: root.height - 2*root.margins
+        radius: Constants.window_radius
+        color: Colors.background_n
 
-        // This clips image and blur pixels to the inner window surface. The outer
-        // transparent margin remains exclusively available for the drop shadow.
-        Item {
-            id: backgroundContent
+        Behavior on color {
+            ColorAnimation { duration: 500 }
+        }
+
+        Item{
             anchors.fill: parent
-            anchors.margins: windowSurface.border.width
-            clip: true
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: backgroundMask
-            }
-
-            Item {
-                id: flowSource
-                anchors.fill: parent
-                visible: root.backgroundMode === "flow"
-                clip: true
-                layer.enabled: visible
-                layer.effect: MultiEffect {
-                    blurEnabled: true
-                    blur: 1.0
-                    saturation: 0.25
-                    //blurMax: 128
-                    //blurMultiplier: 3
-                }
-
-                Rectangle {
-                    id: flowA
-                    width: parent.width * 0.85
-                    height: width
-                    radius: width / 2
-                    color: root.flowColors[0]
-                    x: -width * 0.2
-                    y: -height * 0.35
-                    SequentialAnimation on x {
-                        loops: Animation.Infinite
-                        NumberAnimation { to: flowSource.width * 0.55; duration: 14000 / Math.max(0.25, Global.animationSpeed) }
-                        NumberAnimation { to: -flowA.width * 0.2; duration: 14000 / Math.max(0.25, Global.animationSpeed) }
-                    }
-                }
-                Rectangle {
-                    id: flowB
-                    width: parent.width * 0.75
-                    height: width
-                    radius: width / 2
-                    color: root.flowColors[1]
-                    x: parent.width * 0.5
-                    y: parent.height * 0.25
-                    SequentialAnimation on y {
-                        loops: Animation.Infinite
-                        NumberAnimation { to: -flowB.height * 0.2; duration: 12000 / Math.max(0.25, Global.animationSpeed) }
-                        NumberAnimation { to: flowSource.height * 0.45; duration: 12000 / Math.max(0.25, Global.animationSpeed) }
-                    }
-                }
-                Rectangle {
-                    id: flowC
-                    width: parent.width * 0.65
-                    height: width
-                    radius: width / 2
-                    color: root.flowColors[2]
-                    x: parent.width * 0.2
-                    y: parent.height * 0.55
-                    SequentialAnimation on x {
-                        loops: Animation.Infinite
-                        NumberAnimation { to: -flowC.width * 0.35; duration: 16000 / Math.max(0.25, Global.animationSpeed) }
-                        NumberAnimation { to: flowSource.width * 0.65; duration: 16000 / Math.max(0.25, Global.animationSpeed) }
-                    }
-                }
-            }
-
             Image {
                 id: backgroundImage
                 anchors.fill: parent
@@ -127,20 +57,17 @@ Window {
                     blur: root.backgroundBlur
                 }
             }
-        }
+            
 
-        // Keep the actual rounded window shape after image/blur compositing.
-        Rectangle {
-            id: backgroundMask
-            anchors.fill: parent
-            radius: windowSurface.radius
-            visible: false
+            layer.enabled: root.visibility !== Window.Maximized
+            layer.effect: OpacityMask{
+                maskSource: Rectangle{
+                    width: root.surfaceWidth
+                    height: root.surfaceHeight
+                    radius: Constants.window_radius
+                }
+            }
         }
-
-        Behavior on color {
-            ColorAnimation { duration: 500 }
-        }
-
         layer.enabled: root.visibility !== Window.Maximized
         layer.effect: MultiEffect {
             shadowEnabled: true
@@ -150,7 +77,6 @@ Window {
             shadowVerticalOffset: 4
         }
     }
-
     TitleBar {
         id: titleBar
         mainWindow: root
@@ -174,5 +100,5 @@ Window {
         visible: root.visibility !== Window.Maximized
         mainWindow: root
         z: 100
-    }
+    } 
 }

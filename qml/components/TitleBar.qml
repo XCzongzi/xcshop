@@ -8,22 +8,29 @@ Rectangle {
     property bool showControls: true
     property Window mainWindow
     property int margins: root.mainWindow.visibility === Window.Maximized? 0 : Constants.margins
-    property bool colorFilling: true
+    property bool colorFilling: false
     
     signal closeClicked()
     signal maximizeClicked()
     signal minimizeClicked()
     
-    x: root.margins
-    y: root.margins
-    width: parent.width - root.margins * 2
-    height: 36
+    x: margins
+    y: margins
+    width: parent.width - 2*margins
+    height: Constants.titleBarHeight
 
-    color: colorFilling? Colors.background_n : Colors.transparent
+    color: Colors.transparent
 
-    Behavior on color{
-        ColorAnimation{
-            duration: 200
+    Rectangle{
+        anchors.fill: parent
+        color: Colors.background_n
+        opacity: root.colorFilling
+        topLeftRadius: root.mainWindow.visibility === Window.Maximized? 0 :Constants.window_radius
+        topRightRadius: root.mainWindow.visibility === Window.Maximized? 0 :Constants.window_radius
+        Behavior on opacity{
+            NumberAnimation{
+                duration: 250
+            }
         }
     }
 

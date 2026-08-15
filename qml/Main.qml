@@ -10,8 +10,6 @@ import xcshop 1.0
 XCWindow {
     id: mainWindow
 
-    titleBarColorFilling: pageLoader.sourceComponent !== Constants.pageOnStart
-
     Component.onCompleted: {
         Global.loadSettings()
         //连接信号
@@ -66,28 +64,15 @@ XCWindow {
             root.visible = true
         }
     }
-    Rectangle{
+    WindowSurface{
         id: root
-        color: Colors.transparent
-        property bool settingsFromWorkspace: false
-        property int margins: mainWindow.visibility === Window.Maximized? 0 : Constants.margins
-        x: margins + 1
-        y: margins + mainWindow.titleBar_height
-        width: mainWindow.width - 2*margins - 2
-        height: mainWindow.height - 2*margins - 2 - mainWindow.titleBar_height
-        clip: true
+        mainWindow: mainWindow
         onWidthChanged: Global.window_width = root.width
         onHeightChanged: Global.window_height = root.height
-
-        layer.enabled: true
-        layer.effect: OpacityMask{
-            maskSource: Rectangle{
-                width: root.width
-                height: root.height
-                bottomLeftRadius: Constants.window_radius
-                bottomRightRadius: Constants.window_radius
-            }
-        }
+        ignoreTitleBar: pageLoader.sourceComponent === Constants.pageOnStart
+        
+        property bool settingsFromWorkspace: false
+        
         TypeBar{
             id: typeBar
             z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
@@ -246,6 +231,9 @@ XCWindow {
                     pageLoader.sourceComponent = pageLoader.page
                     typeBar.freeze = false
                     freeze.visible = false
+                    // if(pageLoader.page !== Constants.pageOnStart){
+                    //     mainWindow.titleBarColorFilling = true
+                    // }
                 }
             }
             function pageSwitch(page_){
@@ -254,6 +242,12 @@ XCWindow {
                 freeze.visible = true
                 pageLoader.page = page_
                 opcAnim.start()
+
+                if(pageLoader.page === Constants.pageOnStart){
+                    mainWindow.titleBarColorFilling = false
+                }else{
+                    mainWindow.titleBarColorFilling = true
+                }
             }
 
 

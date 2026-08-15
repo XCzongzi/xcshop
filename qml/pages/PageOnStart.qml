@@ -238,7 +238,7 @@ BasePage {
                 x: -pageContent.x
                 y: 12
                 width: parent.width
-                height: 54
+                height: 64 + Constants.titleBarHeight
 
                 Row {
                     anchors.left: parent.left

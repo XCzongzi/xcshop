@@ -15,10 +15,9 @@ QtObject{
     // 运行时界面偏好；后续可集中接入配置文件持久化。
     property color themeColor: "#00aaFF"
     property real animationSpeed: 1.0
-    property string backgroundMode: "color" // color / image / imageBlur / flow
+    property string backgroundMode: "color" // color / image / imageBlur
     property color backgroundColor: "#1b1d27"
     property string colorScheme: "midnight"
-    property string flowPalette: "aurora"
     property string backgroundImage: ""
     property real backgroundBlur: 0.45
     property string settingsPath: ""
@@ -27,18 +26,18 @@ QtObject{
 
     function applyColorScheme(scheme) {
         var palettes = {
-            "midnight": { background: "#1b1d27", backgroundOverlay: "#aa1b1d27", foreground: "#aa41434f", fired: "#aa92949c", pressed: "#aa6b6c74", text: "#ffffff", banned: "#bbbbbb", shadow: "#aa050505", highlight: "#4bffffff" },
-            "cloud": { background: "#edf2f7", backgroundOverlay: "#e8edf2f7", foreground: "#e0dce5ee", fired: "#d1b6c3d1", pressed: "#d1aebaca", text: "#172033", banned: "#637087", shadow: "#350e1726", highlight: "#60ffffff" },
-            "slate": { background: "#202b38", backgroundOverlay: "#aa202b38", foreground: "#aa45586c", fired: "#aa7b93aa", pressed: "#aa526b82", text: "#f3f8ff", banned: "#b6c2cf", shadow: "#aa08131f", highlight: "#42ffffff" },
-            "glacier": { background: "#eaf5fa", backgroundOverlay: "#e8eaf5fa", foreground: "#e0d5e8f0", fired: "#d1a6c6d5", pressed: "#d187adbf", text: "#123047", banned: "#5d7585", shadow: "#35122535", highlight: "#60ffffff" },
-            "violet": { background: "#2b2238", backgroundOverlay: "#aa2b2238", foreground: "#aa5b476d", fired: "#aa9b7cb2", pressed: "#aa72588a", text: "#fff8ff", banned: "#cbbfd2", shadow: "#aa140b1d", highlight: "#45ffffff" },
-            "lavender": { background: "#f4eff9", backgroundOverlay: "#e8f4eff9", foreground: "#e0e6dcef", fired: "#d1c5afd5", pressed: "#d1b9a2c9", text: "#2c2039", banned: "#75667e", shadow: "#351d1127", highlight: "#60ffffff" },
-            "forest": { background: "#162d2d", backgroundOverlay: "#aa162d2d", foreground: "#aa345b58", fired: "#aa6f9b91", pressed: "#aa46756f", text: "#f3fffb", banned: "#b8cac4", shadow: "#aa051616", highlight: "#42ffffff" },
-            "mint": { background: "#e9f5ef", backgroundOverlay: "#e8e9f5ef", foreground: "#e0d4e9de", fired: "#d1a8cdb9", pressed: "#d188b59c", text: "#17352d", banned: "#5e7a6e", shadow: "#3510241d", highlight: "#60ffffff" },
-            "amber": { background: "#33251d", backgroundOverlay: "#aa33251d", foreground: "#aa654c3c", fired: "#aaa88769", pressed: "#aa815b43", text: "#fff9f3", banned: "#d3c2b4", shadow: "#aa1c1008", highlight: "#45ffffff" },
-            "parchment": { background: "#fbf3e5", backgroundOverlay: "#e8fbf3e5", foreground: "#e0ead8bd", fired: "#d1d5b888", pressed: "#d1c7a66f", text: "#3d2d1f", banned: "#81705c", shadow: "#352b1c0e", highlight: "#60ffffff" },
-            "rose": { background: "#38232e", backgroundOverlay: "#aa38232e", foreground: "#aa704658", fired: "#aaa57b8b", pressed: "#aa89596e", text: "#fff7f9", banned: "#d5bec6", shadow: "#aa1e0b13", highlight: "#45ffffff" },
-            "blush": { background: "#f9edf1", backgroundOverlay: "#e8f9edf1", foreground: "#e0eed8e1", fired: "#d1d3a8b9", pressed: "#d1c5899f", text: "#3b2430", banned: "#816371", shadow: "#352b111c", highlight: "#60ffffff" }
+            "midnight": { background: "#1b1d27", backgroundOverlay: "#aa1b1d27", foreground: "#aa41434f", fired: "#aa92949c", pressed: "#aa6b6c74", text: "#ffffff", banned: "#bbbbbb", highlight: "#4bffffff" },
+            "cloud": { background: "#edf2f7", backgroundOverlay: "#e8edf2f7", foreground: "#e0dce5ee", fired: "#d1b6c3d1", pressed: "#d1aebaca", text: "#172033", banned: "#637087", highlight: "#60ffffff" },
+            "slate": { background: "#202b38", backgroundOverlay: "#aa202b38", foreground: "#aa45586c", fired: "#aa7b93aa", pressed: "#aa526b82", text: "#f3f8ff", banned: "#b6c2cf", highlight: "#42ffffff" },
+            "glacier": { background: "#eaf5fa", backgroundOverlay: "#e8eaf5fa", foreground: "#e0d5e8f0", fired: "#d1a6c6d5", pressed: "#d187adbf", text: "#123047", banned: "#5d7585", highlight: "#60ffffff" },
+            "violet": { background: "#2b2238", backgroundOverlay: "#aa2b2238", foreground: "#aa5b476d", fired: "#aa9b7cb2", pressed: "#aa72588a", text: "#fff8ff", banned: "#cbbfd2", highlight: "#45ffffff" },
+            "lavender": { background: "#f4eff9", backgroundOverlay: "#e8f4eff9", foreground: "#e0e6dcef", fired: "#d1c5afd5", pressed: "#d1b9a2c9", text: "#2c2039", banned: "#75667e", highlight: "#60ffffff" },
+            "forest": { background: "#162d2d", backgroundOverlay: "#aa162d2d", foreground: "#aa345b58", fired: "#aa6f9b91", pressed: "#aa46756f", text: "#f3fffb", banned: "#b8cac4", highlight: "#42ffffff" },
+            "mint": { background: "#e9f5ef", backgroundOverlay: "#e8e9f5ef", foreground: "#e0d4e9de", fired: "#d1a8cdb9", pressed: "#d188b59c", text: "#17352d", banned: "#5e7a6e", highlight: "#60ffffff" },
+            "amber": { background: "#33251d", backgroundOverlay: "#aa33251d", foreground: "#aa654c3c", fired: "#aaa88769", pressed: "#aa815b43", text: "#fff9f3", banned: "#d3c2b4", highlight: "#45ffffff" },
+            "parchment": { background: "#fbf3e5", backgroundOverlay: "#e8fbf3e5", foreground: "#e0ead8bd", fired: "#d1d5b888", pressed: "#d1c7a66f", text: "#3d2d1f", banned: "#81705c", highlight: "#60ffffff" },
+            "rose": { background: "#38232e", backgroundOverlay: "#aa38232e", foreground: "#aa704658", fired: "#aaa57b8b", pressed: "#aa89596e", text: "#fff7f9", banned: "#d5bec6", highlight: "#45ffffff" },
+            "blush": { background: "#f9edf1", backgroundOverlay: "#e8f9edf1", foreground: "#e0eed8e1", fired: "#d1d3a8b9", pressed: "#d1c5899f", text: "#3b2430", banned: "#816371", highlight: "#60ffffff" }
         }
         var palette = palettes[scheme] || palettes.midnight
         colorScheme = palettes[scheme] ? scheme : "midnight"
@@ -50,7 +49,6 @@ QtObject{
         Colors.pressed = palette.pressed
         Colors.text = palette.text
         Colors.banned = palette.banned
-        Colors.shadow = palette.shadow
         Colors.glass_highlight = palette.highlight
     }
 
@@ -162,7 +160,6 @@ QtObject{
             if (saved.backgroundColor) backgroundColor = saved.backgroundColor
             if (saved.backgroundImage) backgroundImage = saved.backgroundImage
             if (saved.backgroundBlur !== undefined) backgroundBlur = saved.backgroundBlur
-            if (saved.flowPalette) flowPalette = saved.flowPalette
             if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, 6)
             if (saved.elementRelayHeight !== undefined)
                 elementRelayHeight = Math.max(126, Math.min(420, Number(saved.elementRelayHeight)))
@@ -181,7 +178,6 @@ QtObject{
             colorScheme: colorScheme,
             backgroundImage: backgroundImage,
             backgroundBlur: backgroundBlur,
-            flowPalette: flowPalette,
             recentProjects: recentProjects,
             elementRelayHeight: elementRelayHeight
         }))

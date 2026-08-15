@@ -33,7 +33,6 @@ Item {
     }
     function backgroundTypeIndex() {
         if (Global.backgroundMode === "color") return 0
-        if (Global.backgroundMode === "flow") return 2
         return 1
     }
     function chooseColorScheme(schemeId) {
@@ -92,9 +91,8 @@ Item {
                 width: parent.width
                 expanded: true
                 title: "主题与配色"
-                subtitle: "先选界面配色，再按需单独调整强调色；两者会共同决定按钮、选中状态和重点信息。"
+                subtitle: "选择颜色组合，随后选择主题色"
                 contentHeight: schemeGrid.y + schemeGrid.height + 16
-                XCText { x: 16; y: 52; xcText: "界面配色"; onCenter: false; xcFontSize: 13; boldFont: false }
                 Column {
                     id: schemeGrid
                     x: 16; y: 76
@@ -105,43 +103,66 @@ Item {
                     property int cardWidth: 128
                     property int columnGap: 10
 
-                    Row {
-                        spacing: schemeGrid.columnGap
-                        Item { width: schemeGrid.labelWidth; height: 36 }
-                        Repeater {
-                            model: ["", root.accentChoices[0], root.accentChoices[1], root.accentChoices[3], root.accentChoices[4], root.accentChoices[2]]
-                            delegate: Item {
-                                required property string modelData
-                                property bool selected: modelData.length && root.isSelectedTheme(modelData)
-                                property bool hovered: false
-                                width: schemeGrid.cardWidth; height: 36
-                                Rectangle { anchors.centerIn: parent; visible: parent.selected; width: 36; height: 36; radius: 18; color: Colors.text }
-                                Rectangle {
-                                    visible: parent.modelData.length
-                                    anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: parent.modelData
-                                    border.width: parent.selected ? 2 : 1
-                                    border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.text, 0.32)
-                                    scale: parent.hovered && !parent.selected ? 1.10 : 1.0
-                                    Behavior on scale { NumberAnimation { duration: 120 } }
+                    Item {
+                        width: schemeGrid.width
+                        height: Math.max(36, accentFlow.height)
+
+                        Flow {
+                            id: accentFlow
+                            x: schemeGrid.labelWidth + schemeGrid.columnGap
+                            width: parent.width - x
+                            height: childrenRect.height
+                            spacing: schemeGrid.columnGap
+
+                            Repeater {
+                                model: ["", root.accentChoices[0], root.accentChoices[1], root.accentChoices[3], root.accentChoices[4], root.accentChoices[2]]
+                                delegate: Item {
+                                    required property string modelData
+                                    property bool selected: modelData.length && root.isSelectedTheme(modelData)
+                                    property bool hovered: false
+                                    width: schemeGrid.cardWidth; height: 36
+                                    Rectangle { anchors.centerIn: parent; visible: parent.selected; width: 36; height: 36; radius: 18; color: Colors.text }
+                                    Rectangle {
+                                        visible: parent.modelData.length
+                                        anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: parent.modelData
+                                        border.width: parent.selected ? 2 : 1
+                                        border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.text, 0.32)
+                                        scale: parent.hovered && !parent.selected ? 1.10 : 1.0
+                                        Behavior on scale { NumberAnimation { duration: 120 } }
+                                    }
+                                    MouseArea { anchors.fill: parent; enabled: parent.modelData.length; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseTheme(parent.modelData) }
                                 }
-                                MouseArea { anchors.fill: parent; enabled: parent.modelData.length; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseTheme(parent.modelData) }
                             }
                         }
                     }
 
                     Repeater {
                         model: ["深色", "浅色"]
-                        delegate: Row {
+                        delegate: Item {
+                            id: schemeRow
                             required property int index
                             required property string modelData
                             property int schemeRowIndex: index
-                            spacing: schemeGrid.columnGap
-                            XCText { width: schemeGrid.labelWidth; height: 76; xcText: modelData; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                            Repeater {
-                                model: 6
-                                delegate: Item {
-                                    required property int index
-                                    property var schemeChoice: root.colorChoices[index * 2 + (parent.schemeRowIndex === 0 ? 0 : 1)]
+                            width: schemeGrid.width
+                            height: Math.max(76, paletteFlow.height)
+
+                            XCText {
+                                width: schemeGrid.labelWidth; height: 76
+                                anchors.verticalCenter: parent.verticalCenter
+                                xcText: modelData; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned
+                            }
+                            Flow {
+                                id: paletteFlow
+                                x: schemeGrid.labelWidth + schemeGrid.columnGap
+                                width: parent.width - x
+                                height: childrenRect.height
+                                spacing: schemeGrid.columnGap
+
+                                Repeater {
+                                    model: 6
+                                    delegate: Item {
+                                        required property int index
+                                        property var schemeChoice: root.colorChoices[index * 2 + schemeRow.schemeRowIndex]
                                     property bool selected: Global.colorScheme === schemeChoice.id
                                     property bool hovered: false
                                     width: schemeGrid.cardWidth; height: 76
@@ -161,6 +182,7 @@ Item {
                                         Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: Global.themeColor }
                                     }
                                     MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseColorScheme(parent.schemeChoice.id) }
+                                    }
                                 }
                             }
                         }
@@ -174,9 +196,7 @@ Item {
                 expanded: true
                 title: "背景"
                 subtitle: "选择窗口背景的呈现方式；图片模糊可改善文字可读性。"
-                contentHeight: flowPaletteRow.visible ? flowPaletteRow.y + flowPaletteRow.height + 16
-                                                     : backgroundHint.visible ? backgroundHint.y + backgroundHint.height + 16
-                                                     : blurRow.visible ? blurRow.y + blurRow.height + 16
+                contentHeight: blurRow.visible ? blurRow.y + blurRow.height + 16
                                                                        : imageEffect.visible ? imageEffect.y + imageEffect.height + 16
                                                                                            : backgroundType.y + backgroundType.height + 16
 
@@ -185,10 +205,10 @@ Item {
                     x: 16
                     y: 70
                     text: "背景类型"
-                    options: ["纯色", "图片", "流光渐变"]
+                    options: ["纯色", "图片"]
                     initialOption: root.backgroundTypeIndex()
                     onClicked: {
-                        Global.backgroundMode = ["color", "image", "flow"][selected]
+                        Global.backgroundMode = ["color", "image"][selected]
                         Global.saveSettings()
                     }
                 }
@@ -223,28 +243,6 @@ Item {
                     XCText { xcText: "模糊强度"; onCenter: false; xcFontSize: 13; boldFont: false; width: 70 }
                     Slider { width: Math.min(240, backgroundBar.width - 130); from: 0; to: 1; value: Global.backgroundBlur; onMoved: { Global.backgroundBlur = value; Global.saveSettings() } }
                 }
-                XCText {
-                    id: backgroundHint
-                    x: 32
-                    y: backgroundType.y + backgroundType.height + 14
-                    visible: Global.backgroundMode === "flow"
-                    width: parent.width - 32
-                    xcText: "流光由渐变色块和高斯模糊构成，速度由下方动画设置控制。"
-                    onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned
-                }
-                RadioGroup {
-                    id: flowPaletteRow
-                    x: 32
-                    y: backgroundHint.y + backgroundHint.height + 10
-                    visible: Global.backgroundMode === "flow"
-                    text: "流光风格"
-                    options: ["极光", "深海", "落日", "葡萄"]
-                    initialOption: ["aurora", "ocean", "sunset", "grape"].indexOf(Global.flowPalette)
-                    onClicked: {
-                        Global.flowPalette = ["aurora", "ocean", "sunset", "grape"][selected]
-                        Global.saveSettings()
-                    }
-                }
             }
 
             ContentBar {
@@ -252,7 +250,7 @@ Item {
                 width: parent.width
                 expanded: true
                 title: "动画"
-                subtitle: "影响背景流光与后续界面动效的全局速度。"
+                subtitle: "调整后续界面动效的全局速度。"
                 contentHeight: animationSlider.y + animationSlider.height + 16
                 Row {
                     x: 16; y: 70; spacing: 14
