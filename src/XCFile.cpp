@@ -2,6 +2,7 @@
 #include <regex>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QUrl>
 
 XCFile::XCFile(){
 
@@ -50,6 +51,17 @@ bool XCFile::folder(const QString& folderPath){
 
 bool XCFile::rename(const QString& oldPath, const QString& newPath){
     return QFile::rename(oldPath, newPath);
+}
+
+bool XCFile::copy(const QString& sourcePath, const QString& destinationPath){
+    const QUrl sourceUrl(sourcePath);
+    const QString localSource = sourceUrl.isLocalFile() ? sourceUrl.toLocalFile() : sourcePath;
+    QFileInfo destinationInfo(destinationPath);
+    if (!QDir().mkpath(destinationInfo.absolutePath()))
+        return false;
+    if (QFile::exists(destinationPath) && !QFile::remove(destinationPath))
+        return false;
+    return QFile::copy(localSource, destinationPath);
 }
 
 bool XCFile::remove_file(const QString& filePath){

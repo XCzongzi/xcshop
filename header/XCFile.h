@@ -17,6 +17,7 @@ public:
     Q_INVOKABLE bool folder(const QString& folderPath);
 
     Q_INVOKABLE bool rename(const QString& oldPath, const QString& newPath);
+    Q_INVOKABLE bool copy(const QString& sourcePath, const QString& destinationPath);
     Q_INVOKABLE bool remove_file(const QString& filePath);
     Q_INVOKABLE bool remove_folder(const QString& folderPath);
     Q_INVOKABLE bool clone(const QString& filePath);

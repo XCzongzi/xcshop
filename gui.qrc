@@ -22,6 +22,5 @@
         <file>assets/gui/controls/open_project.png</file>
         <file>assets/gui/controls/about.png</file>
         <file>assets/gui/controls/settings.png</file>
-        <file>assets/minecraft/items/ForeverIds-main/items/items.min.json</file>
     </qresource>
 </RCC>
