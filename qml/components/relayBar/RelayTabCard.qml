@@ -14,15 +14,16 @@ Rectangle {
     readonly property bool dropTarget: relayBar.draggedRecord
                                         && relayBar.dragTargetGroupKey === modelData.key
     color: dropTarget ? Colors.changeA(Colors.border, 0.32)
+                        : (tabMouse.pressed ? Colors.changeA(Colors.pressed, 0.82)
                         : (selected ? Colors.changeA(Colors.border, 0.20)
                     : (tabMouse.containsMouse ? Colors.changeA(Colors.fired, 0.46)
-                                                : Colors.changeA(Colors.background, 0.22)))
+                                                : Colors.changeA(Colors.background, 0.22))))
     border.width: 1
     border.color: dropTarget ? Colors.changeA(Colors.border, 0.92)
                             : (selected ? Colors.changeA(Colors.border, 0.56)
                             : Colors.changeA(Colors.text, 0.08)
                             )
-    scale: dropTarget ? 1.12 : 1
+    scale: dropTarget ? 1.12 : (tabMouse.pressed ? 0.96 : 1)
     z: dropTarget ? 10 : 0
     transformOrigin: Item.Center
 

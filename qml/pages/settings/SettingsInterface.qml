@@ -123,6 +123,7 @@ Item {
                                     required property string modelData
                                     property bool selected: modelData.length && root.isSelectedTheme(modelData)
                                     property bool hovered: false
+                                    property bool pressed: false
                                     width: schemeGrid.cardWidth; height: 36
                                     Rectangle { anchors.centerIn: parent; visible: parent.selected; width: 36; height: 36; radius: 18; color: Colors.text }
                                     Rectangle {
@@ -130,10 +131,19 @@ Item {
                                         anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: parent.modelData
                                         border.width: parent.selected ? 2 : 1
                                         border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.text, 0.32)
-                                        scale: parent.hovered && !parent.selected ? 1.10 : 1.0
+                                        scale: parent.pressed ? 0.90 : (parent.hovered && !parent.selected ? 1.10 : 1.0)
                                         Behavior on scale { NumberAnimation { duration: 120 } }
                                     }
-                                    MouseArea { anchors.fill: parent; enabled: parent.modelData.length; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseTheme(parent.modelData) }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: parent.modelData.length
+                                        hoverEnabled: true
+                                        onEntered: parent.hovered = true
+                                        onExited: { parent.hovered = false; parent.pressed = false }
+                                        onPressed: parent.pressed = true
+                                        onReleased: parent.pressed = false
+                                        onClicked: root.chooseTheme(parent.modelData)
+                                    }
                                 }
                             }
                         }
@@ -165,15 +175,16 @@ Item {
                                     model: 6
                                     delegate: Item {
                                         required property int index
-                                        property var schemeChoice: root.colorChoices[index * 2 + schemeRow.schemeRowIndex]
+                                    property var schemeChoice: root.colorChoices[index * 2 + schemeRow.schemeRowIndex]
                                     property bool selected: Global.colorScheme === schemeChoice.id
                                     property bool hovered: false
+                                    property bool pressed: false
                                     width: schemeGrid.cardWidth; height: 76
                                     Rectangle {
                                         anchors.centerIn: parent; width: parent.width; height: parent.height; radius: 8
                                         color: parent.schemeChoice.background
                                         border.width: parent.selected ? 2 : 1; border.color: parent.selected ? Global.themeColor : Qt.rgba(0, 0, 0, 0.18)
-                                        scale: parent.hovered && !parent.selected ? 1.025 : 1.0
+                                        scale: parent.pressed ? 0.975 : (parent.hovered && !parent.selected ? 1.025 : 1.0)
                                         Behavior on scale { NumberAnimation { duration: 120 } }
                                         Rectangle { x: 8; y: 8; width: parent.width - 16; height: 16; radius: 4; color: parent.parent.schemeChoice.foreground }
                                         Rectangle { x: 12; y: 12; width: 34; height: 3; radius: 2; color: parent.parent.schemeChoice.text }
@@ -184,7 +195,15 @@ Item {
                                         Rectangle { x: 82; y: 53; width: 38; height: 12; radius: 4; color: parent.parent.schemeChoice.foreground }
                                         Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: root.accentForColorScheme(parent.parent.schemeChoice.id) || Global.themeColor }
                                     }
-                                    MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseColorScheme(parent.schemeChoice.id) }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onEntered: parent.hovered = true
+                                        onExited: { parent.hovered = false; parent.pressed = false }
+                                        onPressed: parent.pressed = true
+                                        onReleased: parent.pressed = false
+                                        onClicked: root.chooseColorScheme(parent.schemeChoice.id)
+                                    }
                                     }
                                 }
                             }

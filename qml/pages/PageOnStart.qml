@@ -51,6 +51,7 @@ BasePage {
         property string iconSource: ""
         property string shortcutText: ""
         property bool hovered: false
+        property bool pressed: false
         readonly property real compactScale: root.compactLayout ? 0.82 : 1.0
         signal clicked()
 
@@ -71,6 +72,8 @@ BasePage {
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.color { ColorAnimation { duration: 140 } }
         Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+        scale: pressed ? 0.98 : 1.0
 
         LightEffect {
             z: 0
@@ -143,7 +146,9 @@ BasePage {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onEntered: { card.hovered = true; card.y = -4 }
-            onExited: { card.hovered = false; card.y = 0 }
+            onExited: { card.hovered = false; card.pressed = false; card.y = 0 }
+            onPressed: card.pressed = true
+            onReleased: card.pressed = false
             onClicked: card.clicked()
         }
     }
@@ -152,6 +157,7 @@ BasePage {
         id: recentEntry
         required property var model
         property bool hovered: false
+        property bool pressed: false
 
         width: parent ? parent.width : 0
         height: 58
@@ -162,6 +168,8 @@ BasePage {
 
         Behavior on color { ColorAnimation { duration: 120 } }
         Behavior on border.color { ColorAnimation { duration: 120 } }
+        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+        scale: pressed ? 0.98 : 1.0
 
         Rectangle {
             x: 12
@@ -196,7 +204,9 @@ BasePage {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onEntered: recentEntry.hovered = true
-            onExited: recentEntry.hovered = false
+            onExited: { recentEntry.hovered = false; recentEntry.pressed = false }
+            onPressed: recentEntry.pressed = true
+            onReleased: recentEntry.pressed = false
             onClicked: root.openProject(recentEntry.model.path)
         }
     }

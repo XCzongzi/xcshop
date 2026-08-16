@@ -34,13 +34,16 @@ Item {
         height: root.height - 8
         radius: 9
         color: card.dragging ? Colors.changeA(Colors.pressed, 0.98)
+                                : (cardMouse.pressed ? Colors.changeA(Colors.pressed, 0.78)
                                 : (cardMouse.containsMouse ? Colors.changeA(Colors.fired, 0.62)
                                                         : Colors.changeA(Colors.background, 0.34))
+                                )
         border.width: 1
         border.color: card.dragging ? Colors.changeA(Colors.border, 0.82)
                                     : Colors.changeA(Colors.text, 0.09)
         z: card.dragging ? 200 : 0
-        scale: root.relayBar.groupDropPreviewActive && card.dragging ? 0.72 : 1
+        scale: root.relayBar.groupDropPreviewActive && card.dragging ? 0.72
+                                                                      : (cardMouse.pressed ? 0.98 : 1)
         transformOrigin: Item.Center
 
         Drag.active: cardMouse.drag.active
