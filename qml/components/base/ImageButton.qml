@@ -3,78 +3,74 @@ import xcshop
 
 Rectangle {
     id: root
+
     property alias imageSource: img.source
-    property int btnSize: 32    //按钮大小
-    property int imgSize: 30     //图像大小，用于动画
+    property int btnSize: 32
+    property int imgSize: 30
     property color btnbackground: Colors.transparent
     property color btnfired: Colors.fired
     property color btnpressed: Colors.pressed
     property int btnRadius: 3
     property bool btnSelected: false
     property bool freeze: false
-    signal clicked()
-    
+    property bool hovered: false
+    property bool pressed: false
+    property int imgSize_: imgSize
 
-    function setColor(){    //选中后调用此函数以固定颜色
-        color = Colors.pressed
-    }
-    
+    signal clicked()
+
+    // 保留旧接口；选中状态由 btnSelected 统一驱动。
+    function setColor() {}
+
     width: btnSize
     height: btnSize
-    color: btnSelected? btnpressed : btnbackground
+    color: btnbackground
     radius: btnRadius
 
-    property int imgSize_: imgSize
+    ButtonStateOverlay {
+        hoverColor: root.btnfired
+        pressedColor: root.btnpressed
+        hovered: root.hovered
+        pressed: root.pressed
+        selected: root.btnSelected
+        stateEnabled: root.enabled
+        duration: 200
+        cornerRadius: root.radius
+    }
 
     Image {
         id: img
         anchors.centerIn: parent
-        sourceSize.width: root.btnSelected? (root.imgSize-3) : root.imgSize_
-        sourceSize.height: root.btnSelected? (root.imgSize-3) : root.imgSize_
+        sourceSize.width: root.btnSelected ? root.imgSize - 3 : root.imgSize_
+        sourceSize.height: root.btnSelected ? root.imgSize - 3 : root.imgSize_
     }
 
-    Behavior on color {
-        ColorAnimation {
-            duration: 200
-            easing.type: Easing.InOutQuad
-        }
-    }
     Behavior on imgSize_ {
-        NumberAnimation {
-            duration: 50
-            easing.type: Easing.InOutQuad
-        }
+        NumberAnimation { duration: 50; easing.type: Easing.InOutQuad }
     }
-
-    onBtnSelectedChanged: root.color = root.btnSelected? root.btnpressed : root.btnbackground
 
     MouseArea {
-        visible: !root.btnSelected && !root.freeze
+        visible: !root.btnSelected && !root.freeze && root.enabled
         anchors.fill: parent
         hoverEnabled: true
         onClicked: root.clicked()
-        onPositionChanged: {
-            parent.color = root.btnfired
+        onEntered: {
+            root.hovered = true
             root.imgSize_ = root.imgSize + 6
         }
         onExited: {
-            parent.color = root.btnbackground
+            root.hovered = false
+            root.pressed = false
             root.imgSize_ = root.imgSize
         }
         onPressed: {
-            parent.color = root.btnpressed
+            root.pressed = true
             root.imgSize_ = root.imgSize - 6
             forceActiveFocus()
         }
         onReleased: {
-            if (containsMouse) {
-                parent.color = root.btnfired
-                root.imgSize_ = root.imgSize + 6
-            }else{
-                parent.color = root.btnbackground
-                root.imgSize_ = root.imgSize
-            }
-            
+            root.pressed = false
+            root.imgSize_ = containsMouse ? root.imgSize + 6 : root.imgSize
         }
     }
 }

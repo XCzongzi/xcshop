@@ -64,7 +64,7 @@ qt_add_qml_module(appxcshop
         qml/components/ElementRelayBar.qml
         qml/components/FileControls.qml
 
-        qml/components/base/reusable/ReusableMouseArea.qml
+        qml/components/base/reusable/ButtonStateOverlay.qml
         qml/components/base/reusable/LightEffect.qml
         qml/components/base/reusable/XCShadow.qml
 

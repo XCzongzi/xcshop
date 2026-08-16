@@ -21,6 +21,7 @@ Item{
 
 
     Rectangle{
+        id: buttonSurface
         radius: 8 * root.scale
         color: Colors.foreground
         width: root.width;height: root.height
@@ -35,20 +36,33 @@ Item{
                 duration: 50
             }
         }
-        Behavior on color{
-            ColorAnimation{
-                duration: 50
-            }
+        property bool hovered: false
+        property bool pressed: false
+        ButtonStateOverlay {
+            hoverColor: Colors.fired
+            pressedColor: Colors.pressed
+            hovered: buttonSurface.hovered
+            pressed: buttonSurface.pressed
+            stateEnabled: buttonSurface.enabled
+            duration: 120
+            cornerRadius: buttonSurface.radius
         }
-        ReusableMouseArea{
+        MouseArea {
             id:mouseArea
+            anchors.fill: parent
+            hoverEnabled: true
             onClicked:root.clicked()
             onEntered:{
                 parent.y = -8
+                parent.hovered = true
             }
             onExited:{
                 parent.y = 0
+                parent.hovered = false
+                parent.pressed = false
             }
+            onPressed: { parent.pressed = true; forceActiveFocus() }
+            onReleased: parent.pressed = false
         }
 
         //光效果纹理

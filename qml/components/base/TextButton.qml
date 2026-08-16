@@ -4,9 +4,7 @@ import xcshop
 Rectangle{
     id: root
     // 颜色完全由状态计算；不要在鼠标事件中直接修改 color，否则会破坏绑定。
-    color: !enabled ? Colors.banned
-                    : (btnSelected || pressed ? pressedColor
-                                              : (hovered ? firedColor : buttonColor))
+    color: !enabled ? Colors.banned : buttonColor
 
     property string text:""
     property bool btnSelected: false
@@ -40,6 +38,18 @@ Rectangle{
     function setColor_banned(){}
 
 
+    ButtonStateOverlay {
+        hoverColor: root.firedColor
+        pressedColor: root.pressedColor
+        hovered: root.hovered
+        pressed: root.pressed
+        selected: root.btnSelected
+        stateEnabled: root.enabled
+        animationEnabled: root.colorAnimationEnabled
+        duration: 200
+        cornerRadius: root.radius
+    }
+
     XCText{
         id: buttonText
         xcText: root.text
@@ -47,13 +57,6 @@ Rectangle{
         xcFontSize: root.textSize
         boldFont: root.boldFont
         underlineFont: root.underlineFont
-    }
-
-    Behavior on color{
-        enabled: root.colorAnimationEnabled
-        ColorAnimation{
-            duration: 200
-        }
     }
 
     Timer {

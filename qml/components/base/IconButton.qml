@@ -12,27 +12,37 @@ Rectangle{
 
     property string text
     property string icon
+    property bool hovered: false
+    property bool pressed: false
 
     signal clicked()
 
     layer.enabled: true
     layer.effect:XCShadow{}
-    Behavior on color{
-            ColorAnimation{
-                duration: 50
-            }
-        }
+    ButtonStateOverlay {
+        hoverColor: Colors.fired
+        pressedColor: Colors.pressed
+        hovered: root.hovered
+        pressed: root.pressed
+        stateEnabled: root.enabled
+        duration: 120
+        cornerRadius: root.radius
+    }
     LightEffect{
         lightSource_r: 18
         lightSource_x:mouseArea.mouseX
         lightSource_y:mouseArea.mouseY
         blur: 0.8
     }
-    ReusableMouseArea{
+    MouseArea {
         id: mouseArea
-        onClicked:{
-            root.clicked()
-        }
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: root.clicked()
+        onEntered: root.hovered = true
+        onExited: { root.hovered = false; root.pressed = false }
+        onPressed: { root.pressed = true; forceActiveFocus() }
+        onReleased: root.pressed = false
     }
 
     Image{
