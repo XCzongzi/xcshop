@@ -52,7 +52,6 @@ QtObject{
         Colors.glass_highlight = palette.highlight
     }
 
-    property bool showFileCtrls: false
     
     //项目信息
     property string project_location: ""

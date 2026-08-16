@@ -8,6 +8,13 @@ BasePage {
     fullScreen: true
 
     property int currentSection: 0
+    onCurrentSectionChanged: {
+        for (var i = 0; i < sectionButtons.count; ++i) {
+            var button = sectionButtons.itemAt(i)
+            if (button)
+                button.setSelected(i === currentSection, false)
+        }
+    }
     readonly property var sections: [
         { title: "界面", page: interfacePage },
         { title: "商店模板", page: templatesPage },
@@ -45,12 +52,13 @@ BasePage {
                 XCText { width: parent.width; xcText: "自定义编辑器的界面与本地资源"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                 Item { width: 1; height: 18 }
                 Repeater {
+                    id: sectionButtons
                     model: root.sections
                     delegate: SettingsNavButton {
                         required property int index
                         required property var modelData
                         text: modelData.title
-                        selected: root.currentSection === index
+                        Component.onCompleted: setSelected(root.currentSection === index, true)
                         onClicked: root.currentSection = index
                     }
                 }

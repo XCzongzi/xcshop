@@ -22,6 +22,7 @@ Rectangle{
     property color textColor: Colors.text
     property bool hovered: false
     property bool pressed: false
+    property bool colorAnimationEnabled: true
 
     signal clicked()
 
@@ -30,6 +31,12 @@ Rectangle{
 
     // 保留旧接口以兼容现有调用；选中状态才是唯一的状态来源。
     function setColor(){ btnSelected = true }
+    function setSelected(selected, noAnimation){
+        colorAnimationEnabled = !noAnimation
+        btnSelected = selected
+        if (noAnimation)
+            colorAnimationEnableTimer.start()
+    }
     function setColor_banned(){}
 
 
@@ -43,9 +50,16 @@ Rectangle{
     }
 
     Behavior on color{
+        enabled: root.colorAnimationEnabled
         ColorAnimation{
             duration: 200
         }
+    }
+
+    Timer {
+        id: colorAnimationEnableTimer
+        interval: 1
+        onTriggered: root.colorAnimationEnabled = true
     }
 
     MouseArea {

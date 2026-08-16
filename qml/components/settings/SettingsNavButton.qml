@@ -3,13 +3,12 @@ import xcshop
 
 TextButton {
     id: root
-    property bool selected: false
-    btnSelected: selected
+    colorAnimationEnabled: false
     width: parent ? parent.width : implicitWidth
     height: 40
     radius: 7
     textSize: 15
     widthBorderSize: 10
-    buttonColor: Colors.transparent
+    buttonColor: Colors.changeA(Colors.fired, 0)
     pressedColor: Colors.changeA(Colors.border, 0.30)
 }

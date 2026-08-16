@@ -31,12 +31,7 @@ Item {
                 && Math.abs(Global.themeColor.g - choice.g) < 0.001
                 && Math.abs(Global.themeColor.b - choice.b) < 0.001
     }
-    function backgroundTypeIndex() {
-        if (Global.backgroundMode === "color") return 0
-        return 1
-    }
-    function chooseColorScheme(schemeId) {
-        Global.applyColorScheme(schemeId)
+    function accentForColorScheme(schemeId) {
         var accentByScheme = {
             slate: accentChoices[0], glacier: accentChoices[0],
             violet: accentChoices[1], lavender: accentChoices[1],
@@ -44,7 +39,15 @@ Item {
             amber: accentChoices[4], parchment: accentChoices[4],
             rose: accentChoices[2], blush: accentChoices[2]
         }
-        var accent = accentByScheme[schemeId]
+        return accentByScheme[schemeId]
+    }
+    function backgroundTypeIndex() {
+        if (Global.backgroundMode === "color") return 0
+        return 1
+    }
+    function chooseColorScheme(schemeId) {
+        Global.applyColorScheme(schemeId)
+        var accent = accentForColorScheme(schemeId)
         if (accent) {
             Global.themeColor = accent
             Colors.border = accent
@@ -179,7 +182,7 @@ Item {
                                         Rectangle { x: 13; y: 38; width: 42; height: 6; radius: 3; color: parent.parent.schemeChoice.background }
                                         Rectangle { x: 82; y: 31; width: 38; height: 16; radius: 5; color: parent.parent.schemeChoice.surface }
                                         Rectangle { x: 82; y: 53; width: 38; height: 12; radius: 4; color: parent.parent.schemeChoice.foreground }
-                                        Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: Global.themeColor }
+                                        Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: root.accentForColorScheme(parent.parent.schemeChoice.id) || Global.themeColor }
                                     }
                                     MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.chooseColorScheme(parent.schemeChoice.id) }
                                     }
