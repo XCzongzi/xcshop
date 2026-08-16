@@ -36,6 +36,7 @@ Rectangle {
         stateEnabled: root.enabled
         duration: 200
         cornerRadius: root.radius
+        topRightRadius: root.topRightRadius
     }
 
     Image {

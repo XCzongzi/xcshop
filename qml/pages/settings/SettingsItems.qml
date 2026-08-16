@@ -44,6 +44,10 @@ Item {
         return itemsRootPath + "/assets/" + itemNamespace(itemId) + "/" + itemName(itemId) + ".png"
     }
 
+    function hasMappedTexture(itemId) {
+        return xcFile.exists(itemIconPath(itemId))
+    }
+
     function loadItemMappings() {
         var rawVanilla = xcFile.read(vanillaItemsPath)
         var rawCustom = xcFile.read(customItemsPath)
@@ -58,7 +62,7 @@ Item {
         var mappings = []
         for (var vanillaIndex = 0; vanillaIndex < vanillaItems.length; ++vanillaIndex) {
             var vanilla = vanillaItems[vanillaIndex]
-            if (vanilla && vanilla.name)
+            if (vanilla && vanilla.name && vanilla.name !== "minecraft:air")
                 mappings.push({ itemId: vanilla.name, numericId: vanilla.id, builtIn: true })
         }
         for (var customIndex = 0; customIndex < customItems.length; ++customIndex) {
@@ -249,7 +253,7 @@ Item {
             id: mappingListBar
             width: parent.width
             expanded: true
-            title: "全部物品"
+            title: "当前的物品映射表"
             subtitle: "共 " + root.itemMappings.length + " 项，当前显示 " + root.filteredItems.length + " 项。"
             contentHeight: root.listContentHeight
 
@@ -294,8 +298,9 @@ Item {
                 width: parent.width - 32
                 height: 24
                 XCText { x: 8; width: 48; xcText: "图标"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                XCText { x: 68; width: parent.width - 230; xcText: "物品 ID"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                XCText { x: parent.width - 154; width: 62; xcText: "来源"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                XCText { x: 68; width: parent.width - 340; xcText: "物品 ID"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                XCText { x: parent.width - 260; width: 62; xcText: "来源"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                XCText { x: parent.width - 180; width: 94; xcText: "映射状态"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                 XCText { x: parent.width - 78; width: 70; xcText: "操作"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
             }
 
@@ -320,6 +325,7 @@ Item {
                     border.color: Colors.changeA(Colors.text, rowMouse.containsMouse ? 0.11 : 0.05)
 
                     property string iconSource: root.fileUrl(root.itemIconPath(itemDelegate.modelData.itemId))
+                    property bool textureMapped: root.hasMappedTexture(itemDelegate.modelData.itemId)
 
                     MouseArea { id: rowMouse; anchors.fill: parent; hoverEnabled: true }
 
@@ -349,7 +355,7 @@ Item {
 
                     XCText {
                         x: 68
-                        width: parent.width - 230
+                        width: parent.width - 340
                         xcText: itemDelegate.modelData.itemId
                         onCenter: false
                         xcFontSize: 13
@@ -357,13 +363,22 @@ Item {
                         elide: Text.ElideMiddle
                     }
                     XCText {
-                        x: parent.width - 154
+                        x: parent.width - 260
                         width: 62
                         xcText: itemDelegate.modelData.builtIn ? "原版" : "自定义"
                         onCenter: false
                         xcFontSize: 12
                         boldFont: false
                         textColor: itemDelegate.modelData.builtIn ? Colors.banned : Colors.border
+                    }
+                    XCText {
+                        x: parent.width - 180
+                        width: 94
+                        xcText: itemDelegate.textureMapped ? "已匹配至贴图" : "未匹配至贴图"
+                        onCenter: false
+                        xcFontSize: 11
+                        boldFont: false
+                        textColor: itemDelegate.textureMapped ? Colors.border : Colors.banned
                     }
                     TextButton {
                         visible: !itemDelegate.modelData.builtIn
