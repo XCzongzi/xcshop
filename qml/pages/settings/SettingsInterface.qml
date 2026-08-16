@@ -4,7 +4,7 @@ import xcshop
 
 Item {
     id: root
-    property var accentChoices: ["#00aaff", "#7c5cff", "#e85d9e", "#17b890", "#f2a541"]
+    property var accentChoices: Global.accentChoices
     property var colorChoices: [
         { id: "midnight", name: "深夜", mode: "深色", background: "#1b1d27", foreground: "#41434f", surface: "#6b6c74", text: "#ffffff" },
         { id: "cloud", name: "云白", mode: "浅色", background: "#edf2f7", foreground: "#dce5ee", surface: "#aebaca", text: "#172033" },
@@ -32,14 +32,7 @@ Item {
                 && Math.abs(Global.themeColor.b - choice.b) < 0.001
     }
     function accentForColorScheme(schemeId) {
-        var accentByScheme = {
-            slate: accentChoices[0], glacier: accentChoices[0],
-            violet: accentChoices[1], lavender: accentChoices[1],
-            forest: accentChoices[3], mint: accentChoices[3],
-            amber: accentChoices[4], parchment: accentChoices[4],
-            rose: accentChoices[2], blush: accentChoices[2]
-        }
-        return accentByScheme[schemeId]
+        return Global.accentForColorScheme(schemeId)
     }
     function backgroundTypeIndex() {
         if (Global.backgroundMode === "color") return 0
@@ -47,11 +40,6 @@ Item {
     }
     function chooseColorScheme(schemeId) {
         Global.applyColorScheme(schemeId)
-        var accent = accentForColorScheme(schemeId)
-        if (accent) {
-            Global.themeColor = accent
-            Colors.border = accent
-        }
         Global.saveSettings()
     }
     function colorSchemeData(schemeId) {

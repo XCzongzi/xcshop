@@ -13,7 +13,7 @@ QtObject {
     property color pressed: "#aa6b6c74"
     property color text: "#ffffff"
     // 设置页可修改，全局控件会随之更新。
-    property color border: "#00aaFF"
+    property color border: "#2f8cff"
     property color banned: "#bbbbbb"
     readonly property color error: "#FF0000"
 

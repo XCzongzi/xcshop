@@ -71,9 +71,6 @@ Rectangle {
                     height: 30
                     radius: 6
                     widthBorderSize: 9
-                    buttonColor: Colors.transparent
-                    firedColor: Colors.changeA(Colors.fired, 0.26)
-                    pressedColor: Colors.transparent
                     btnSelected: root.selected === index
                     onClicked: {
                         root.selected = index

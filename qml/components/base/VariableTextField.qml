@@ -18,14 +18,19 @@ Item {
     property string placeholderText
     property string content
 
-    readonly property string itemIdColor: "#ffd54f"
-    readonly property string keyColor: "#79c0ff"
-    readonly property string stringColor: "#a5d6a7"
-    readonly property string numberColor: "#ffb86c"
-    readonly property string quantityColor: "#c792ea"
-    readonly property string punctuationColor: "#b0bec5"
-    readonly property string booleanColor: "#82e0aa"
-    readonly property string invalidColor: "#ff5555"
+    // 语法覆盖层独立适配浅/深背景：浅色使用更深的墨色，深色使用高亮但不过曝的粉彩。
+    readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126
+                                               + Colors.background_n.g * 0.7152
+                                               + Colors.background_n.b * 0.0722) > 0.58
+    readonly property int syntaxPaletteRevision: lightSyntaxTheme ? 1 : 0
+    readonly property string itemIdColor: lightSyntaxTheme ? "#8a5800" : "#ffe08a"
+    readonly property string keyColor: lightSyntaxTheme ? "#005fae" : "#a5e8ff"
+    readonly property string stringColor: lightSyntaxTheme ? "#176b38" : "#b9fbc8"
+    readonly property string numberColor: lightSyntaxTheme ? "#a43b00" : "#ffc58a"
+    readonly property string quantityColor: lightSyntaxTheme ? "#6940a5" : "#e5c5ff"
+    readonly property string punctuationColor: lightSyntaxTheme ? "#4b5b6a" : "#e2e8f0"
+    readonly property string booleanColor: lightSyntaxTheme ? "#08745f" : "#99f6e4"
+    readonly property string invalidColor: lightSyntaxTheme ? "#bd1f2d" : "#ff8a93"
 
     signal accepted()
 
@@ -51,12 +56,14 @@ Item {
             "punctuation": punctuationColor,
             "boolean": booleanColor,
             "invalid": invalidColor,
-            "brackets": ["#79c0ff", "#c792ea", "#ffd54f"]
+            "brackets": lightSyntaxTheme ? ["#005fae", "#6940a5", "#8a5800"]
+                                         : ["#a5e8ff", "#e5c5ff", "#ffe08a"]
         }
     }
 
     function createHighlightedText(source) {
         syntaxHighlighterRevision
+        syntaxPaletteRevision
         return ItemSyntaxHighlighter.highlight(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
                                                 ItemSyntaxParser)
