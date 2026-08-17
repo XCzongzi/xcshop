@@ -19,3 +19,6 @@
 # Local application data
 /settings.json
 /item-mappings.json
+
+# Minecraft assets
+/assets/minecraft/
