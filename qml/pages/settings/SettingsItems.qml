@@ -64,7 +64,7 @@ Item {
     }
 
     function itemIconPath(itemId) {
-        return itemsRootPath + "/assets/" + itemNamespace(itemId) + "/" + itemName(itemId) + ".png"
+        return Global.getItemTexturePath(itemId)
     }
 
     function hasMappedTexture(itemId) {
@@ -688,7 +688,7 @@ Item {
                 width: parent.width - 32
                 height: 24
                 XCText { x: 8; width: 48; xcText: "图标"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                XCText { x: 68; width: parent.width - 340; xcText: "物品 ID"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                XCText { x: 52; width: parent.width - 324; xcText: "物品 ID"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                 XCText { x: parent.width - 260; width: 62; xcText: "来源"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                 XCText { x: parent.width - 180; width: 94; xcText: "映射状态"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                 XCText { x: parent.width - 78; width: 70; xcText: "操作"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
@@ -697,7 +697,7 @@ Item {
             ListView {
                 id: itemTable
                 x: 16
-                y: 164
+                y: 166
                 width: parent.width - 32
                 height: parent.height - y - 12
                 clip: true
@@ -708,7 +708,7 @@ Item {
                     id: itemDelegate
                     required property var modelData
                     width: ListView.view.width
-                    height: 42
+                    height: 46
                     radius: 7
                     color: Colors.changeA(Colors.background, 0.22)
                     border.width: 1
@@ -721,16 +721,16 @@ Item {
                     Rectangle {
                         x: 8
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 28
-                        height: 28
+                        width: 32
+                        height: 32
                         radius: 5
                         clip: true
                         visible: itemDelegate.iconSource.length > 0
                         color: Colors.transparent
                         Image {
                             anchors.centerIn: parent
-                            width: 24
-                            height: 24
+                            width: 30
+                            height: 30
                             z: 1
                             source: itemDelegate.iconSource
                             fillMode: Image.PreserveAspectFit
@@ -745,8 +745,8 @@ Item {
                     }
 
                     XCText {
-                        x: 68
-                        width: parent.width - 340
+                        x: 52
+                        width: parent.width - 324
                         xcText: itemDelegate.modelData.itemId
                         onCenter: false
                         xcFontSize: 13

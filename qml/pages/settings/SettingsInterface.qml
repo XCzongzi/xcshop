@@ -4,7 +4,7 @@ import xcshop
 
 Item {
     id: root
-    property var accentChoices: Global.accentChoices
+    property var accentChoices: Colors.accentChoices
     property var colorChoices: [
         { id: "midnight", name: "深夜", mode: "深色", background: "#1b1d27", foreground: "#41434f", surface: "#6b6c74", text: "#ffffff" },
         { id: "cloud", name: "云白", mode: "浅色", background: "#edf2f7", foreground: "#dce5ee", surface: "#aebaca", text: "#172033" },
@@ -21,25 +21,24 @@ Item {
     ]
 
     function chooseTheme(color) {
-        Global.themeColor = color
-        Colors.border = color
+        Colors.setThemeColor(color)
         Global.saveSettings()
     }
     function isSelectedTheme(color) {
         var choice = Qt.color(color)
-        return Math.abs(Global.themeColor.r - choice.r) < 0.001
-                && Math.abs(Global.themeColor.g - choice.g) < 0.001
-                && Math.abs(Global.themeColor.b - choice.b) < 0.001
+        return Math.abs(Colors.themeColor.r - choice.r) < 0.001
+                && Math.abs(Colors.themeColor.g - choice.g) < 0.001
+                && Math.abs(Colors.themeColor.b - choice.b) < 0.001
     }
     function accentForColorScheme(schemeId) {
-        return Global.accentForColorScheme(schemeId)
+        return Colors.accentForColorScheme(schemeId)
     }
     function backgroundTypeIndex() {
         if (Global.backgroundMode === "color") return 0
         return 1
     }
     function chooseColorScheme(schemeId) {
-        Global.applyColorScheme(schemeId)
+        Colors.applyColorScheme(schemeId)
         Global.saveSettings()
     }
     function colorSchemeData(schemeId) {
@@ -164,14 +163,14 @@ Item {
                                     delegate: Item {
                                         required property int index
                                     property var schemeChoice: root.colorChoices[index * 2 + schemeRow.schemeRowIndex]
-                                    property bool selected: Global.colorScheme === schemeChoice.id
+                                    property bool selected: Colors.colorScheme === schemeChoice.id
                                     property bool hovered: false
                                     property bool pressed: false
                                     width: schemeGrid.cardWidth; height: 76
                                     Rectangle {
                                         anchors.centerIn: parent; width: parent.width; height: parent.height; radius: 8
                                         color: parent.schemeChoice.background
-                                        border.width: parent.selected ? 2 : 1; border.color: parent.selected ? Global.themeColor : Qt.rgba(0, 0, 0, 0.18)
+                                        border.width: parent.selected ? 2 : 1; border.color: parent.selected ? Colors.themeColor : Qt.rgba(0, 0, 0, 0.18)
                                         scale: parent.pressed ? 0.975 : (parent.hovered && !parent.selected ? 1.025 : 1.0)
                                         Behavior on scale { NumberAnimation { duration: 120 } }
                                         Rectangle { x: 8; y: 8; width: parent.width - 16; height: 16; radius: 4; color: parent.parent.schemeChoice.foreground }
@@ -181,7 +180,7 @@ Item {
                                         Rectangle { x: 13; y: 38; width: 42; height: 6; radius: 3; color: parent.parent.schemeChoice.background }
                                         Rectangle { x: 82; y: 31; width: 38; height: 16; radius: 5; color: parent.parent.schemeChoice.surface }
                                         Rectangle { x: 82; y: 53; width: 38; height: 12; radius: 4; color: parent.parent.schemeChoice.foreground }
-                                        Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: root.accentForColorScheme(parent.parent.schemeChoice.id) || Global.themeColor }
+                                        Rectangle { x: 104; y: 35; width: 12; height: 8; radius: 4; color: root.accentForColorScheme(parent.parent.schemeChoice.id) || Colors.themeColor }
                                     }
                                     MouseArea {
                                         anchors.fill: parent

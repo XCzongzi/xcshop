@@ -17,6 +17,7 @@ Item {
     property int syntaxHighlighterRevision: 0
     property string placeholderText
     property string content
+    readonly property string inputContent: textField.text
 
     // 语法覆盖层独立适配浅/深背景：浅色使用更深的墨色，深色使用高亮但不过曝的粉彩。
     readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126

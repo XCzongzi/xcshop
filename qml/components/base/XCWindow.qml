@@ -18,7 +18,7 @@ Window {
     readonly property Image background: backgroundImage
     readonly property int titleBar_height: titleBar.height
     property string backgroundMode: Global.backgroundMode
-    property color backgroundColor: Global.backgroundColor
+    property color backgroundColor: Colors.backgroundColor
     property string backgroundSource: Global.backgroundImage
     property real backgroundBlur: Global.backgroundBlur
 

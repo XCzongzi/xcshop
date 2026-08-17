@@ -41,6 +41,17 @@ BaseIOPage {
 
     }
 
+    function itemIdFromInput(value){
+        var text = value === undefined || value === null ? "" : String(value).trim()
+        var match = text.match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i)
+        return match ? match[1] : ""
+    }
+
+    function itemTextureSource(value){
+        var path = Global.getItemTexturePath(itemIdFromInput(value))
+        return path.length ? "file:///" + path.replace(/\\/g, "/") : ""
+    }
+
 
 
     //布局
@@ -75,6 +86,24 @@ BaseIOPage {
         }
         min_width: 400
         contentHeight: itemInput_field.y + itemInput_field.height + 18
+
+        Image{
+            width: 64
+            height: width
+            y: 16
+            x: parent.width - width - 16
+            source: root.itemTextureSource(itemInput_field.inputContent)
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            mipmap: false
+            visible: status === Image.Ready
+            layer.enabled: visible
+            layer.effect: XCShadow {
+                shadowBlur: 0.55
+                shadowHorizontalOffset: 2
+                shadowVerticalOffset: 2
+            }
+        }
     }
     ContentBar{
         id:costInput

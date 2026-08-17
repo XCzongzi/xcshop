@@ -12,65 +12,14 @@ QtObject{
 
     property Image mainWindow_background
 
-    // 运行时界面偏好；后续可集中接入配置文件持久化。
-    property color themeColor: "#2f8cff"
-    // 顺序：蓝、紫、粉、绿、琥珀。页面配色与设置页共用这一组强调色。
-    readonly property var accentChoices: ["#2f8cff", "#8c6bff", "#de638e", "#2faf78", "#df963b"]
     property real animationSpeed: 1.0
     property string backgroundMode: "color" // color / image / imageBlur
-    property color backgroundColor: "#1b1d27"
-    property string colorScheme: "midnight"
     property string backgroundImage: ""
     property real backgroundBlur: 0.45
     property string settingsPath: ""
     property var recentProjects: []
     property int elementRelayHeight: 160
 
-    function accentForColorScheme(scheme) {
-        var accentByScheme = {
-            slate: accentChoices[0], glacier: accentChoices[0],
-            violet: accentChoices[1], lavender: accentChoices[1],
-            forest: accentChoices[3], mint: accentChoices[3],
-            amber: accentChoices[4], parchment: accentChoices[4],
-            rose: accentChoices[2], blush: accentChoices[2]
-        }
-        return accentByScheme[scheme] || ""
-    }
-
-    function applyColorScheme(scheme) {
-        var palettes = {
-            "midnight": { background: "#1b1d27", backgroundOverlay: "#aa1b1d27", foreground: "#aa41434f", fired: "#c092949c", pressed: "#d06b6c74", text: "#ffffff", banned: "#bbbbbb", highlight: "#4bffffff" },
-            "cloud": { background: "#edf2f7", backgroundOverlay: "#e8edf2f7", foreground: "#e0dce5ee", fired: "#e8b6c3d1", pressed: "#f0aebaca", text: "#172033", banned: "#637087", highlight: "#60ffffff" },
-            "slate": { background: "#202b38", backgroundOverlay: "#aa202b38", foreground: "#aa45586c", fired: "#c07b93aa", pressed: "#d0526b82", text: "#f3f8ff", banned: "#b6c2cf", highlight: "#42ffffff" },
-            "glacier": { background: "#eaf5fa", backgroundOverlay: "#e8eaf5fa", foreground: "#e0d5e8f0", fired: "#e8a6c6d5", pressed: "#f087adbf", text: "#123047", banned: "#5d7585", highlight: "#60ffffff" },
-            "violet": { background: "#2b2238", backgroundOverlay: "#aa2b2238", foreground: "#aa5b476d", fired: "#c09b7cb2", pressed: "#d072588a", text: "#fff8ff", banned: "#cbbfd2", highlight: "#45ffffff" },
-            "lavender": { background: "#f4eff9", backgroundOverlay: "#e8f4eff9", foreground: "#e0e6dcef", fired: "#e8c5afd5", pressed: "#f0b9a2c9", text: "#2c2039", banned: "#75667e", highlight: "#60ffffff" },
-            "forest": { background: "#162d2d", backgroundOverlay: "#aa162d2d", foreground: "#aa345b58", fired: "#c06f9b91", pressed: "#d046756f", text: "#f3fffb", banned: "#b8cac4", highlight: "#42ffffff" },
-            "mint": { background: "#e9f5ef", backgroundOverlay: "#e8e9f5ef", foreground: "#e0d4e9de", fired: "#e8a8cdb9", pressed: "#f088b59c", text: "#17352d", banned: "#5e7a6e", highlight: "#60ffffff" },
-            "amber": { background: "#33251d", backgroundOverlay: "#aa33251d", foreground: "#aa654c3c", fired: "#c0a88769", pressed: "#d0815b43", text: "#fff9f3", banned: "#d3c2b4", highlight: "#45ffffff" },
-            "parchment": { background: "#fbf3e5", backgroundOverlay: "#e8fbf3e5", foreground: "#e0ead8bd", fired: "#e8d5b888", pressed: "#f0c7a66f", text: "#3d2d1f", banned: "#81705c", highlight: "#60ffffff" },
-            "rose": { background: "#38232e", backgroundOverlay: "#aa38232e", foreground: "#aa704658", fired: "#c0a57b8b", pressed: "#d089596e", text: "#fff7f9", banned: "#d5bec6", highlight: "#45ffffff" },
-            "blush": { background: "#f9edf1", backgroundOverlay: "#e8f9edf1", foreground: "#e0eed8e1", fired: "#e8d3a8b9", pressed: "#f0c5899f", text: "#3b2430", banned: "#816371", highlight: "#60ffffff" }
-        }
-        var palette = palettes[scheme] || palettes.midnight
-        colorScheme = palettes[scheme] ? scheme : "midnight"
-        backgroundColor = palette.background
-        Colors.background_n = palette.background
-        Colors.background = palette.backgroundOverlay
-        Colors.foreground = palette.foreground
-        Colors.fired = palette.fired
-        Colors.pressed = palette.pressed
-        Colors.text = palette.text
-        Colors.banned = palette.banned
-        Colors.glass_highlight = palette.highlight
-        var accent = accentForColorScheme(colorScheme)
-        if (accent.length) {
-            themeColor = accent
-            Colors.border = accent
-        }
-    }
-
-    
     //项目信息
     property string project_location: ""
     property string current_element: "Total"
@@ -101,6 +50,22 @@ QtObject{
     function get_filePath(){    //获取文件路径，包含文件名
         return current_fileLocation[current_enum] + "/" + current_fileName[current_enum] + ".xcse" + current_element
 
+    }
+
+//通过物品id获取纹理位置
+    function getItemTexturePath(itemId){
+        var value = itemId === undefined || itemId === null ? "" : String(itemId).trim()
+        if (!value.length)
+            return ""
+
+        var separator = value.indexOf(":")
+        var namespaceName = separator > 0 ? value.substring(0, separator) : "minecraft"
+        var itemName = separator >= 0 ? value.substring(separator + 1) : value
+        if (!itemName.length)
+            return ""
+
+        return APP_DIRPATH + "/../assets/minecraft/items/assets/"
+                + namespaceName + "/" + itemName + ".png"
     }
 
 
@@ -170,34 +135,28 @@ QtObject{
             var saved = text.length ? JSON.parse(text) : null
             if (!saved)
                 return
-            if (saved.themeColor) themeColor = saved.themeColor
+            Colors.loadSettings(saved)
             if (saved.animationSpeed) animationSpeed = saved.animationSpeed
             if (saved.backgroundMode) backgroundMode = saved.backgroundMode
-            if (saved.colorScheme) applyColorScheme(saved.colorScheme)
-            if (saved.backgroundColor) backgroundColor = saved.backgroundColor
             if (saved.backgroundImage) backgroundImage = saved.backgroundImage
             if (saved.backgroundBlur !== undefined) backgroundBlur = saved.backgroundBlur
             if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, 6)
             if (saved.elementRelayHeight !== undefined)
                 elementRelayHeight = Math.max(126, Math.min(420, Number(saved.elementRelayHeight)))
         } catch (error) {}
-        Colors.border = themeColor
     }
 
     function saveSettings(){
         if (!settingsPath.length)
             return
-        xcfile.write(settingsPath, JSON.stringify({
-            themeColor: themeColor,
-            animationSpeed: animationSpeed,
-            backgroundMode: backgroundMode,
-            backgroundColor: backgroundColor,
-            colorScheme: colorScheme,
-            backgroundImage: backgroundImage,
-            backgroundBlur: backgroundBlur,
-            recentProjects: recentProjects,
-            elementRelayHeight: elementRelayHeight
-        }))
+        var settings = Colors.settingsData()
+        settings.animationSpeed = animationSpeed
+        settings.backgroundMode = backgroundMode
+        settings.backgroundImage = backgroundImage
+        settings.backgroundBlur = backgroundBlur
+        settings.recentProjects = recentProjects
+        settings.elementRelayHeight = elementRelayHeight
+        xcfile.write(settingsPath, JSON.stringify(settings))
     }
 
     function relayProjectKey(location){
