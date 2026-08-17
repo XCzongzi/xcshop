@@ -9,6 +9,8 @@ QtObject{
 
     readonly property string url_templates: "https://xczongzi.github.io/AppOnlineData-xcshop/templates.json"
     readonly property string url_templatesPer: "https://xczongzi.github.io/AppOnlineData-xcshop/templates/"
+    readonly property string url_itemMappings: "https://raw.githubusercontent.com/Plagiatus/ForeverIds/main/items/items.min.json"
+    readonly property string url_itemMappingTags: "https://api.github.com/repos/Plagiatus/ForeverIds/tags?per_page=1"
 
 
 

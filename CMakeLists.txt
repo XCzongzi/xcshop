@@ -9,7 +9,7 @@ set(QT_QML_GENERATE_QMLLS_INI ON)   #图形效果
 
 
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick Network Concurrent)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
@@ -25,6 +25,7 @@ set(CMAKE_AUTORCC ON)   #解决资源文件问题，一定要放在qt_add_execut
 qt_add_executable(appxcshop
     src/main.cpp
     src/XCFile.cpp
+    src/MinecraftAssetImporter.cpp
     src/ElementIO.cpp
 )
 
@@ -142,10 +143,12 @@ qt_add_qml_module(appxcshop
         js/ElementRelayState.js
     SOURCES
         src/XCFile.cpp
+        src/MinecraftAssetImporter.cpp
         src/main.cpp
         src/ElementIO.cpp
 
         header/XCFile.h
+        header/MinecraftAssetImporter.h
         header/ElementIO.h
 )
 
@@ -165,7 +168,7 @@ set_target_properties(appxcshop PROPERTIES
 )
 
 target_link_libraries(appxcshop
-    PRIVATE Qt6::Quick Qt6::Network
+    PRIVATE Qt6::Quick Qt6::Network Qt6::Concurrent
 )
 
 include(GNUInstallDirs)
