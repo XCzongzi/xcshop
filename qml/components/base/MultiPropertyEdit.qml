@@ -1,29 +1,190 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
 
+// A compact property editor with a selector in its header and one custom
+// editor surface below it. Supply one Component for every option through
+// editorComponents; the selected component is created on demand.
 Item {
     id: root
+
     property string text: ""
     property var options: []
+    property var editorComponents: []
+    property Item activeContentItem: null
     property int selected: -1
     property int initialOption: 0
+    property int headerHeight: 38
+    property int contentPadding: 10
+    property int minimumEditorHeight: 32
+    property string emptyText: "请选择需要编辑的属性"
+
+    readonly property bool hasLabel: text.length > 0
+    readonly property bool hasEditor: selected >= 0
+                                      && editorComponents
+                                      && selected < editorComponents.length
+                                      && editorComponents[selected]
+    readonly property real contentHeight: hasEditor
+                                        ? editorLoader.height
+                                        : (activeContentItem
+                                           ? activeContentItem.height
+                                           : fallbackContent.childrenRect.y + fallbackContent.childrenRect.height)
+
+    // Keeps the old direct-child syntax working for simple, single-editor
+    // usages. New code should prefer editorComponents so every menu item owns
+    // its own editor.
+    default property alias content: fallbackContent.data
 
     signal clicked()
 
-    width: selectionControl.width
-    height: selectionControl.height
+    implicitWidth: 280
+    implicitHeight: headerHeight + contentPadding + Math.max(contentHeight, minimumEditorHeight)
+    height: implicitHeight
 
-    RadioGroup {
-        id: selectionControl
-        text: root.text
-        options: root.options
-        selected: root.selected
-        initialOption: root.initialOption
-        onClicked: {
-            root.selected = selected
-            root.clicked()
-        }
+    function selectOption(index) {
+        if (index < 0 || index >= options.length)
+            return
+
+        selected = index
+        clicked()
     }
 
-    Component.onCompleted: root.selected = root.initialOption
+    function ensureSelection() {
+        if (!options.length) {
+            selected = -1
+            return
+        }
+
+        if (selected < 0 || selected >= options.length)
+            selected = Math.min(Math.max(initialOption, 0), options.length - 1)
+    }
+
+    onOptionsChanged: ensureSelection()
+    Component.onCompleted: ensureSelection()
+
+    Item {
+        id: header
+        width: parent.width
+        height: root.headerHeight
+        clip: true
+
+        XCText {
+            id: labelText
+            visible: root.hasLabel
+            x: 12
+            anchors.verticalCenter: parent.verticalCenter
+            xcText: root.text
+            onCenter: false
+            xcFontSize: 14
+        }
+
+        Flickable {
+            id: optionFlickable
+            x: root.hasLabel ? labelText.x + labelText.width + 12 : 0
+            width: parent.width - x
+            height: 32
+            anchors.bottom: parent.bottom
+            contentWidth: optionContent.width
+            contentHeight: height
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.HorizontalFlick
+            interactive: contentWidth > width
+
+            Item {
+                id: optionContent
+                width: optionRow.width
+                height: parent.height
+
+                Rectangle {
+                    id: activePropertyMarker
+                    visible: root.selected >= 0 && root.selected < optionRepeater.count
+                    x: root.selected >= 0 && root.selected < optionRepeater.count
+                       ? optionRepeater.itemAt(root.selected).x : 0
+                    y: parent.height - height - 3
+                    width: root.selected >= 0 && root.selected < optionRepeater.count
+                           ? optionRepeater.itemAt(root.selected).width : 0
+                    height: 3
+                    radius: height / 2
+                    color: Colors.border
+
+                    Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                }
+
+                Row {
+                    id: optionRow
+                    height: parent.height
+                    spacing: 3
+
+                    Repeater {
+                        id: optionRepeater
+                        model: root.options
+
+                        delegate: TextButton {
+                            required property int index
+                            required property var model
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: model.modelData
+                            textSize: 13
+                            height: 32
+                            radius: 5
+                            widthBorderSize: 8
+                            boldFont: root.selected === index
+                            btnSelected: false
+                            textColor: root.selected === index ? Colors.text : Colors.changeA(Colors.text, 0.70)
+                            firedColor: Colors.changeA(Colors.fired, 0.45)
+                            pressedColor: Colors.changeA(Colors.border, 0.72)
+                            onClicked: root.selectOption(index)
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        y: root.headerHeight - 1
+        height: 1
+        color: Colors.changeA(Colors.text, 0.13)
+    }
+
+    Item {
+        id: contentArea
+        x: root.contentPadding
+        y: root.headerHeight + root.contentPadding
+        width: parent.width - root.contentPadding * 2
+        height: root.contentHeight
+
+        Loader {
+            id: editorLoader
+            visible: root.hasEditor
+            width: parent.width
+            height: item ? Math.max(root.minimumEditorHeight, item.implicitHeight, item.height)
+                         : root.minimumEditorHeight
+            sourceComponent: root.hasEditor ? root.editorComponents[root.selected] : null
+        }
+
+        Item {
+            id: fallbackContent
+            visible: !root.hasEditor
+            width: parent.width
+            height: childrenRect.y + childrenRect.height
+        }
+
+        XCText {
+            visible: !root.hasEditor && fallbackContent.children.length === 0
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            xcText: root.emptyText
+            xcFontSize: 13
+            boldFont: false
+            onCenter: false
+            textColor: Colors.banned
+        }
+    }
 }

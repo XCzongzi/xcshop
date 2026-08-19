@@ -355,46 +355,26 @@ Item {
                         onTextEdited: root.updateSegment(segmentCard.index, "text", text)
                     }
 
-                    Row {
-                        x: 10; y: 76; spacing: 4
-                        Repeater {
-                            model: root.colorOptions
-                            delegate: Rectangle {
-                                required property var modelData
-                                width: 17; height: 17; radius: 4
-                                color: modelData.preview
-                                border.width: segmentCard.model.color === modelData.value && !segmentCard.model.customColor.length ? 2 : 1
-                                border.color: segmentCard.model.color === modelData.value && !segmentCard.model.customColor.length ? Colors.border : Colors.changeA(Colors.text, 0.30)
-                                Controls.ToolTip.visible: colorMouse.containsMouse
-                                Controls.ToolTip.text: modelData.name
-                                MouseArea { id: colorMouse; anchors.fill: parent; hoverEnabled: true; onClicked: { root.updateSegment(segmentCard.index, "color", modelData.value); root.updateSegment(segmentCard.index, "customColor", "") } }
-                            }
-                        }
-                    }
-
-                    XCTextField {
-                        x: 10; y: 101; width: 100; height: 28
-                        text: segmentCard.model.customColor
-                        placeholderText: "#RRGGBB"
-                        font.pixelSize: 12
-                        onTextEdited: root.updateSegment(segmentCard.index, "customColor", text)
-                    }
-                    Row {
-                        x: 118; y: 101; spacing: 4
-                        Repeater {
-                            model: [
-                                { "label": "粗", "key": "bold" }, { "label": "斜", "key": "italic" },
-                                { "label": "下", "key": "underlined" }, { "label": "删", "key": "strikethrough" }, { "label": "乱", "key": "obfuscated" }
-                            ]
-                            delegate: Rectangle {
-                                required property var modelData
-                                width: 28; height: 28; radius: 5
-                                property bool selected: !!segmentCard.model[modelData.key]
-                                color: selected ? Colors.changeA(Colors.border, 0.66) : Colors.changeA(Colors.pressed, 0.66)
-                                border.width: 1; border.color: selected ? Colors.border : Colors.changeA(Colors.text, 0.12)
-                                XCText { anchors.centerIn: parent; xcText: modelData.label; xcFontSize: 11; textColor: selected ? "#1b1b1b" : Colors.text }
-                                MouseArea { anchors.fill: parent; onClicked: root.updateSegment(segmentCard.index, modelData.key, !segmentCard.model[modelData.key]) }
-                            }
+                    TextStyleEditor {
+                        id: segmentStyleEditor
+                        x: 10
+                        y: 76
+                        colorOptions: root.colorOptions
+                        color: segmentCard.model.color
+                        customColor: segmentCard.model.customColor
+                        bold: !!segmentCard.model.bold
+                        italic: !!segmentCard.model.italic
+                        underlined: !!segmentCard.model.underlined
+                        strikethrough: !!segmentCard.model.strikethrough
+                        obfuscated: !!segmentCard.model.obfuscated
+                        onPropertyEdited: {
+                            root.updateSegment(segmentCard.index, "color", segmentStyleEditor.color)
+                            root.updateSegment(segmentCard.index, "customColor", segmentStyleEditor.customColor)
+                            root.updateSegment(segmentCard.index, "bold", segmentStyleEditor.bold)
+                            root.updateSegment(segmentCard.index, "italic", segmentStyleEditor.italic)
+                            root.updateSegment(segmentCard.index, "underlined", segmentStyleEditor.underlined)
+                            root.updateSegment(segmentCard.index, "strikethrough", segmentStyleEditor.strikethrough)
+                            root.updateSegment(segmentCard.index, "obfuscated", segmentStyleEditor.obfuscated)
                         }
                     }
                     Row {

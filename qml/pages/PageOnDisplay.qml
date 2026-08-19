@@ -6,6 +6,7 @@ BasePage {
     color: Colors.transparent
     workspace: true
 
+
     ContentBar{
         id: previewBar
         title: "预览"
@@ -32,72 +33,52 @@ BasePage {
         x: 16
         y: previewBar.y + previewBar.height + 16
         min_width: 400
-        contentHeight: frameBar_separatorInput.y + frameBar_separatorInput.height + 16
+        contentHeight: frameBar_multiPropertyEdit.y + frameBar_multiPropertyEdit.height + 16
+        property var textContents: ["", "", ""]
+        readonly property var textPlaceholders: [
+            "示例：{\"text\":\"花费：\",\"color\":\"green\"}",
+            "示例：{\"text\":\"点击购买\",\"color\":\"blue\",\"underlined\": true}",
+            "推荐：+ 或 \\n"
+        ]
 
-        XCText {
-            id: frameBar_headText
+        MultiPropertyEdit {
+            id: frameBar_multiPropertyEdit
+            x: 16
             y: 64
-            x: 16
-            xcText: "头部文本（JSON）"
-            xcFontSize: 16
-            onCenter: false
-        }
-        JsonTextEditorButton {
-            targetInput: frameBar_headContent
-            editorTitle: "编辑头部文本 JSON"
-            x: parent.width - width - 16
-            y: frameBar_headText.y - 2
-        }
-        VariableTextField {
-            id: frameBar_headContent
-            x: 16
-            y: frameBar_headText.y + frameBar_headText.height + 12
             width: parent.width - 32
-            height: 128
-            placeholderText: "示例：{\"text\":\"花费：\",\"color\":\"green\"}"
-        }
-        XCText {
-            id: frameBar_endText
-            y: frameBar_headContent.y + frameBar_headContent.height + 16
-            x: 16
-            xcText: "尾部文本（JSON）"
-            xcFontSize: 16
-            onCenter: false
-        }
-        JsonTextEditorButton {
-            targetInput: frameBar_endContent
-            editorTitle: "编辑尾部文本 JSON"
-            x: parent.width - width - 16
-            y: frameBar_endText.y - 2
-        }
-        VariableTextField {
-            id: frameBar_endContent
-            x: 16
-            y: frameBar_endText.y + frameBar_endText.height + 12
-            width: parent.width - 32
-            height: 128
-            placeholderText: "示例：{\"text\":\"点击购买\",\"color\":\"blue\",\"underlined\": true}"
-        }
-        XCText {
-            id: frameBar_separator
-            y: frameBar_endContent.y + frameBar_endContent.height + 16
-            x: 16
-            xcText: "分隔文本（JSON）"
-            xcFontSize: 16
-            onCenter: false
-        }
-        JsonTextEditorButton {
-            targetInput: frameBar_separatorInput
-            editorTitle: "编辑分隔文本 JSON"
-            x: parent.width - width - 16
-            y: frameBar_separator.y - 2
-        }
-        XCTextField{
-            id: frameBar_separatorInput
-            x: 16
-            y: frameBar_separator.y + frameBar_separator.height + 12
-            width : parent.width - 32
-            placeholderText: "推荐：+ 或 \\n"
+            options: ["头部文本", "尾部文本", "分隔文本"]
+            onSelectedChanged: frameBar_contentInput.setContent(frameBar.textContents[selected])
+
+            Item {
+                id: frameBar_textEditor
+                width: parent.width
+                height: frameBar_editorCaption.height + 8 + frameBar_contentInput.height
+
+                XCText {
+                    id: frameBar_editorCaption
+                    xcText: "JSON 内容"
+                    xcFontSize: 13
+                    onCenter: false
+                    boldFont: false
+                    textColor: Colors.banned
+                }
+                JsonTextEditorButton {
+                    targetInput: frameBar_contentInput
+                    editorTitle: "编辑" + frameBar_multiPropertyEdit.options[frameBar_multiPropertyEdit.selected] + " JSON"
+                    anchors.right: parent.right
+                    y: -3
+                }
+                VariableTextField {
+                    id: frameBar_contentInput
+                    y: frameBar_editorCaption.height + 8
+                    width: parent.width
+                    height: 128
+                    //content: frameTextContents[index]
+                    placeholderText: frameBar.textPlaceholders[frameBar_multiPropertyEdit.selected]
+                    onContentChanged: frameBar.textContents[frameBar_multiPropertyEdit.selected] = content
+                }
+
+            }
         }
     }
     ContentBar {
@@ -108,11 +89,29 @@ BasePage {
         y: root.layout? frameBar.y : frameBar.y + frameBar.height + 16
         min_width: 400
         contentHeight:memberBar_multiPropertyEdit.y + memberBar_multiPropertyEdit.height + 16
+        property var textContents: ["", "", ""]
+        readonly property var textPlaceholders: [
+            "输入项头文本，可使用变量",
+            "输入项中文本，可使用变量",
+            "输入项尾文本，可使用变量"
+        ]
+        property string elementColor: "white"
+        property string valueColor: "white"
+        property string elementCustomColor: ""
+        property string valueCustomColor: ""
+        property bool elementBold: false
+        property bool valueBold: false
+        property bool elementUnderlined: false
+        property bool valueUnderlined: false
+        property bool elementItalic: false
+        property bool valueItalic: false
+        property bool elementStrikethrough: false
+        property bool valueStrikethrough: false
 
         RadioGroup {
             id: memberBar_radioGroup
             x: 16
-            y: 45
+            y: 80
             text: "提示顺序"
             options: ["元素 + 值", "值 + 元素"]
             onClicked: memberBar_multiPropertyEdit.selected = 0
@@ -121,17 +120,159 @@ BasePage {
             id: memberBar_multiPropertyEdit
             x: 16
             y: memberBar_radioGroup.y + memberBar_radioGroup.height + 14
+            width: parent.width - 32
             options: memberBar_radioGroup.selected === 0 ? ["项头文本", "代价元素", "项中文本", "代价值", "项尾文本"] : ["项头文本", "代价值", "项中文本", "代价元素", "项尾文本"]
+            activeContentItem: selected % 2 === 0 ? memberBar_textEditor : memberBar_valueEdit
+            onSelectedChanged: {
+                if (selected % 2 === 0) {
+                    memberBar_contentInput.setContent(memberBar.textContents[selected / 2])
+                } else {
+                    var editingElement = options[selected] === "代价元素"
+                    styleEditor.color = editingElement ? memberBar.elementColor : memberBar.valueColor
+                    styleEditor.customColor = editingElement ? memberBar.elementCustomColor : memberBar.valueCustomColor
+                    styleEditor.bold = editingElement ? memberBar.elementBold : memberBar.valueBold
+                    styleEditor.italic = editingElement ? memberBar.elementItalic : memberBar.valueItalic
+                    styleEditor.underlined = editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
+                    styleEditor.strikethrough = editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
+                }
+            }
+
+            Item {
+                id: memberBar_textEditor
+                width: parent.width
+                visible: memberBar_multiPropertyEdit.selected % 2 === 0
+                height: memberBar_editorCaption.height + 8 + memberBar_contentInput.height
+
+                XCText {
+                    id: memberBar_editorCaption
+                    xcText: "JSON 内容"
+                    xcFontSize: 13
+                    onCenter: false
+                    boldFont: false
+                    textColor: Colors.banned
+                }
+                JsonTextEditorButton {
+                    targetInput: memberBar_contentInput
+                    editorTitle: "编辑" + memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] + " JSON"
+                    anchors.right: parent.right
+                    y: -3
+                }
+                VariableTextField {
+                    id: memberBar_contentInput
+                    y: memberBar_editorCaption.height + 8
+                    width: parent.width
+                    height: 128
+                    placeholderText: memberBar.textPlaceholders[memberBar_multiPropertyEdit.selected / 2]
+                    onContentChanged: memberBar.textContents[memberBar_multiPropertyEdit.selected / 2] = content
+                }
+            }
+            Item {
+                id: memberBar_valueEdit
+                width: parent.width
+                visible: memberBar_multiPropertyEdit.selected % 2 !== 0
+                height: styleEditor.height
+
+                readonly property bool editingElement: memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] === "代价元素"
+
+                TextStyleEditor {
+                    id: styleEditor
+                    color: memberBar_valueEdit.editingElement ? memberBar.elementColor : memberBar.valueColor
+                    customColor: memberBar_valueEdit.editingElement ? memberBar.elementCustomColor : memberBar.valueCustomColor
+                    bold: memberBar_valueEdit.editingElement ? memberBar.elementBold : memberBar.valueBold
+                    italic: memberBar_valueEdit.editingElement ? memberBar.elementItalic : memberBar.valueItalic
+                    underlined: memberBar_valueEdit.editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
+                    strikethrough: memberBar_valueEdit.editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
+                    showObfuscated: false
+                    onPropertyEdited: {
+                        if (memberBar_valueEdit.editingElement)
+                            memberBar.elementColor = styleEditor.color
+                        else
+                            memberBar.valueColor = styleEditor.color
+                        if (memberBar_valueEdit.editingElement) {
+                            memberBar.elementCustomColor = styleEditor.customColor
+                            memberBar.elementBold = styleEditor.bold
+                            memberBar.elementItalic = styleEditor.italic
+                            memberBar.elementUnderlined = styleEditor.underlined
+                            memberBar.elementStrikethrough = styleEditor.strikethrough
+                        } else {
+                            memberBar.valueCustomColor = styleEditor.customColor
+                            memberBar.valueBold = styleEditor.bold
+                            memberBar.valueItalic = styleEditor.italic
+                            memberBar.valueUnderlined = styleEditor.underlined
+                            memberBar.valueStrikethrough = styleEditor.strikethrough
+                        }
+                    }
+                }
+            }
         }
     }
-    ContentBar{
-        id:noticeTextBar
+    ContentBar {
+        id: noticeTextBar
         title: "提示信息"
         subtitle: "购买成功或失败时的提示与音效"
         min_width: 400
-        contentHeight: 300
+        contentHeight: noticeMultiPropertyEdit.y + noticeMultiPropertyEdit.height + 16
         x: root.layout? memberBar.x + memberBar.width + 16 : 16
         y: root.layout? previewBar.y : memberBar.y + memberBar.height + 16
+        property var textContents: ["", ""]
+        property var soundPaths: ["", ""]
+        readonly property var textPlaceholders: [
+            "示例：{\"text\":\"购买成功\",\"color\":\"green\"}",
+            "示例：{\"text\":\"购买失败\",\"color\":\"red\"}"
+        ]
 
+        MultiPropertyEdit {
+            id: noticeMultiPropertyEdit
+            x: 16
+            y: 64
+            width: parent.width - 32
+            options: ["成功信息", "失败信息"]
+            activeContentItem: noticeEditor
+            onSelectedChanged: {
+                noticeTextInput.setContent(noticeTextBar.textContents[selected])
+                noticeSoundInput.text = noticeTextBar.soundPaths[selected]
+            }
+
+            Item {
+                id: noticeEditor
+                width: parent.width
+                height: noticeSoundInput.y + noticeSoundInput.height
+
+                XCText {
+                    id: noticeTextCaption
+                    xcText: "提示文本（JSON）"
+                    xcFontSize: 16
+                    onCenter: false
+                }
+                JsonTextEditorButton {
+                    targetInput: noticeTextInput
+                    editorTitle: "编辑" + noticeMultiPropertyEdit.options[noticeMultiPropertyEdit.selected] + "文本 JSON"
+                    anchors.right: parent.right
+                    y: -2
+                }
+                VariableTextField {
+                    id: noticeTextInput
+                    y: noticeTextCaption.height + 12
+                    width: parent.width
+                    height: 96
+                    placeholderText: noticeTextBar.textPlaceholders[noticeMultiPropertyEdit.selected]
+                    onContentChanged: noticeTextBar.textContents[noticeMultiPropertyEdit.selected] = content
+                }
+                XCText {
+                    id: noticeSoundCaption
+                    y: noticeTextInput.y + noticeTextInput.height + 16
+                    xcText: "提示音效"
+                    xcFontSize: 16
+                    onCenter: false
+                }
+                XCTextField {
+                    id: noticeSoundInput
+                    y: noticeSoundCaption.y + noticeSoundCaption.height + 12
+                    width: parent.width
+                    placeholderText: "输入" + noticeMultiPropertyEdit.options[noticeMultiPropertyEdit.selected] + "音效路径"
+                    onEditingFinished: noticeTextBar.soundPaths[noticeMultiPropertyEdit.selected] = text
+                }
+            }
+        }
     }
 }
