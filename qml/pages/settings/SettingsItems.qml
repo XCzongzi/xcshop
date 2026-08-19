@@ -259,7 +259,10 @@ Item {
         var matches = []
         for (var index = 0; index < itemMappings.length; ++index) {
             var entry = itemMappings[index]
-            if ((sourceFilter === 1 && !entry.builtIn) || (sourceFilter === 2 && entry.builtIn))
+            var textureMatched = hasMappedTexture(entry.itemId)
+            if ((sourceFilter === 1 && !entry.builtIn)
+                    || (sourceFilter === 2 && entry.builtIn)
+                    || (sourceFilter === 3 && textureMatched))
                 continue
             if (!keyword.length) {
                 matches.push({ entry: entry, score: 0 })
@@ -651,7 +654,7 @@ Item {
                 y: 70
                 per_width: 108
                 per_height: 32
-                options: ["全部", "原版", "自定义"]
+                options: ["全部", "原版", "自定义", "未匹配"]
                 onClicked: {
                     root.sourceFilter = selected
                     root.filterItems()

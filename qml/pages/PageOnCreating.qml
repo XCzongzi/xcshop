@@ -107,7 +107,16 @@ BasePage {
     }
 
     function createProjectNotice(title, content) {
-        pageEvent("NoticeBar.show", [title, content])
+        pageEvent("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": {
+                "title": title,
+                "content": content
+            },
+            "callback": function(result) {
+                root.executeFromMain("notice", result)
+            }
+        })
     }
 
     function createProject() {

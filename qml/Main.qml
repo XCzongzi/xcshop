@@ -48,22 +48,22 @@ XCWindow {
     //     }
     // }
 
-    MultiEffect {
-        id: backBlur
-        anchors.fill: root
-        source: null
-        blurEnabled: true
-        blur: 1.0
-        //blurMax: 32
-        function enable(){
-            source = root
-            root.visible = false
-        }
-        function disable(){
-            source = null
-            root.visible = true
-        }
-    }
+    // MultiEffect {
+    //     id: backBlur
+    //     anchors.fill: root
+    //     source: null
+    //     blurEnabled: true
+    //     blur: 1.0
+    //     //blurMax: 32
+    //     function enable(){
+    //         source = root
+    //         root.visible = false
+    //     }
+    //     function disable(){
+    //         source = null
+    //         root.visible = true
+    //     }
+    // }
     WindowSurface{
         id: root
         mainWindow: mainWindow
@@ -72,6 +72,18 @@ XCWindow {
         ignoreTitleBar: pageLoader.sourceComponent === Constants.pageOnStart
         
         property bool settingsFromWorkspace: false
+
+        // 所有模态弹窗均从这里进入。弹窗组件只需提供 close(result) 函数并发出 closed(result) 信号。
+        function showPopup(component, properties, callback) {
+            popup.open(component, properties, callback)
+        }
+
+        function showNotice(title, content, callback) {
+            popup.open(Constants.popupNotice, {
+                "title": title,
+                "content": content
+            }, callback)
+        }
         
         TypeBar{
             id: typeBar
@@ -156,9 +168,7 @@ XCWindow {
             workspaceActive: root.workspaceChromeVisible
             maxPanelHeight: Math.max(minPanelHeight, root.height - fileControlsBar.height - 120)
             onInvalidElement: function(filePath) {
-                noticeBar.title = "元素已失效"
-                noticeBar.content = "找不到对应元素文件，已从中转区移除：\n" + filePath
-                noticeBar.show()
+                root.showNotice("元素已失效", "找不到对应元素文件，已从中转区移除：\n" + filePath)
             }
             onElementActivated: function(filePath) {
                 root.openElementFromRelay(filePath)
@@ -166,18 +176,9 @@ XCWindow {
         }
         RelaySelectionMask{}
 
-        NoticeBoard{
-            id:noticeBar
-            y: mainWindow.titleBarHeight
-            height: mainWindow.height - y
-            width: mainWindow.width
-            mainWindow: mainWindow
-            z: 101
-            onCloseBtnClicked:{
-                pageLoader.item.executeFromMain("notice")
-            }
-
-
+        PopupLoader {
+            id: popup
+            anchors.fill: parent
         }
 
 
@@ -231,9 +232,6 @@ XCWindow {
                     pageLoader.sourceComponent = pageLoader.page
                     typeBar.freeze = false
                     freeze.visible = false
-                    // if(pageLoader.page !== Constants.pageOnStart){
-                    //     mainWindow.titleBarColorFilling = true
-                    // }
                 }
             }
             function pageSwitch(page_){
@@ -271,9 +269,18 @@ XCWindow {
                         break
 
                         case "NoticeBar.show":
-                            noticeBar.title = parameters[0]
-                            noticeBar.content = parameters[1]
-                            noticeBar.show()
+                            root.showNotice(parameters[0], parameters[1], function(result) {
+                                if (pageLoader.item && typeof pageLoader.item.executeFromMain === "function")
+                                    pageLoader.item.executeFromMain("notice", result)
+                            })
+                        break
+
+                        // 页面可以通过 pageEvent("Popup.show", { component, properties, callback }) 请求任意弹窗。
+                        case "Popup.show":
+                            root.showPopup(parameters.component, parameters.properties, parameters.callback)
+                        break
+                        case "Popup.close":
+                            popup.close(parameters.result)
                         break
 
                         case "Creating.projectCreated":
@@ -312,6 +319,13 @@ XCWindow {
         }
         function signalReceive(signalType,parameters){
             switch(signalType){
+                // 非页面组件可通过 SignalBus 使用同一套弹窗入口。
+                case "Popup.show":
+                    root.showPopup(parameters.component, parameters.properties, parameters.callback)
+                break
+                case "Popup.close":
+                    popup.close(parameters.result)
+                break
                 case "switched_file":
                     if(pageLoader.sourceComponent === Constants.pageWithEmpty)return
                     Console.output("switched")

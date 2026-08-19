@@ -79,6 +79,8 @@ qt_add_qml_module(appxcshop
         qml/components/base/XCFileDialog.qml
         qml/components/base/XCFolderDialog.qml
         qml/components/base/NoticeBoard.qml
+        qml/components/popup/PopupLoader.qml
+        qml/components/popup/PopupNotice.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
         qml/components/base/ComboBox.qml

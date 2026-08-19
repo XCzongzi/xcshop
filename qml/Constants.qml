@@ -27,5 +27,8 @@ QtObject{
     readonly property Component pageOnSettings: Qt.createComponent("pages/PageOnSettings.qml")
     readonly property Component pageOnAbout: Qt.createComponent("pages/PageOnAbout.qml")
     readonly property Component batchRename: Qt.createComponent("pages/BatchRename.qml")
+
+    // 弹窗组件由 Main.qml 的 popup Loader 统一创建和释放。
+    readonly property Component popupNotice: Qt.createComponent("components/popup/PopupNotice.qml")
     
 }
