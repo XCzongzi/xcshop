@@ -27,7 +27,7 @@ BasePage {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, 0.97)
+        color: Colors.transparent
 
         Rectangle {
             id: sidebar

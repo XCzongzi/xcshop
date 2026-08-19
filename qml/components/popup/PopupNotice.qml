@@ -53,7 +53,8 @@ Item {
         width: root.dialogWidth
         height: root.dialogHeight
         anchors.centerIn: parent
-        radius: 15
+        bottomLeftRadius: 15
+        bottomRightRadius: 15
         color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, 0.985)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)

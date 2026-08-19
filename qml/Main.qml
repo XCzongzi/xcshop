@@ -20,50 +20,6 @@ XCWindow {
         //mainWindow.showFilePage = true //临时的
         Global.mainWindow_background = mainWindow.background
     }
-    // ConsoleWindow{  //控制台，临时的
-    //     onInputed:function(command) {
-    //         if(command.c1 === "pageSwitch"){
-    //             switch(command.c2){
-    //                 case "UI":
-    //                     pageLoader.pageSwitch(Constants.pageOnUI)
-    //                 break;case "Item":
-    //                     pageLoader.pageSwitch(Constants.pageOnItem)
-    //                 break;case "Cost":
-    //                     pageLoader.pageSwitch(Constants.pageOnCost)
-    //                 break;case "Display":
-    //                     pageLoader.pageSwitch(Constants.pageOnDisplay)
-    //                 break;case "Total":
-    //                     pageLoader.pageSwitch(Constants.pageOnTotal)
-    //                 break;case "Start":
-    //                     pageLoader.pageSwitch(Constants.pageOnStart)
-    //                 break;case "Empty":
-    //                     pageLoader.pageSwitch(Constants.pageWithEmpty)
-    //                 break;case "Open":
-    //                     pageLoader.pageSwitch(Constants.pageOnOpening)
-    //                 break;case "Create":
-    //                     pageLoader.pageSwitch(Constants.pageOnCreating)
-    //                 break
-    //             }
-    //         }
-    //     }
-    // }
-
-    // MultiEffect {
-    //     id: backBlur
-    //     anchors.fill: root
-    //     source: null
-    //     blurEnabled: true
-    //     blur: 1.0
-    //     //blurMax: 32
-    //     function enable(){
-    //         source = root
-    //         root.visible = false
-    //     }
-    //     function disable(){
-    //         source = null
-    //         root.visible = true
-    //     }
-    // }
     WindowSurface{
         id: root
         mainWindow: mainWindow
@@ -78,15 +34,15 @@ XCWindow {
             popup.open(component, properties, callback)
         }
 
-        function showNotice(title, content, callback) {
-            popup.open(Constants.popupNotice, {
-                "title": title,
-                "content": content
-            }, callback)
+        // 弹窗下方的完整应用内容；PopupLoader 以此作为高斯模糊源。
+        Item {
+            id: popupBlurSource
+            anchors.fill: parent
         }
         
         TypeBar{
             id: typeBar
+            parent: popupBlurSource
             z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
             onTypeBtnClicked: typeName=>root.typeSwitch(typeName,false)
             bottomLeftRadius: mainWindow.visibility === Window.Maximized? 0 : Constants.window_radius
@@ -150,6 +106,7 @@ XCWindow {
 
         ElementExplorer{
             id: elementExplorer
+            parent: popupBlurSource
             z:97
             visible: root.workspaceChromeVisible
             barWidth: 150
@@ -161,6 +118,7 @@ XCWindow {
 
         ElementRelayBar {
             id: elementRelayBar
+            parent: popupBlurSource
             z: 99
             x: root.pageX
             y: root.height - height
@@ -168,17 +126,23 @@ XCWindow {
             workspaceActive: root.workspaceChromeVisible
             maxPanelHeight: Math.max(minPanelHeight, root.height - fileControlsBar.height - 120)
             onInvalidElement: function(filePath) {
-                root.showNotice("元素已失效", "找不到对应元素文件，已从中转区移除：\n" + filePath)
+                root.showPopup(Constants.popupNotice, {
+                    "title": "元素已失效",
+                    "content": "找不到对应元素文件，已从中转区移除：\n" + filePath
+                })
             }
             onElementActivated: function(filePath) {
                 root.openElementFromRelay(filePath)
             }
         }
-        RelaySelectionMask{}
+        RelaySelectionMask{
+            parent: popupBlurSource
+        }
 
         PopupLoader {
             id: popup
             anchors.fill: parent
+            blurTarget: popupBlurSource
         }
 
 
@@ -192,6 +156,7 @@ XCWindow {
         // }
         FileControls{
             id:fileControlsBar
+            parent: popupBlurSource
             visible: root.workspaceChromeVisible
             x: root.pageX
         }
@@ -202,6 +167,7 @@ XCWindow {
 
         Loader{
             id:pageLoader
+            parent: popupBlurSource
             
             x: Math.max(root.pageX,65)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
@@ -266,13 +232,6 @@ XCWindow {
                                     root.settingsFromWorkspace = false
                                     pageLoader.pageSwitch(Constants.pageOnAbout)
                             }
-                        break
-
-                        case "NoticeBar.show":
-                            root.showNotice(parameters[0], parameters[1], function(result) {
-                                if (pageLoader.item && typeof pageLoader.item.executeFromMain === "function")
-                                    pageLoader.item.executeFromMain("notice", result)
-                            })
                         break
 
                         // 页面可以通过 pageEvent("Popup.show", { component, properties, callback }) 请求任意弹窗。

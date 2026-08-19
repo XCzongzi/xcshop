@@ -36,7 +36,6 @@ Item {
     property string importStatus: ""
     property int importProgress: 0
     property string pendingImportMessage: ""
-    property string pendingRemovalId: ""
     // Keep the mapping table useful even when the settings window is made small.
     // The surrounding Flickable exposes the rest of the page instead of shrinking
     // the table until it is no longer usable.
@@ -629,7 +628,10 @@ Item {
                     pressedColor: Colors.changeA(Colors.border, 0.58)
                     onClicked: {
                         mappingDownloadMenu.opened = false
-                        mappingHistoryDialog.show()
+                        SignalBus.sendToMain("Popup.show", {
+                            "component": Constants.popupMappingHistory,
+                            "properties": { "settingsPage": root }
+                        })
                     }
                 }
             }
@@ -787,8 +789,19 @@ Item {
                         firedColor: Colors.changeA(Colors.error, 0.22)
                         pressedColor: Colors.changeA(Colors.error, 0.42)
                         onClicked: {
-                            root.pendingRemovalId = itemDelegate.modelData.itemId
-                            removeNotice.show()
+                            var itemId = itemDelegate.modelData.itemId
+                            SignalBus.sendToMain("Popup.show", {
+                                "component": Constants.popupNotice,
+                                "properties": {
+                                    "title": "删除自定义物品",
+                                    "content": "确定删除“" + itemId + "”吗？此操作会更新 custom-items.json。",
+                                    "doubleButton": true
+                                },
+                                "callback": function(result) {
+                                    if (result === 1)
+                                        root.removeCustomItem(itemId)
+                                }
+                            })
                         }
                     }
                     XCText {
@@ -920,208 +933,6 @@ Item {
                                                    mouse.y - pageScrollThumb.height / 2))
                 settingsFlickable.contentY = targetY / pageScrollBar.maxThumbY * pageScrollBar.maxContentY
             }
-        }
-    }
-
-    Item {
-        id: mappingHistoryDialog
-        anchors.fill: parent
-        z: 30
-        visible: false
-
-        function show() {
-            visible = true
-            root.loadHistoricalMappingVersions()
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            color: "#000000"
-            opacity: 0.46
-            MouseArea {
-                anchors.fill: parent
-                onClicked: mappingHistoryDialog.visible = false
-            }
-        }
-
-        Rectangle {
-            id: mappingHistoryPanel
-            width: Math.min(440, Math.max(300, parent.width - 48))
-            height: 330
-            anchors.centerIn: parent
-            radius: 14
-            color: Colors.changeA(Colors.background, 0.985)
-            border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.12)
-
-            layer.enabled: true
-            layer.effect: XCShadow {
-                shadowColor: "#a8000000"
-                shadowBlur: 0.85
-                shadowVerticalOffset: 10
-                shadowHorizontalOffset: 0
-            }
-
-            MouseArea { anchors.fill: parent }
-
-            Rectangle {
-                width: parent.width
-                height: 5
-                radius: parent.radius
-                color: Colors.border
-            }
-
-            XCText {
-                x: 22
-                y: 22
-                width: parent.width - 44
-                xcText: "选择历史映射表版本"
-                onCenter: false
-                xcFontSize: 19
-            }
-
-            XCText {
-                x: 22
-                y: 53
-                width: parent.width - 44
-                xcText: root.historicalVersionsStatus
-                onCenter: false
-                xcFontSize: 12
-                boldFont: false
-                textColor: root.historicalVersionsStatus.indexOf("无法") >= 0
-                           || root.historicalVersionsStatus.indexOf("无效") >= 0
-                           ? Colors.error : Colors.banned
-            }
-
-            Rectangle {
-                x: 22
-                y: 78
-                width: parent.width - 44
-                height: 1
-                color: Colors.changeA(Colors.text, 0.10)
-            }
-
-            ListView {
-                id: historicalVersionList
-                x: 22
-                y: 90
-                width: parent.width - 44
-                height: 180
-                clip: true
-                spacing: 3
-                model: root.historicalMappingVersions
-
-                delegate: TextButton {
-                    required property var modelData
-                    width: historicalVersionList.width - (historicalVersionScrollBar.visible ? 10 : 0)
-                    height: 32
-                    radius: 7
-                    text: modelData
-                    textSize: 13
-                    boldFont: false
-                    widthBorderSize: 10
-                    buttonColor: Colors.changeA(Colors.foreground, 0.74)
-                    firedColor: Colors.changeA(Colors.border, 0.76)
-                    onClicked: {
-                        mappingHistoryDialog.visible = false
-                        root.downloadMappings(modelData)
-                    }
-                }
-
-                XCText {
-                    anchors.centerIn: parent
-                    visible: root.historicalVersionsLoading
-                    xcText: "正在读取版本…"
-                    xcFontSize: 13
-                    boldFont: false
-                    textColor: Colors.banned
-                }
-            }
-
-            Rectangle {
-                id: historicalVersionScrollBar
-                anchors.top: historicalVersionList.top
-                anchors.bottom: historicalVersionList.bottom
-                anchors.right: historicalVersionList.right
-                width: 6
-                radius: width / 2
-                visible: historicalVersionList.contentHeight > historicalVersionList.height
-                color: Colors.changeA(Colors.background, 0.30)
-
-                readonly property real maxContentY: Math.max(0, historicalVersionList.contentHeight - historicalVersionList.height)
-                readonly property real maxThumbY: Math.max(0, height - historicalVersionScrollThumb.height)
-
-                Rectangle {
-                    id: historicalVersionScrollThumb
-                    width: parent.width
-                    height: Math.max(28, parent.height * historicalVersionList.height
-                                     / Math.max(historicalVersionList.height, historicalVersionList.contentHeight))
-                    y: historicalVersionScrollBar.maxContentY > 0
-                       ? historicalVersionList.contentY / historicalVersionScrollBar.maxContentY
-                         * historicalVersionScrollBar.maxThumbY : 0
-                    radius: width / 2
-                    color: historicalVersionScrollHandle.containsMouse || historicalVersionScrollHandle.pressed
-                           ? Colors.changeA(Colors.border, 0.92)
-                           : Colors.changeA(Colors.banned, 0.62)
-
-                    MouseArea {
-                        id: historicalVersionScrollHandle
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        property real previousY: 0
-                        onPressed: previousY = mouseY
-                        onPositionChanged: {
-                            if (!pressed || historicalVersionScrollBar.maxThumbY <= 0)
-                                return
-                            var targetY = Math.max(0, Math.min(historicalVersionScrollBar.maxThumbY,
-                                                               historicalVersionScrollThumb.y + mouseY - previousY))
-                            historicalVersionList.contentY = targetY / historicalVersionScrollBar.maxThumbY
-                                                             * historicalVersionScrollBar.maxContentY
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    z: -1
-                    onClicked: function(mouse) {
-                        if (historicalVersionScrollBar.maxThumbY <= 0)
-                            return
-                        var targetY = Math.max(0, Math.min(historicalVersionScrollBar.maxThumbY,
-                                                           mouse.y - historicalVersionScrollThumb.height / 2))
-                        historicalVersionList.contentY = targetY / historicalVersionScrollBar.maxThumbY
-                                                         * historicalVersionScrollBar.maxContentY
-                    }
-                }
-            }
-
-            TextButton {
-                anchors.right: parent.right
-                anchors.rightMargin: 22
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 18
-                text: "关闭"
-                height: 34
-                radius: 7
-                textSize: 13
-                widthBorderSize: 12
-                buttonColor: Colors.pressed
-                onClicked: mappingHistoryDialog.visible = false
-            }
-        }
-    }
-
-    NoticeBoard {
-        id: removeNotice
-        anchors.fill: parent
-        z: 20
-        title: "删除自定义物品"
-        content: "确定删除 “" + root.pendingRemovalId + "” 吗？此操作会更新 custom-items.json。"
-        doubleBtn: true
-        onCloseBtnClicked: function(type) {
-            if (type === 1 && root.pendingRemovalId.length)
-                root.removeCustomItem(root.pendingRemovalId)
-            root.pendingRemovalId = ""
         }
     }
 }

@@ -78,9 +78,9 @@ qt_add_qml_module(appxcshop
         qml/components/base/XCKeyInput.qml
         qml/components/base/XCFileDialog.qml
         qml/components/base/XCFolderDialog.qml
-        qml/components/base/NoticeBoard.qml
         qml/components/popup/PopupLoader.qml
         qml/components/popup/PopupNotice.qml
+        qml/components/popup/PopupMappingHistory.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
         qml/components/base/ComboBox.qml
@@ -136,7 +136,6 @@ qt_add_qml_module(appxcshop
         assets/js/request.js
 
 
-        qml/Temp/ConsoleWindow.qml
         qml/Temp/Console.qml
 
     RESOURCES

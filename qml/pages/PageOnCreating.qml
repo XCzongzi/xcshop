@@ -106,7 +106,7 @@ BasePage {
         })
     }
 
-    function createProjectNotice(title, content) {
+    function showProjectResult(title, content) {
         pageEvent("Popup.show", {
             "component": Constants.popupNotice,
             "properties": {
@@ -142,10 +142,10 @@ BasePage {
             Global.project_location = location
             Global.rememberProject(location, projectInfo)
             projectCreationSucceeded = true
-            createProjectNotice("创建成功", "项目已成功创建至：\n" + Global.project_location
+            showProjectResult("创建成功", "项目已成功创建至：\n" + Global.project_location
                                 + "\n\n即将在工作区中打开项目")
         } else {
-            createProjectNotice("创建失败", "无法创建项目目录或写入配置文件，请检查路径权限后重试。")
+            showProjectResult("创建失败", "无法创建项目目录或写入配置文件，请检查路径权限后重试。")
         }
     }
 
@@ -182,7 +182,8 @@ BasePage {
     Rectangle {
         anchors.fill: parent
         anchors.rightMargin: 8
-        color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, 0.97)
+        color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b,
+                       Global.backgroundMode === "color" ? 0.97 : 0.72)
     }
 
     Item {
