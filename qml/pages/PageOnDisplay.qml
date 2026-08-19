@@ -42,6 +42,12 @@ BasePage {
             xcFontSize: 16
             onCenter: false
         }
+        JsonTextEditorButton {
+            targetInput: frameBar_headContent
+            editorTitle: "编辑头部文本 JSON"
+            x: parent.width - width - 16
+            y: frameBar_headText.y - 2
+        }
         VariableTextField {
             id: frameBar_headContent
             x: 16
@@ -58,6 +64,12 @@ BasePage {
             xcFontSize: 16
             onCenter: false
         }
+        JsonTextEditorButton {
+            targetInput: frameBar_endContent
+            editorTitle: "编辑尾部文本 JSON"
+            x: parent.width - width - 16
+            y: frameBar_endText.y - 2
+        }
         VariableTextField {
             id: frameBar_endContent
             x: 16
@@ -73,6 +85,12 @@ BasePage {
             xcText: "分隔文本（JSON）"
             xcFontSize: 16
             onCenter: false
+        }
+        JsonTextEditorButton {
+            targetInput: frameBar_separatorInput
+            editorTitle: "编辑分隔文本 JSON"
+            x: parent.width - width - 16
+            y: frameBar_separator.y - 2
         }
         XCTextField{
             id: frameBar_separatorInput

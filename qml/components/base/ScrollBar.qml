@@ -12,6 +12,10 @@ Rectangle{
     property int height_output: scroller.y * (content_height/height)
     property int wheelDeltaY: 0
     property bool layout_determines//绑定决定布局变化的变量，在父控件中
+    // Some views synchronise contentY bi-directionally with this control.
+    // They can turn this off to avoid the handle animation feeding an old
+    // position back into the view while it is scrolling.
+    property bool animatePosition: true
     visible: content_height > height
 
     onLayout_determinesChanged:{   //在页面变化时重置高度，防止出错
@@ -63,6 +67,7 @@ Rectangle{
             }
         }
         Behavior on y{
+            enabled: root.animatePosition
             NumberAnimation {
                 duration: 30
                 easing.type: Easing.InOutQuad

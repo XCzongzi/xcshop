@@ -75,12 +75,14 @@ qt_add_qml_module(appxcshop
         qml/components/base/XCText.qml
         qml/components/base/XCTextField.qml
         qml/components/base/XCTextArea.qml
+        qml/components/base/JsonTextEditorButton.qml
         qml/components/base/XCKeyInput.qml
         qml/components/base/XCFileDialog.qml
         qml/components/base/XCFolderDialog.qml
         qml/components/popup/PopupLoader.qml
         qml/components/popup/PopupNotice.qml
         qml/components/popup/PopupMappingHistory.qml
+        qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
         qml/components/base/ComboBox.qml

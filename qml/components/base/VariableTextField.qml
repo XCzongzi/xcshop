@@ -46,6 +46,13 @@ Item {
         return textField.text
     }
 
+    // Lets popup editors update both the public value and the actual input
+    // immediately, including when the field has not lost focus yet.
+    function setContent(value) {
+        content = value === undefined || value === null ? "" : String(value)
+        textField.text = content
+    }
+
     function syntaxPalette() {
         return {
             "plain": Colors.text,

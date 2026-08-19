@@ -29,5 +29,6 @@ QtObject{
     // 弹窗组件由 Main.qml 的 popup Loader 统一创建和释放。
     readonly property Component popupNotice: Qt.createComponent("components/popup/PopupNotice.qml")
     readonly property Component popupMappingHistory: Qt.createComponent("components/popup/PopupMappingHistory.qml")
+    readonly property Component popupJsonTextEditor: Qt.createComponent("components/popup/PopupJsonTextEditor.qml")
     
 }
