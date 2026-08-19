@@ -38,6 +38,15 @@ XCWindow {
         Item {
             id: popupBlurSource
             anchors.fill: parent
+            // 通过 layer.effect 替换内容自身的最终绘制结果，而非在其上叠一张模糊副本。
+            // 因此即使页面/控件本身带透明度，也不会从底下漏出未模糊的原始画面。
+            layer.enabled: popup.active && popup.status === Loader.Ready
+            layer.effect: MultiEffect {
+                blurEnabled: popupBlurSource.layer.enabled
+                blur: popup.blurAmount
+                blurMax: 64
+                autoPaddingEnabled: false
+            }
         }
         
         TypeBar{

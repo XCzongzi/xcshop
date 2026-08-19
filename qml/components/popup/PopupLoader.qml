@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 
 // Main.qml 的单实例弹窗入口。被加载的组件可选实现 open()、close(result)
 // 并在完成关闭动画后发出 closed(result) 信号。
@@ -14,17 +13,6 @@ Loader {
     property real blurAmount: 0.55
     property var pendingProperties: ({})
     property var closeCallback: null
-
-    MultiEffect {
-        id: backgroundBlur
-        anchors.fill: parent
-        source: root.blurTarget
-        visible: root.active && root.blurTarget !== null
-        blurEnabled: visible
-        blur: root.blurAmount
-        blurMax: 64
-        autoPaddingEnabled: false
-    }
 
     function open(component, properties, callback) {
         clear()
