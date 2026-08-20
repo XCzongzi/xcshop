@@ -9,6 +9,33 @@ BaseIOPage {
 
 
     function elementReading(){
+        frameBar.textContents = [
+            eledata.frame.head,
+            eledata.frame.end,
+            eledata.frame.separator
+        ]
+        frameBar_contentInput.setContent(frameBar.textContents[frameBar_multiPropertyEdit.selected])
+
+        memberBar_radioGroup.selected = eledata.member.order
+        memberBar.textContents = [
+            eledata.member.head,
+            eledata.member.middle,
+            eledata.member.end
+        ]
+        memberBar_multiPropertyEdit.selected = 0
+        memberBar_contentInput.setContent(memberBar.textContents[0])
+
+        noticeTextBar.textContents = [
+            eledata.hint.success[0],
+            eledata.hint.fail[0]
+        ]
+        noticeTextBar.soundPaths = [
+            eledata.hint.success[1],
+            eledata.hint.fail[1]
+        ]
+        noticeTextInput.setContent(noticeTextBar.textContents[noticeMultiPropertyEdit.selected])
+        noticeSoundInput.text = noticeTextBar.soundPaths[noticeMultiPropertyEdit.selected]
+
         memberBar.elementColor = eledata.member.cost.color
         memberBar.elementBold = eledata.member.cost.bold
         memberBar.elementItalic = eledata.member.cost.italic
@@ -103,7 +130,17 @@ BaseIOPage {
                     height: 128
                     //content: frameTextContents[index]
                     placeholderText: frameBar.textPlaceholders[frameBar_multiPropertyEdit.selected]
-                    onContentChanged: frameBar.textContents[frameBar_multiPropertyEdit.selected] = content
+                    onContentChanged: {
+                        var selected = frameBar_multiPropertyEdit.selected
+                        frameBar.textContents[selected] = content
+                        if (selected === 0)
+                            root.eledata.frame.head = content
+                        else if (selected === 1)
+                            root.eledata.frame.end = content
+                        else
+                            root.eledata.frame.separator = content
+                        root.updateDataOut()
+                    }
                 }
 
             }
@@ -142,7 +179,11 @@ BaseIOPage {
             y: 80
             text: "提示顺序"
             options: ["元素 + 值", "值 + 元素"]
-            onClicked: memberBar_multiPropertyEdit.selected = 0
+            onClicked: {
+                memberBar_multiPropertyEdit.selected = 0
+                root.eledata.member.order = selected
+                root.updateDataOut()
+            }
         }
         MultiPropertyEdit {
             id: memberBar_multiPropertyEdit
@@ -185,7 +226,17 @@ BaseIOPage {
                     width: parent.width
                     height: 128
                     placeholderText: memberBar.textPlaceholders[memberBar_multiPropertyEdit.selected / 2]
-                    onContentChanged: memberBar.textContents[memberBar_multiPropertyEdit.selected / 2] = content
+                    onContentChanged: {
+                        var selected = memberBar_multiPropertyEdit.selected / 2
+                        memberBar.textContents[selected] = content
+                        if (selected === 0)
+                            root.eledata.member.head = content
+                        else if (selected === 1)
+                            root.eledata.member.middle = content
+                        else
+                            root.eledata.member.end = content
+                        root.updateDataOut()
+                    }
                 }
             }
             Item {
@@ -284,7 +335,12 @@ BaseIOPage {
                     width: parent.width
                     height: 96
                     placeholderText: noticeTextBar.textPlaceholders[noticeMultiPropertyEdit.selected]
-                    onContentChanged: noticeTextBar.textContents[noticeMultiPropertyEdit.selected] = content
+                    onContentChanged: {
+                        var selected = noticeMultiPropertyEdit.selected
+                        noticeTextBar.textContents[selected] = content
+                        root.eledata.hint[selected === 0 ? "success" : "fail"][0] = content
+                        root.updateDataOut()
+                    }
                     onAccepted: {
 
                     }
@@ -301,7 +357,12 @@ BaseIOPage {
                     y: noticeSoundCaption.y + noticeSoundCaption.height + 12
                     width: parent.width
                     placeholderText: "输入" + noticeMultiPropertyEdit.options[noticeMultiPropertyEdit.selected] + "音效路径"
-                    onEditingFinished: noticeTextBar.soundPaths[noticeMultiPropertyEdit.selected] = text
+                    onEditingFinished: {
+                        var selected = noticeMultiPropertyEdit.selected
+                        noticeTextBar.soundPaths[selected] = text
+                        root.eledata.hint[selected === 0 ? "success" : "fail"][1] = text
+                        root.updateDataOut()
+                    }
                 }
             }
         }
