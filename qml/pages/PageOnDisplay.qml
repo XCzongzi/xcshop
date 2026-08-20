@@ -6,7 +6,10 @@ BaseIOPage {
     color: Colors.transparent
     workspace: true
 
-
+    // Incremented whenever one of the display-format controls changes.  The
+    // text arrays are edited in place, which otherwise would not notify a QML
+    // binding that reads them.
+    property int previewRevision: 0
 
     function elementReading(){
         frameBar.textContents = [
@@ -49,6 +52,8 @@ BaseIOPage {
         memberBar.valueStrikethrough = eledata.member.value.strikethrough
         memberBar.valueObfuscated = eledata.member.value.obfuscated
 
+        previewRevision++
+
         // root.setTextStyle(memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] === "代价元素")
     }
 
@@ -68,7 +73,34 @@ BaseIOPage {
         width: root.layout? memberBar.x + memberBar.width - 16 : parent.width - 32
         x: 16
         y: 16 - root.height_output
-        contentHeight: 300
+        // The card follows the tooltip's actual outer height, including
+        // explicit line breaks from the configured Minecraft text.
+        contentHeight: minecraftTooltip.y + minecraftTooltip.height + 32
+
+        MinecraftTooltipPreview {
+            id: minecraftTooltip
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 78
+            frameHead: { root.previewRevision; return frameBar.textContents[0] }
+            frameEnd: { root.previewRevision; return frameBar.textContents[1] }
+            frameSeparator: { root.previewRevision; return frameBar.textContents[2] }
+            memberHead: { root.previewRevision; return memberBar.textContents[0] }
+            memberMiddle: { root.previewRevision; return memberBar.textContents[1] }
+            memberEnd: { root.previewRevision; return memberBar.textContents[2] }
+            memberOrder: memberBar_radioGroup.selected
+            elementColor: memberBar.elementColor
+            elementBold: memberBar.elementBold
+            elementItalic: memberBar.elementItalic
+            elementUnderlined: memberBar.elementUnderlined
+            elementStrikethrough: memberBar.elementStrikethrough
+            elementObfuscated: memberBar.elementObfuscated
+            valueColor: memberBar.valueColor
+            valueBold: memberBar.valueBold
+            valueItalic: memberBar.valueItalic
+            valueUnderlined: memberBar.valueUnderlined
+            valueStrikethrough: memberBar.valueStrikethrough
+            valueObfuscated: memberBar.valueObfuscated
+        }
     }
 
 
@@ -139,6 +171,7 @@ BaseIOPage {
                             root.eledata.frame.end = content
                         else
                             root.eledata.frame.separator = content
+                        root.previewRevision++
                         root.updateDataOut()
                     }
                 }
@@ -182,6 +215,7 @@ BaseIOPage {
             onClicked: {
                 memberBar_multiPropertyEdit.selected = 0
                 root.eledata.member.order = selected
+                root.previewRevision++
                 root.updateDataOut()
             }
         }
@@ -235,6 +269,7 @@ BaseIOPage {
                             root.eledata.member.middle = content
                         else
                             root.eledata.member.end = content
+                        root.previewRevision++
                         root.updateDataOut()
                     }
                 }
@@ -279,6 +314,7 @@ BaseIOPage {
                         root.eledata.member.value.strikethrough = memberBar.valueStrikethrough
                         root.eledata.member.value.obfuscated = memberBar.valueObfuscated
 
+                        root.previewRevision++
                         root.updateDataOut()
                     }
                 }

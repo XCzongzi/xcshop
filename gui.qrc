@@ -9,6 +9,8 @@
         <file>assets/gui/typeBar/Item.png</file>
         <file>assets/gui/typeBar/Cost.png</file>
         <file>assets/gui/typeBar/Display.png</file>
+        <file>assets/minecraft/gui/item_lore/background.png</file>
+        <file>assets/minecraft/gui/item_lore/frame.png</file>
         <file>assets/gui/element/Bar/newFile.png</file>
         <file>assets/gui/element/Bar/newMenu.png</file>
         <file>assets/gui/element/UI.png</file>

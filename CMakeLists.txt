@@ -90,10 +90,6 @@ qt_add_qml_module(appxcshop
         qml/components/base/ComboBox.qml
         qml/components/base/BranchBar.qml
         qml/components/base/VariableTextField.qml
-        js/syntax/ItemSyntaxHighlighter.js
-        js/syntax/ItemSyntaxParser.js
-        js/syntax/mode-1.js
-        js/syntax/mode-2.js
         qml/components/base/VariableTextArea.qml
         qml/components/base/ScrollBar.qml
         qml/components/base/MultiPropertyEdit.qml
@@ -117,6 +113,7 @@ qt_add_qml_module(appxcshop
 
         qml/pages/Controls/_Item/Item_triggerBar.qml
         qml/pages/Controls/_Item/Item_costBar.qml
+        qml/pages/Controls/_Display/MinecraftTooltipPreview.qml
         
         qml/pages/base/BasePage.qml
         qml/pages/base/BaseIOPage.qml
@@ -138,6 +135,10 @@ qt_add_qml_module(appxcshop
 
 
         assets/js/request.js
+        js/syntax/ItemSyntaxHighlighter.js
+        js/syntax/ItemSyntaxParser.js
+        js/syntax/mode-1.js
+        js/syntax/mode-2.js
 
 
         qml/Temp/Console.qml

@@ -59,6 +59,32 @@ Item {
         segmentModel.clear()
     }
 
+    // Segment text is stored as the real Minecraft text.  The visual editor
+    // shows control characters with JSON-style escapes, so `\\n` remains a
+    // visible, editable token instead of becoming an empty-looking line.
+    function textForEditor(value) {
+        return String(value === undefined || value === null ? "" : value)
+                .replace(/\\/g, "\\\\")
+                .replace(/\n/g, "\\n")
+                .replace(/\r/g, "\\r")
+                .replace(/\t/g, "\\t")
+    }
+
+    function textFromEditor(value) {
+        return String(value === undefined || value === null ? "" : value)
+                .replace(/\\(.)/g, function(match, escaped) {
+                    if (escaped === "n")
+                        return "\n"
+                    if (escaped === "r")
+                        return "\r"
+                    if (escaped === "t")
+                        return "\t"
+                    if (escaped === "\\")
+                        return "\\"
+                    return match
+                })
+    }
+
     function appendSegment(segment) {
         var clean = defaultSegment(segment.text)
         clean.color = segment.color || "white"
@@ -347,9 +373,9 @@ Item {
                     XCTextField {
                         id: segmentTextInput
                         x: 10; y: 34; width: parent.width - 20; height: 32
-                        text: segmentCard.model.text
-                        placeholderText: "输入这一段文字"
-                        onTextEdited: root.updateSegment(segmentCard.index, "text", text)
+                        text: root.textForEditor(segmentCard.model.text)
+                        placeholderText: "输入文字；\\n 换行，\\\\n 显示 \\n"
+                        onTextEdited: root.updateSegment(segmentCard.index, "text", root.textFromEditor(text))
                     }
 
                     TextStyleEditor {
