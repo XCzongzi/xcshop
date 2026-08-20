@@ -74,6 +74,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/TextButton.qml
         qml/components/base/XCText.qml
         qml/components/base/XCTextField.qml
+        qml/components/base/XCCheckBox.qml
         qml/components/base/BooleanSwitch.qml
         qml/components/base/TextStyleEditor.qml
         qml/components/base/XCTextArea.qml

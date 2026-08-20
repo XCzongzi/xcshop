@@ -14,23 +14,8 @@ BasePage {
         width: parent.width - 40
         contentHeight: displayInput_textField.y + displayInput_textField.height + 18
 
-        XCText {
-            id: displayInput_propertyText
-            y: 18
-            x: 20
-            xcText: "显示名称"
-            xcFontSize: 17
-            onCenter: false
-        }
-        XCText {
-            x: 20
-            y: 45
-            xcText: "该名称会显示在商店界面中。"
-            xcFontSize: 12
-            onCenter: false
-            boldFont: false
-            textColor: Colors.banned
-        }
+        title: "显示名称"
+        subtitle: "代价在正文中显示的名称"
         XCTextField {
             id: displayInput_textField
             y: 72
@@ -46,22 +31,31 @@ BasePage {
         y: displayInput.y + displayInput.height + 12
         width: parent.width - 40
         contentHeight: typeInput_propertyText.visible ? itemInput_field.y + itemInput_field.height + 18
-                                             : typeInput_radioGroup.y + typeInput_radioGroup.height + 24
+                                             : checkBox.y + checkBox.height + 24
 
-        XCText { x: 20; y: 18; xcText: "代价类型"; xcFontSize: 17; onCenter: false }
-        XCText { x: 20; y: 45; xcText: "选择商店扣除资源的方式。"; xcFontSize: 12; onCenter: false; boldFont: false; textColor: Colors.banned }
+        title: "代价类型"
+        subtitle: "选择商店扣除资源的方式"
+
         RadioGroup {
             id: typeInput_radioGroup
+            x: 16
             y: 72
             text: ""
             options: ["经验等级", "物品数量", "计分板分数", "目标选择器"]
-            anchors.horizontalCenter: parent.horizontalCenter
         }
+        XCCheckBox{
+            id: checkBox
+            x: 16
+            y: typeInput_radioGroup.y + typeInput_radioGroup.height + 12
+            visible: !(typeInput_radioGroup.selected === 3)
+            text: "仅筛选，不进行扣除"
+        }
+
         XCText {
             id: typeInput_propertyText
             visible: typeInput_radioGroup.selected !== 0
             x: 20
-            y: typeInput_radioGroup.y + typeInput_radioGroup.height + 12
+            y: typeInput_radioGroup.selected === 3? typeInput_radioGroup.y + typeInput_radioGroup.height + 12 : checkBox.y + checkBox.height + 12
             xcText: typeInput_radioGroup.selected === 1 ? "物品标识" : typeInput_radioGroup.selected === 2 ? "计分板名称" : "目标选择器（仅筛选，不会进行扣除）"
             xcFontSize: 15
             onCenter: false
