@@ -47,36 +47,5 @@ BasePage {
         }
     }
 
-    Row {
-        id: overviewCards
-        x: root.pageMargin
-        y: projectSummary.y + projectSummary.height + root.cardGap
-        width: parent.width - root.pageMargin * 2
-        spacing: root.cardGap
-
-        ContentBar {
-            width: (overviewCards.width - overviewCards.spacing * 2) / 3
-            contentHeight: 142
-            expanded: true
-            XCText { x: 18; y: 18; xcText: "界面配置"; onCenter: false; xcFontSize: 16 }
-            XCText { x: 18; y: 51; xcText: "UI"; onCenter: false; xcFontSize: 28; textColor: Colors.border }
-            XCText { x: 18; y: 94; width: parent.width - 36; xcText: "从左侧文件树选择界面文件进行编辑。"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcWrapMode: true }
-        }
-        ContentBar {
-            width: (overviewCards.width - overviewCards.spacing * 2) / 3
-            contentHeight: 142
-            expanded: true
-            XCText { x: 18; y: 18; xcText: "商品元素"; onCenter: false; xcFontSize: 16 }
-            XCText { x: 18; y: 51; xcText: "ITEM"; onCenter: false; xcFontSize: 28; textColor: Colors.border }
-            XCText { x: 18; y: 94; width: parent.width - 36; xcText: "维护物品标识、展示信息与触发规则。"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcWrapMode: true }
-        }
-        ContentBar {
-            width: (overviewCards.width - overviewCards.spacing * 2) / 3
-            contentHeight: 142
-            expanded: true
-            XCText { x: 18; y: 18; xcText: "构建与展示"; onCenter: false; xcFontSize: 16 }
-            XCText { x: 18; y: 51; xcText: "BUILD"; onCenter: false; xcFontSize: 28; textColor: Colors.border }
-            XCText { x: 18; y: 94; width: parent.width - 36; xcText: "配置代价与文本展示，完善商店输出。"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcWrapMode: true }
-        }
-    }
+    
 }

@@ -21,6 +21,12 @@ Item{
         if (Global.current_element === "Display") {
             return JSON.stringify({"frame":{"head":"","end":"","separator":""},"member":{"order":0,"head":"","middle":"","end":"","cost":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false},"value":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false}},"hint":{"success":["",""],"fail":["",""]}})
         }
+        if (Global.current_element === "Cost") {
+            return JSON.stringify({
+                "display": "",
+                "type": { "selected": 0, "value": "", "filter": false }
+            })
+        }
         return ""
     }
 

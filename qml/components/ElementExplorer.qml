@@ -9,7 +9,7 @@ Rectangle{
     property string pendingFolder: ""
     id: root
     property bool started: Global.get_fileName() != ""
-    width: isShowing ?  started ? barWidth : parent.width - 120  : 0
+    width: isShowing ? barWidth : 0
     height: parent.height
     x:65
     color: Colors.foreground
@@ -58,7 +58,7 @@ Rectangle{
         color: '#3d000000'
 
         MouseArea{      //大小调整
-            visible: root.isShowing && root.started
+            visible: root.isShowing
             height: parent.height
             width: parent.width - x
             x: -2

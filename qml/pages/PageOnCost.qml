@@ -1,11 +1,22 @@
 import QtQuick
 import xcshop
 
-BasePage {
+BaseIOPage {
     id: root
     color: Colors.transparent
     workspace: true
     content_height: displayInput.height + typeInput.height + 44
+
+    function elementReading() {
+        displayInput_textField.text = root.eledata.display
+        typeInput_radioGroup.selected = root.eledata.type.selected
+        checkBox.checked = root.eledata.type.filter
+        itemInput_field.setContent(root.eledata.type.value)
+
+        Qt.callLater(function(){
+            typeInput.expand()
+        })
+    }
 
     ContentBar {
         id: displayInput
@@ -22,11 +33,16 @@ BasePage {
             x: 20
             width: parent.width - 40
             placeholderText: "例如：钻石、经验等级或自定义货币"
+            onEditingFinished: {
+                root.eledata.display = text
+                root.updateDataOut()
+            }
         }
     }
 
     ContentBar {
         id: typeInput
+        delayExpand: true
         x: 20
         y: displayInput.y + displayInput.height + 12
         width: parent.width - 40
@@ -42,6 +58,10 @@ BasePage {
             y: 72
             text: ""
             options: ["经验等级", "物品数量", "计分板分数", "目标选择器"]
+            onClicked: {
+                root.eledata.type.selected = selected
+                root.updateDataOut()
+            }
         }
         XCCheckBox{
             id: checkBox
@@ -49,6 +69,10 @@ BasePage {
             y: typeInput_radioGroup.y + typeInput_radioGroup.height + 12
             visible: !(typeInput_radioGroup.selected === 3)
             text: "仅筛选，不进行扣除"
+            onToggled: function(checked) {
+                root.eledata.type.filter = checked
+                root.updateDataOut()
+            }
         }
 
         XCText {
@@ -67,6 +91,11 @@ BasePage {
             y: typeInput_propertyText.y + typeInput_propertyText.height + 8
             width: parent.width - 40
             height: 128
+            content: ""
+            onAccepted: {
+                root.eledata.type.value = content
+                root.updateDataOut()
+            }
         }
     }
 }
