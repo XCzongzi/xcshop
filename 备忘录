@@ -22,6 +22,8 @@ item文件结构：
 多元素编辑框：items
 存储被选择栏位的编号：selected
 
+{"frame":{"head":"","end":"","separator":""},"member":{"order":0,"head":"","middle":"","end":"","cost":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false},"value":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false}},"hint":{"success":["",""],"fail":["",""]}}
+
 
 
 7.29BUG:

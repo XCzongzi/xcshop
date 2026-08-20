@@ -25,7 +25,9 @@ Item {
         { "name": "白", "value": "white", "preview": "#ffffff" }
     ]
     property string color: "white"
-    property string customColor: ""
+    // UI-only fallback used when the custom-colour field is cleared.  The
+    // persisted/editor API remains the single `color` property.
+    property string lastPresetColor: "white"
     property bool bold: false
     property bool italic: false
     property bool underlined: false
@@ -39,6 +41,19 @@ Item {
     implicitHeight: formatRow.y + formatRow.height
     width: implicitWidth
     height: implicitHeight
+
+    function isPresetColor(value) {
+        for (var index = 0; index < colorOptions.length; ++index) {
+            if (colorOptions[index].value === value)
+                return true
+        }
+        return false
+    }
+
+    onColorChanged: {
+        if (isPresetColor(color))
+            lastPresetColor = color
+    }
 
     Row {
         id: colorRow
@@ -54,15 +69,14 @@ Item {
                 height: 17
                 radius: 4
                 color: modelData.preview
-                border.width: root.color === modelData.value && !root.customColor.length ? 2 : 1
-                border.color: root.color === modelData.value && !root.customColor.length
+                border.width: root.color === modelData.value ? 2 : 1
+                border.color: root.color === modelData.value
                               ? Colors.border : Colors.changeA(Colors.text, 0.30)
 
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
                         root.color = modelData.value
-                        root.customColor = ""
                         root.propertyEdited()
                     }
                 }
@@ -71,23 +85,23 @@ Item {
     }
 
     XCTextField {
-        id: customColorInput
+        id: colorInput
         y: colorRow.height + 8
         width: 100
         height: 28
-        text: root.customColor
+        text: root.isPresetColor(root.color) ? "" : root.color
         placeholderText: "#RRGGBB"
         font.pixelSize: 12
         onTextEdited: {
-            root.customColor = text
+            root.color = text.length ? text : root.lastPresetColor
             root.propertyEdited()
         }
     }
 
     Row {
         id: formatRow
-        x: customColorInput.width + 8
-        y: customColorInput.y
+        x: colorInput.width + 8
+        y: colorInput.y
         spacing: 4
 
         BooleanSwitch {

@@ -1,10 +1,38 @@
 import QtQuick
 import xcshop
 
-BasePage {
+BaseIOPage {
     id: root
     color: Colors.transparent
     workspace: true
+
+
+
+    function elementReading(){
+        memberBar.elementColor = eledata.member.cost.color
+        memberBar.elementBold = eledata.member.cost.bold
+        memberBar.elementItalic = eledata.member.cost.italic
+        memberBar.elementUnderlined = eledata.member.cost.underlined
+        memberBar.elementStrikethrough = eledata.member.cost.strikethrough
+        memberBar.elementObfuscated = eledata.member.cost.obfuscated
+        memberBar.valueColor = eledata.member.value.color
+        memberBar.valueBold = eledata.member.value.bold
+        memberBar.valueItalic = eledata.member.value.italic
+        memberBar.valueUnderlined = eledata.member.value.underlined
+        memberBar.valueStrikethrough = eledata.member.value.strikethrough
+        memberBar.valueObfuscated = eledata.member.value.obfuscated
+
+        // root.setTextStyle(memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] === "代价元素")
+    }
+
+    function setTextStyle(editingElement){
+        styleEditor.color = editingElement ? memberBar.elementColor : memberBar.valueColor
+        styleEditor.bold = editingElement ? memberBar.elementBold : memberBar.valueBold
+        styleEditor.italic = editingElement ? memberBar.elementItalic : memberBar.valueItalic
+        styleEditor.underlined = editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
+        styleEditor.strikethrough = editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
+        styleEditor.obfuscated = editingElement ? memberBar.elementObfuscated : memberBar.valueObfuscated
+    }
 
 
     ContentBar{
@@ -97,8 +125,6 @@ BasePage {
         ]
         property string elementColor: "white"
         property string valueColor: "white"
-        property string elementCustomColor: ""
-        property string valueCustomColor: ""
         property bool elementBold: false
         property bool valueBold: false
         property bool elementUnderlined: false
@@ -107,6 +133,8 @@ BasePage {
         property bool valueItalic: false
         property bool elementStrikethrough: false
         property bool valueStrikethrough: false
+        property bool elementObfuscated: false
+        property bool valueObfuscated: false
 
         RadioGroup {
             id: memberBar_radioGroup
@@ -127,13 +155,7 @@ BasePage {
                 if (selected % 2 === 0) {
                     memberBar_contentInput.setContent(memberBar.textContents[selected / 2])
                 } else {
-                    var editingElement = options[selected] === "代价元素"
-                    styleEditor.color = editingElement ? memberBar.elementColor : memberBar.valueColor
-                    styleEditor.customColor = editingElement ? memberBar.elementCustomColor : memberBar.valueCustomColor
-                    styleEditor.bold = editingElement ? memberBar.elementBold : memberBar.valueBold
-                    styleEditor.italic = editingElement ? memberBar.elementItalic : memberBar.valueItalic
-                    styleEditor.underlined = editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
-                    styleEditor.strikethrough = editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
+                    root.setTextStyle(options[selected] === "代价元素")
                 }
             }
 
@@ -176,31 +198,37 @@ BasePage {
 
                 TextStyleEditor {
                     id: styleEditor
-                    color: memberBar_valueEdit.editingElement ? memberBar.elementColor : memberBar.valueColor
-                    customColor: memberBar_valueEdit.editingElement ? memberBar.elementCustomColor : memberBar.valueCustomColor
-                    bold: memberBar_valueEdit.editingElement ? memberBar.elementBold : memberBar.valueBold
-                    italic: memberBar_valueEdit.editingElement ? memberBar.elementItalic : memberBar.valueItalic
-                    underlined: memberBar_valueEdit.editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
-                    strikethrough: memberBar_valueEdit.editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
-                    showObfuscated: false
                     onPropertyEdited: {
-                        if (memberBar_valueEdit.editingElement)
+                        if (memberBar_valueEdit.editingElement) {//更新数据
                             memberBar.elementColor = styleEditor.color
-                        else
-                            memberBar.valueColor = styleEditor.color
-                        if (memberBar_valueEdit.editingElement) {
-                            memberBar.elementCustomColor = styleEditor.customColor
                             memberBar.elementBold = styleEditor.bold
                             memberBar.elementItalic = styleEditor.italic
                             memberBar.elementUnderlined = styleEditor.underlined
                             memberBar.elementStrikethrough = styleEditor.strikethrough
+                            memberBar.elementObfuscated = styleEditor.obfuscated
                         } else {
-                            memberBar.valueCustomColor = styleEditor.customColor
+                            memberBar.valueColor = styleEditor.color
                             memberBar.valueBold = styleEditor.bold
                             memberBar.valueItalic = styleEditor.italic
                             memberBar.valueUnderlined = styleEditor.underlined
                             memberBar.valueStrikethrough = styleEditor.strikethrough
+                            memberBar.valueObfuscated = styleEditor.obfuscated
                         }
+                        //保存数据
+                        root.eledata.member.cost.color = memberBar.elementColor
+                        root.eledata.member.cost.bold = memberBar.elementBold
+                        root.eledata.member.cost.italic = memberBar.elementItalic
+                        root.eledata.member.cost.underlined = memberBar.elementUnderlined
+                        root.eledata.member.cost.strikethrough = memberBar.elementStrikethrough
+                        root.eledata.member.cost.obfuscated = memberBar.elementObfuscated
+                        root.eledata.member.value.color = memberBar.valueColor
+                        root.eledata.member.value.bold = memberBar.valueBold
+                        root.eledata.member.value.italic = memberBar.valueItalic
+                        root.eledata.member.value.underlined = memberBar.valueUnderlined
+                        root.eledata.member.value.strikethrough = memberBar.valueStrikethrough
+                        root.eledata.member.value.obfuscated = memberBar.valueObfuscated
+
+                        root.updateDataOut()
                     }
                 }
             }
@@ -257,6 +285,9 @@ BasePage {
                     height: 96
                     placeholderText: noticeTextBar.textPlaceholders[noticeMultiPropertyEdit.selected]
                     onContentChanged: noticeTextBar.textContents[noticeMultiPropertyEdit.selected] = content
+                    onAccepted: {
+
+                    }
                 }
                 XCText {
                     id: noticeSoundCaption

@@ -43,7 +43,6 @@ Item {
         return {
             "text": text === undefined ? "文字" : String(text),
             "color": "white",
-            "customColor": "",
             "bold": false,
             "italic": false,
             "underlined": false,
@@ -63,7 +62,6 @@ Item {
     function appendSegment(segment) {
         var clean = defaultSegment(segment.text)
         clean.color = segment.color || "white"
-        clean.customColor = segment.customColor || ""
         clean.bold = !!segment.bold
         clean.italic = !!segment.italic
         clean.underlined = !!segment.underlined
@@ -161,14 +159,13 @@ Item {
         if (afterIndex >= 0 && afterIndex < segmentModel.count) {
             var previous = segmentModel.get(afterIndex)
             segment.color = previous.color
-            segment.customColor = previous.customColor
         }
         segmentModel.insert(Math.max(0, afterIndex + 1), segment)
     }
 
     function styleForSegment(segment) {
         return {
-            "color": segment.customColor.trim().length ? segment.customColor.trim() : segment.color,
+            "color": segment.color,
             "bold": !!segment.bold,
             "italic": !!segment.italic,
             "underlined": !!segment.underlined,
@@ -223,7 +220,7 @@ Item {
     }
 
     function previewColor(segment) {
-        var value = segment.customColor.trim().length ? segment.customColor.trim() : segment.color
+        var value = segment.color
         for (var colorIndex = 0; colorIndex < colorOptions.length; ++colorIndex) {
             if (colorOptions[colorIndex].value === value)
                 return colorOptions[colorIndex].preview
@@ -361,7 +358,6 @@ Item {
                         y: 76
                         colorOptions: root.colorOptions
                         color: segmentCard.model.color
-                        customColor: segmentCard.model.customColor
                         bold: !!segmentCard.model.bold
                         italic: !!segmentCard.model.italic
                         underlined: !!segmentCard.model.underlined
@@ -369,7 +365,6 @@ Item {
                         obfuscated: !!segmentCard.model.obfuscated
                         onPropertyEdited: {
                             root.updateSegment(segmentCard.index, "color", segmentStyleEditor.color)
-                            root.updateSegment(segmentCard.index, "customColor", segmentStyleEditor.customColor)
                             root.updateSegment(segmentCard.index, "bold", segmentStyleEditor.bold)
                             root.updateSegment(segmentCard.index, "italic", segmentStyleEditor.italic)
                             root.updateSegment(segmentCard.index, "underlined", segmentStyleEditor.underlined)
