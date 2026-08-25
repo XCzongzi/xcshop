@@ -51,8 +51,6 @@ TextArea{
             if(event.modifiers & Qt.ControlModifier){   //检测是否同时按下Ctrl
                 event.accepted = true
                 root.accepted()         //Ctrl+Enter时提交
-                //Global.file_modify_name()
-
             }
         }
     }

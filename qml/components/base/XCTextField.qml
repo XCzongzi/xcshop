@@ -7,7 +7,6 @@ TextField{
     id: root
     height: 32
 
-    property int autoSaveType: 0    //0.不自动保存 1.修改文件名 2.保存键值对
     property bool isWrap: false // 默认为非自动换行
     wrapMode: isWrap? TextEdit.Wrap : TextEdit.NoWrap // 自动换行((No)Warp)
     verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
@@ -47,10 +46,4 @@ TextField{
     font.family: "Consolas"
     font.pixelSize: 16
 
-    onAccepted: {
-        if(root.autoSaveType == 1){
-            Global.file_modify_name(root.text)
-        }
-        Console.output(root.text)
-    }
 }

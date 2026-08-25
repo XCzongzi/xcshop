@@ -26,23 +26,11 @@ Window {
     property int margins: visibility === Window.Maximized? 0 : Constants.margins
     readonly property int surfaceWidth: windowSurface.width
     readonly property int surfaceHeight: windowSurface.height
-    readonly property int framelessWindowFlags: Qt.Window | Qt.FramelessWindowHint
-                                                   | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint
-    property bool restoreFramelessAfterMinimize: false
+    
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint
 
-    flags: framelessWindowFlags
-
-    // QTBUG-125037：Windows 上透明无边框 QML Window 从任务栏恢复时会残留原生标题栏。
-    // 最小化期间临时采用普通顶层窗口样式，恢复后再还原自绘无边框样式。
-    onVisibilityChanged: {
-        if (visibility === Window.Minimized) {
-            restoreFramelessAfterMinimize = true
-            flags = Qt.Window
-        } else if (restoreFramelessAfterMinimize) {
-            flags = framelessWindowFlags
-            restoreFramelessAfterMinimize = false
-        }
-    }
+    // Keep flags stable so minimizing never destroys the previous normal or
+    // maximized placement. NativeFramelessWindow backports QTBUG-127116.
 
     Rectangle {
         id: windowSurface

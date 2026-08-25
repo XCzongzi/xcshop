@@ -231,21 +231,6 @@ QtObject{
         saveSettings()
     }
     //普通
-    function file_modify_name(text){
-        Console.output("modify name")
-        Console.output(Qt.resolvedUrl(get_filePath()))
-        Console.output(xcfile.rename(get_filePath(), get_fileLocation(false)+ "/" + text + ".xcse" + current_element))
-        current_fileName[current_enum] = text
-    }
-    function file_delete(){
-        xcfile.remove_file(get_filePath())
-        //SignalBus.elementIndexReset(current_file_index)
-    }
-    function file_clone(){
-        Console.output("clone")
-        Console.output(xcfile.clone(get_filePath()))
-        //SignalBus.elementIndexRefresh(get_fileLocation(true),get_fileName())
-    }
     function file_save_content(key, value){
         
     }

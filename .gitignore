@@ -1,5 +1,6 @@
 # CMake / Qt build output
 /build/
+/build-mingw-debug/
 /out/
 /CMakeFiles/
 /CMakeCache.txt
@@ -22,3 +23,6 @@
 
 # Minecraft assets
 /assets/minecraft/
+
+#
+/项目构思/

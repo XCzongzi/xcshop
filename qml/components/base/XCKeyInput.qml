@@ -9,7 +9,6 @@ Item{
     property string keyText : "键"
     property string fieldText : "请输入值"
     property int fieldX : field.x
-    property int autoSaveType: 0
     //property string context : field.text
     height: propertyText.height + field.height + 2
     
@@ -35,7 +34,6 @@ Item{
         width: root.width
         y: propertyText.height + 2
         placeholderText: root.fieldText
-        autoSaveType: root.autoSaveType
         onTextChanged: {
             root.fieldContextChanged()
         }

@@ -163,13 +163,12 @@ XCWindow {
         //     visible: pageLoader.item.workspace
         //     x: root.pageX + 8
         // }
-        FileControls{
-            id:fileControlsBar
+        FileControls {
+            id: fileControlsBar
             parent: popupBlurSource
             visible: root.workspaceChromeVisible
             x: root.pageX
         }
-
 
         readonly property bool workspaceChromeVisible: typeBar.isEnabled && Global.project_location.length > 0
         property int pageX: elementExplorer.x + elementExplorer.width
