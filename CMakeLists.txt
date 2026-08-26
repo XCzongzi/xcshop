@@ -115,6 +115,8 @@ qt_add_qml_module(appxcshop
         qml/pages/Controls/_Item/Item_triggerBar.qml
         qml/pages/Controls/_Item/Item_costBar.qml
         qml/pages/Controls/_Display/MinecraftTooltipPreview.qml
+        qml/pages/Controls/_UI/ContainerBox.qml
+        qml/pages/Controls/_UI/ItemSlot.qml
         
         qml/pages/base/BasePage.qml
         qml/pages/base/BaseIOPage.qml

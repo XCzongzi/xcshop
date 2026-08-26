@@ -56,22 +56,17 @@ Item {
         Behavior on border.color { ColorAnimation { duration: 110 } }
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
-        Rectangle {
+        Image {
+            id: elementIcon
             x: 9
             anchors.verticalCenter: parent.verticalCenter
-            width: 34
+            width: 30
             height: 30
-            radius: 7
-            color: Colors.changeA(Colors.border, 0.13)
-            border.width: 1
-            border.color: Colors.changeA(Colors.border, 0.34)
-            XCText {
-                anchors.centerIn: parent
-                xcText: RelayState.typeLabel(root.elementType)
-                xcFontSize: 10
-                boldFont: false
-                textColor: Colors.border
-            }
+            source: "qrc:/assets/gui/element/" + root.elementType + ".png"
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            mipmap: false
+            visible: status === Image.Ready
         }
 
         Column {

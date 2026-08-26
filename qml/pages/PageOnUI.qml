@@ -19,6 +19,7 @@ BaseIOPage {
         x: parent.width - width
         height: parent.height - y
         width: 200
+        color: Colors.foreground
     }
 
 
