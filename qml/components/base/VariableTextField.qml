@@ -8,7 +8,7 @@ import "../../../js/syntax/mode-2.js" as SyntaxMode2
 Item {
     id: root
 
-    // 0: disabled, 1: legacy item NBT, 2: item stack components
+    // 0: 禁用语法高亮, 1: 旧版本, 2: 新版堆叠组件
     property int syntaxHighlightMode: 0
     property var syntaxHighlighters: ({
         1: SyntaxMode1,

@@ -69,6 +69,14 @@ XCWindow {
         }
         function typeSwitch(typeName,after) {   //为了方便后续调用，就把type原本的槽函数单独分离了出来，after用于区分是否后期调用
             Global.current_element = typeName   //after的作用是取消动画
+            // 中转区可以直接调用 typeSwitch；同步类型栏的视觉选中态，不能只依赖按钮点击。
+            switch(typeName){
+                case "Total": typeBar.currentType = 0; break
+                case "UI": typeBar.currentType = 1; break
+                case "Item": typeBar.currentType = 2; break
+                case "Cost": typeBar.currentType = 3; break
+                case "Display": typeBar.currentType = 4; break
+            }
             if(!after)elementExplorer.floderReset()
             if(typeName === "Total"){
                 elementExplorer.barHide()
@@ -213,12 +221,20 @@ XCWindow {
                 typeBar.freeze = true
                 freeze.visible = true
                 pageLoader.page = page_
-                opcAnim.start()
 
-                if(pageLoader.page === Constants.pageOnStart){
+                if(pageLoader.page === Constants.pageOnStart){  //开始界面填充标题栏
                     mainWindow.titleBarColorFilling = false
                 }else{
                     mainWindow.titleBarColorFilling = true
+                }
+
+                if(pageLoader.page === Constants.pageOnUI       //切换前检测销毁动画，仅在工作区时跳过播放
+                || pageLoader.page === Constants.pageOnItem
+                || pageLoader.page === Constants.pageOnCost
+                || pageLoader.page === Constants.pageOnDisplay){
+                    opcAnim.onFinished()
+                }else{
+                    opcAnim.start()
                 }
             }
 

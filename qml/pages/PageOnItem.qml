@@ -16,13 +16,6 @@ BaseIOPage {
     
         displayInput_selection.selected = root.eledata.display.selected
         displayInput_input.setElement(root.eledata.display.element, false)
-        
-        
-        Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
-            costInput.expand()
-            displayInput.expand()
-            triggerInput.expand()
-        })
 
         //Repeater中动态加载的组件的数据也需要使用函数来更新
         //由于数据是存储在数组中的，而Repeater使用的模型又是ListModel，所以需要先把数组中的数据同步到ListModel当中
@@ -39,7 +32,14 @@ BaseIOPage {
             listModel.append(eledata.trigger[i])
         }
 
+        Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
+            costInput.expand()
+            displayInput.expand()
+            triggerInput.expand()
+        })
+
     }
+
 
     function itemIdFromInput(value){
         var text = value === undefined || value === null ? "" : String(value).trim()
@@ -154,7 +154,7 @@ BaseIOPage {
                             costListModel.remove(model.index, 1)
                         }
                     }
-                    onDeleteAnimFinishied: {
+                    onDeleteAnimFinishied: function(currentIndex) {
                         root.eledata.cost.splice(currentIndex, 1)
                         root.updateDataOut()
                         costListModel.remove(currentIndex, 1)
@@ -275,7 +275,7 @@ BaseIOPage {
                             listModel.remove(model.index,1)
                         }
                     }
-                    onDeleteAnimFinishied:{
+                    onDeleteAnimFinishied:function(currentIndex) {
                         root.eledata.trigger.splice(currentIndex,1);root.updateDataOut()
                         listModel.remove(currentIndex,1)
                     }

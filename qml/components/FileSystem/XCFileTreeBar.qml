@@ -9,6 +9,7 @@ Item{
     
     property string currentFolder: ""
     property string filePath: "file:" + Global.project_location + "/" + Global.current_element + currentFolder
+    property int selectionRetryCount: 0
 
     signal floderSwitched()
     signal fileSwitched()
@@ -20,14 +21,52 @@ Item{
     Component.onCompleted:{
         SignalBus.elementIndexReset.connect(set_selection)
     }
+    function refreshCurrentSelectionLater(){
+        var fileLocation = Global.get_fileLocation(true)
+        var fileName = Global.get_fileName()
+        selectionRetryCount = 0
+        Qt.callLater(function(){
+            root.refreshSelection(fileLocation, fileName)
+        })
+    }
     function refreshSelection(fileLocation, fileName){
         //Console.output(filePath + "\n" + fileLocation)
-        if(filePath == fileLocation){
-            fileList.itemAtIndex(get_index(fileName)).setSelection(true,true) 
+        if(filePath !== fileLocation)
+            return
+
+        // 延后/重试期间可能又打开了另一份文件，旧请求不得覆盖新选择。
+        if(Global.get_fileLocation(true) !== fileLocation || Global.get_fileName() !== fileName)
+            return
+
+        if(!fileName.length)
+            return
+
+        var selectionIndex = get_index(fileName)
+        var selectedItem = selectionIndex >= 0 ? fileList.itemAtIndex(selectionIndex) : null
+        if(!selectedItem){
+            // FolderListModel Ready 时，ListView 的 delegate 可能仍未创建完成。
+            // 在下一帧重试几次，避免首次跨类型打开时漏掉高亮。
+            if(selectionRetryCount < 5){
+                ++selectionRetryCount
+                selectionRetryTimer.fileLocation = fileLocation
+                selectionRetryTimer.fileName = fileName
+                selectionRetryTimer.restart()
+            }
+            return
         }
+
+        // 清除旧文件的高亮，保证元素管理器始终只有一个当前文件。
+        for(var i = 0; i < fileList.count; ++i){
+            var item = fileList.itemAtIndex(i)
+            if(item)
+                item.setSelection(false, true)
+        }
+
+        selectedItem.setSelection(true, true)
+        selectionRetryCount = 0
     }
     function get_index(fileName){
-        for(var i = 0; i < fileList.count; i++){
+        for(var i = 0; i < folderFileModel.count; i++){
             //Console.output(folderFileModel.get(i,"fileBaseName"))
             //Console.output(fileName)
             if(folderFileModel.get(i,"fileBaseName") == fileName){
@@ -35,6 +74,13 @@ Item{
             }
         }
         return -1
+    }
+    Timer{
+        id: selectionRetryTimer
+        interval: 16
+        property string fileLocation: ""
+        property string fileName: ""
+        onTriggered: root.refreshSelection(fileLocation, fileName)
     }
     // Timer{      //用Timer启动刷新，因为文件系统的变化可能有延迟
     //     id: refreshTimer
@@ -68,6 +114,7 @@ Item{
         //Global.set_file(root.currentFolder,"")
         //refreshTimer.start()
         root.fileSwitched()
+        root.refreshCurrentSelectionLater()
     }
     
 
@@ -87,7 +134,8 @@ Item{
                 // 触发这两个flick方法是为了让ListView刷新
                 fileList.flick(0,1)
                 direList.flick(0,1)
-                root.refreshSelection(Global.get_fileLocation(true), Global.get_fileName())
+                // Ready 只表示模型数据可用；delegate 仍可能在本轮事件循环内创建。
+                root.refreshCurrentSelectionLater()
                 
 
             }

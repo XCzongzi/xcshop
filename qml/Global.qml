@@ -22,6 +22,11 @@ QtObject{
 
     //项目信息
     property string project_location: ""
+    property string version: ""
+    property int syntaxVersion: 1
+
+
+
     property string current_element: "Total"
     property int current_enum: 0     //enum:element_number，用于以数字形式存储元素类型
     onCurrent_elementChanged:{
@@ -70,8 +75,15 @@ QtObject{
 
 
     function set_file(folder, name){    //若folder参数为"*"，则表示不改变文件路径，只改变文件名
-        if(folder !== "*")current_fileLocation[current_enum] = project_location + "/" + current_element + folder
-        current_fileName[current_enum] = name
+        // 重新赋值数组以触发 QML 属性通知；直接改 var 数组下标不会可靠地刷新绑定。
+        if(folder !== "*"){
+            var locations = current_fileLocation.slice()
+            locations[current_enum] = project_location + "/" + current_element + folder
+            current_fileLocation = locations
+        }
+        var names = current_fileName.slice()
+        names[current_enum] = name
+        current_fileName = names
     }
 
     function normalizeElementPath(filePath){

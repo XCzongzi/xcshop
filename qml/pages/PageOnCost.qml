@@ -92,6 +92,7 @@ BaseIOPage {
             width: parent.width - 40
             height: 128
             content: ""
+            syntaxHighlightMode: typeInput_radioGroup.selected === 1 ? Global.syntaxVersion : 0
             onAccepted: {
                 root.eledata.type.value = content
                 root.updateDataOut()

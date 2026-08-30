@@ -1,8 +1,6 @@
 #include <QObject>
-#include <QFile>
-#include <QTextStream>
+#include <QString>
 #include <QtQml>    // QML_ELEMENT macro
-#include <QDir>
 
 
 class ElementIO : public QObject {
@@ -11,10 +9,11 @@ class ElementIO : public QObject {
 
 public:
     ElementIO();
-    ~ElementIO();
     Q_INVOKABLE bool open(const QString& filePath);
-    Q_INVOKABLE void close(const QString& filePath);
-    Q_INVOKABLE void write(const QString& filePath);
+    Q_INVOKABLE void close();
+    Q_INVOKABLE bool write(const QString& content);
     Q_INVOKABLE QString read();
 
+private:
+    QString m_filePath;
 };

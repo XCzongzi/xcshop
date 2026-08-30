@@ -12,12 +12,44 @@ Item {
     required property string relativePath
     required property int sourceIndex
 
+    // Show the item saved in every Item element whenever the corresponding
+    // mapped texture has been generated locally.
+    readonly property bool showStoredItemTexture: elementType === "Item"
+    readonly property string defaultIconSource: "qrc:/assets/gui/element/" + elementType + ".png"
+    readonly property string iconSource: storedItemIconSource()
+
     property var recordData: ({
         "path": path,
         "name": name,
         "type": elementType,
         "relativePath": relativePath
     })
+
+    XCFile { id: elementFile }
+
+    function itemIdFromValue(value) {
+        var text = value === undefined || value === null ? "" : String(value).trim()
+        var match = text.match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i)
+        return match ? match[1] : ""
+    }
+
+    function storedItemIconSource() {
+        if (!showStoredItemTexture)
+            return defaultIconSource
+
+        var itemData
+        try {
+            itemData = JSON.parse(elementFile.read(path))
+        } catch (error) {
+            return defaultIconSource
+        }
+
+        var texturePath = Global.getItemTexturePath(itemIdFromValue(itemData ? itemData.item : ""))
+        if (!texturePath.length || !elementFile.exists(texturePath))
+            return defaultIconSource
+
+        return "file:///" + texturePath.replace(/\\/g, "/")
+    }
 
 
     Rectangle {
@@ -62,7 +94,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 30
             height: 30
-            source: "qrc:/assets/gui/element/" + root.elementType + ".png"
+            source: root.iconSource
             fillMode: Image.PreserveAspectFit
             smooth: false
             mipmap: false

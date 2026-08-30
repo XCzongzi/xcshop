@@ -1,42 +1,44 @@
 #include "ElementIO.h"
-#include <regex>
+#include <QFile>
+#include <QSaveFile>
 
-QFile file;
-
-QString elementPath = "";
-
-
-
-ElementIO::ElementIO(){
-
-}
-
-ElementIO::~ElementIO(){
-    file.close();
-}
+ElementIO::ElementIO() = default;
 
 bool ElementIO::open(const QString& filePath){
-    elementPath = filePath;
-    file.setFileName(filePath);
-    if (file.open(QIODevice::ReadWrite | QIODevice::Text))return true;
-    return false;
-}
-void ElementIO::close(const QString& filePath){
-    file.close();
+    m_filePath = filePath;
+
+    QFile input(m_filePath);
+    return input.open(QIODevice::ReadOnly | QIODevice::Text);
 }
 
-void ElementIO::write(const QString& content){
-    // 先清空文件内容再写入
-    file.seek(0);       // 移动到文件开头
-    file.resize(0);     // 清空文件内容
+void ElementIO::close(){
+    m_filePath.clear();
+}
 
-    QTextStream out(&file);
-    out << content;
-    out.flush();
+bool ElementIO::write(const QString& content){
+    if (m_filePath.isEmpty())
+        return false;
+
+    QSaveFile output(m_filePath);
+    if (!output.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+
+    const QByteArray encoded = content.toUtf8();
+    if (output.write(encoded) != encoded.size()) {
+        output.cancelWriting();
+        return false;
+    }
+
+    return output.commit();
 }
 
 QString ElementIO::read(){
-    file.seek(0);
-    QTextStream in(&file);
-    return in.readAll();
+    if (m_filePath.isEmpty())
+        return "";
+
+    QFile input(m_filePath);
+    if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
+        return "";
+
+    return QString::fromUtf8(input.readAll());
 }

@@ -23,13 +23,26 @@ Rectangle{
         treeAnim.start()
     }
     function floderReset(){
+        // 切换元素类型时，回到该类型当前文件所在的目录；否则文件列表在根目录，
+        // 即使 Global 中已有当前文件，也无法在列表里选中它。
+        if (!root.pendingFolder.length)
+            root.pendingFolder = root.currentElementFolder()
         root.contentOpacity = 0
         timer.start()
+    }
+    function currentElementFolder(){
+        var typeRoot = Global.project_location + "/" + Global.current_element
+        var fileLocation = Global.get_fileLocation(false)
+        return fileLocation.indexOf(typeRoot) === 0
+                ? fileLocation.substring(typeRoot.length)
+                : ""
     }
     function openElementFolder(folder){
         pendingFolder = ""
         xcFileTree.currentFolder = folder || ""
         root.floderSwitch()
+        // 同目录内切换文件不会触发 FolderListModel 的重新加载，因此需要主动刷新选中态。
+        xcFileTree.refreshCurrentSelectionLater()
     }
 
     Timer{       //似乎Global.current_element和xcFileTree.currentFolder一起改变的话会出问题，所以这边用Timer防止出问题
@@ -39,6 +52,7 @@ Rectangle{
             xcFileTree.currentFolder = root.pendingFolder
             root.pendingFolder = ""
             if(Global.current_element != "Total")treeAnim.start()
+            xcFileTree.refreshCurrentSelectionLater()
         }
         
     }
