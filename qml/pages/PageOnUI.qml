@@ -1,5 +1,7 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
+import Qt5Compat.GraphicalEffects
 
 BaseIOPage {
     id: root
@@ -49,19 +51,18 @@ BaseIOPage {
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.07)
 
-        Row {
-
-            spacing: 18
-
-            Repeater {
-                model: 5
-                delegate: ItemSlot {
-                    size: 64
-                    selectionId: "Item"
-
+        ContainerBox{
+            anchors.fill: parent
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: canvasArea.width
+                    height: canvasArea.height
+                    radius: canvasArea.radius
                 }
             }
         }
+        
     }
 
     Rectangle {

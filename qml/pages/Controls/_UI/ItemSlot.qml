@@ -16,6 +16,17 @@ Rectangle {
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property string defaultIconSource: "qrc:/assets/gui/element/Item.png"
     readonly property string iconSource: storedItemIconSource()
+    readonly property string selectedElementName: {
+        var element = Global.parseElementPath(selectedElementPath)
+        if (element)
+            return element.name
+        var parts = normalizedPath(selectedElementPath).split("/")
+        return parts.length ? parts[parts.length - 1] : ""
+    }
+    readonly property string selectedElementDisplayPath: {
+        var element = Global.parseElementPath(selectedElementPath)
+        return element ? element.relativePath : normalizedPath(selectedElementPath)
+    }
 
     signal selectionRequested(string selectionId)
     signal selectionCancelled(string selectionId)
@@ -25,8 +36,9 @@ Rectangle {
     width: size
     height: size
     radius: 0
+    z: itemTooltip.visible ? 1000 : 0
     color: lit || slotMouse.containsMouse || dropHovered
-           ? Qt.rgba(1, 1, 1, 0.20)
+           ? Qt.rgba(1, 1, 1, 0.56)
            : "transparent"
 
     Behavior on color { ColorAnimation { duration: 20 } }
@@ -179,6 +191,69 @@ Rectangle {
         smooth: false
         mipmap: false
         visible: root.hasSelection && status === Image.Ready
+    }
+
+    Item {
+        id: itemTooltip
+        visible: root.hasSelection && slotMouse.containsMouse
+        z: 1
+        width: tooltipContent.implicitWidth + 32
+        height: tooltipContent.implicitHeight + 26
+        x: slotMouse.mouseX + 12
+        y: slotMouse.mouseY - height / 2
+
+        BorderImage {
+            anchors.fill: parent
+            source: "qrc:/assets/minecraft/gui/item_lore/background.png"
+            border.left: 10
+            border.top: 10
+            border.right: 10
+            border.bottom: 10
+            horizontalTileMode: BorderImage.Stretch
+            verticalTileMode: BorderImage.Stretch
+        }
+
+        BorderImage {
+            anchors.fill: parent
+            source: "qrc:/assets/minecraft/gui/item_lore/frame.png"
+            border.left: 10
+            border.top: 10
+            border.right: 10
+            border.bottom: 10
+            horizontalTileMode: BorderImage.Stretch
+            verticalTileMode: BorderImage.Stretch
+        }
+
+        BorderImage {
+            anchors.fill: parent
+            anchors.margins: 1
+            source: "qrc:/assets/minecraft/gui/item_lore/frame.png"
+            border.left: 10
+            border.top: 10
+            border.right: 10
+            border.bottom: 10
+            horizontalTileMode: BorderImage.Stretch
+            verticalTileMode: BorderImage.Stretch
+        }
+
+        Row {
+            id: tooltipContent
+            anchors.centerIn: parent
+            spacing: 0
+
+            Text {
+                text: root.selectedElementName
+                color: "white"
+                font.family: "Microsoft YaHei"
+                font.pixelSize: 16
+            }
+            Text {
+                text: " | " + root.selectedElementDisplayPath
+                color: "#a0a0a0"
+                font.family: "Microsoft YaHei"
+                font.pixelSize: 16
+            }
+        }
     }
 
     MouseArea {

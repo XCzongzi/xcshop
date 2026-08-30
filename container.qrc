@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/minecraft/gui/container/0.png</file>
+        <file>assets/minecraft/gui/container/1.png</file>
+        <file>assets/minecraft/gui/container/2.png</file>
+        <file>assets/minecraft/gui/container/3.png</file>
+        <file>assets/minecraft/gui/container/4.png</file>
+        <file>assets/minecraft/gui/container/5.png</file>
+    </qresource>
+</RCC>
