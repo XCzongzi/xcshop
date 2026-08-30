@@ -48,6 +48,20 @@ BaseIOPage {
         color: Colors.changeA(Colors.foreground, 0.18)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.07)
+
+        Row {
+
+            spacing: 18
+
+            Repeater {
+                model: 5
+                delegate: ItemSlot {
+                    size: 64
+                    selectionId: "Item"
+
+                }
+            }
+        }
     }
 
     Rectangle {
