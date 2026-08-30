@@ -1,5 +1,6 @@
 import QtQuick
 import xcshop
+import "../../../js/ElementRelayState.js" as RelayState
 
 Rectangle {
     id: root

@@ -10,6 +10,8 @@ Rectangle{
     width: size
     height: size
 
+    color: Colors.transparent
+
 
 
 

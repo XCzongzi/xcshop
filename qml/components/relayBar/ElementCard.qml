@@ -80,8 +80,11 @@ Item {
 
         Drag.active: cardMouse.drag.active
         Drag.keys: ["xcshop-element"]
-        Drag.hotSpot.x: width / 2
-        Drag.hotSpot.y: height / 2
+        // Use the pointer's grab point for DropArea hit testing, rather than
+        // the card centre.  This makes a target activate when the cursor
+        // reaches it, regardless of where the card was picked up.
+        Drag.hotSpot.x: cardMouse.mouseX
+        Drag.hotSpot.y: cardMouse.mouseY
         Drag.mimeData: ({ "text/plain": root.path })
 
         Behavior on color { ColorAnimation { duration: 110 } }
