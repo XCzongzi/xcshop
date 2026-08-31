@@ -5,7 +5,7 @@ import xcshop
 Rectangle{
     id: root
     property int uiscale: 1
-    property int containerType: 0
+    property int containerType: 1
     color: Colors.transparent
 
     width: containerImage.sourceSize.width * uiscale

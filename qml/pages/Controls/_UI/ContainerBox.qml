@@ -6,7 +6,7 @@ Item {
     clip: true
 
     property int minimumScale: 1
-    property int maximumScale: 10
+    property int maximumScale: 30
     property bool viewWasManipulated: false
 
     function clamp(value, minimum, maximum) {
@@ -86,13 +86,6 @@ Item {
                                                     : Qt.OpenHandCursor)
 
         onPressed: function(mouse) {
-            // Left clicks inside the UI belong to its item slots and controls.
-            if (mouse.button === Qt.LeftButton
-                    && isOverContainer(mouse.x, mouse.y)) {
-                mouse.accepted = false
-                return
-            }
-
             pressX = mouse.x
             pressY = mouse.y
             containerX = container.x
