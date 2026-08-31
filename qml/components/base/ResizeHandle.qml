@@ -12,6 +12,8 @@ Item {
 
     signal dragStarted()
     signal dragMoved(real delta)
+    signal dragFinished()
+    signal dragCanceled()
 
     Rectangle {
         x: root.horizontal ? root.edgeMargin : (parent.width - width) / 2
@@ -50,5 +52,8 @@ Item {
             var position = root.horizontal ? point.y : point.x
             root.dragMoved(position - root.pressScenePosition)
         }
+
+        onReleased: root.dragFinished()
+        onCanceled: root.dragCanceled()
     }
 }

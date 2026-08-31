@@ -64,27 +64,27 @@ Rectangle{
         to: 1
     }
 
-    Rectangle{
-        id:edge
-        width: 1
-        height: root.height
-        x: root.width - width
-        color: '#3d000000'
+    ResizeHandle {
+        id: resizeHandle
+        visible: root.isShowing
+        z: 10
+        x: root.width - width / 2
+        width: 12
+        height: parent.height
 
-        MouseArea{      //大小调整
-            visible: root.isShowing
-            height: parent.height
-            width: parent.width - x
-            x: -2
-            onPressed: widthAnim.enabled = false
-            onPositionChanged: {
-                if(pressed){
-                    root.barWidth = Math.max(Math.min(mouseX + root.width, Global.window_width - 100), 150)
-                }
-            }
-            onReleased: widthAnim.enabled = true
-            cursorShape: Qt.SizeHorCursor
+        property int pressWidth: 0
+
+        onDragStarted: {
+            widthAnim.enabled = false
+            pressWidth = root.barWidth
         }
+        onDragMoved: function(delta) {
+            root.barWidth = Math.max(150,
+                                     Math.min(Global.window_width - 100,
+                                              pressWidth + delta))
+        }
+        onDragFinished: widthAnim.enabled = true
+        onDragCanceled: widthAnim.enabled = true
     }
     
 

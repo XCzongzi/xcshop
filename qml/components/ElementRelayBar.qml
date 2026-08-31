@@ -300,45 +300,30 @@ Rectangle {
         }
     }
 
-    //边框
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 5
-        color: resizeArea.containsMouse || root.resizing ? Colors.changeA(Colors.border, 0.62)
-                                                       : Colors.changeA(Colors.text, 0.08)
+    ResizeHandle {
+        id: resizeHandle
+        z: 10
+        horizontal: true
+        y: -height / 2
+        width: parent.width
+        height: 12
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        property int pressHeight: 0
 
-        MouseArea {
-            id: resizeArea
-            anchors.fill: parent
-            anchors.topMargin: -3
-            anchors.bottomMargin: -3
-            hoverEnabled: true
-            cursorShape: Qt.SizeVerCursor
-            property real pressSceneY: 0
-            property int pressHeight: 0
-            onPressed: function(mouse) {
-                root.resizing = true
-                pressSceneY = mapToItem(root.parent, mouse.x, mouse.y).y
-                pressHeight = root.panelHeight
-            }
-            onPositionChanged: function(mouse) {
-                if (!pressed)
-                    return
-                var currentSceneY = mapToItem(root.parent, mouse.x, mouse.y).y
-                root.panelHeight = Math.max(root.minPanelHeight,
-                                            Math.min(root.maxPanelHeight,
-                                                     pressHeight + pressSceneY - currentSceneY))
-            }
-            onReleased: {
-                root.resizing = false
-                Global.saveElementRelayHeight(root.panelHeight)
-            }
-            onCanceled: root.resizing = false
+        onDragStarted: {
+            root.resizing = true
+            pressHeight = root.panelHeight
         }
+        onDragMoved: function(delta) {
+            root.panelHeight = Math.max(root.minPanelHeight,
+                                        Math.min(root.maxPanelHeight,
+                                                 pressHeight - delta))
+        }
+        onDragFinished: {
+            root.resizing = false
+            Global.saveElementRelayHeight(root.panelHeight)
+        }
+        onDragCanceled: root.resizing = false
     }
 
     //顶栏
