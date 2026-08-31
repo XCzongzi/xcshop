@@ -11,6 +11,9 @@ BaseIOPage {
     property int inspectorWidth: 260
     property int minimumInspectorWidth: 200
     property int minimumWorkspaceWidth: 280
+    property int layoutBarHeight: 72
+    property int minimumLayoutBarHeight: 72
+    property int minimumCanvasHeight: 200
     property int pageMargin: 10
     property int panelSpacing: 10
     readonly property int maximumInspectorWidth: Math.max(
@@ -18,13 +21,18 @@ BaseIOPage {
                                                      width - minimumWorkspaceWidth
                                                      - pageMargin * 2
                                                      - panelSpacing)
+    readonly property int maximumLayoutBarHeight: Math.max(
+                                                       minimumLayoutBarHeight,
+                                                       height - pageMargin * 2
+                                                       - panelSpacing - minimumCanvasHeight)
 
     Rectangle {
         id: layoutBar
         x: root.pageMargin
         y: root.pageMargin
         width: Math.max(0, inspector.x - root.panelSpacing - x)
-        height: 72
+        height: Math.min(root.layoutBarHeight, root.maximumLayoutBarHeight)
+        z: 1
         radius: 10
         color: Colors.changeA(Colors.foreground, 0.72)
         border.width: 1
@@ -38,6 +46,24 @@ BaseIOPage {
             onCenter: false
         }
 
+        ResizeHandle {
+            id: layoutResizeHandle
+            z: 10
+            horizontal: true
+            y: parent.height - height / 2
+            width: parent.width
+            height: 12
+
+            property int pressHeight: 0
+
+            onDragStarted: pressHeight = layoutBar.height
+            onDragMoved: function(delta) {
+                root.layoutBarHeight = Math.max(
+                            root.minimumLayoutBarHeight,
+                            Math.min(root.maximumLayoutBarHeight,
+                                     pressHeight + delta))
+            }
+        }
     }
 
     Rectangle {
@@ -86,54 +112,22 @@ BaseIOPage {
         }
 
    
-        Item {
+        ResizeHandle {
             id: resizeHandle
             z: 10
+            horizontal: false
             x: -width / 2
             width: 12
             height: parent.height
 
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.topMargin: 10
-                anchors.bottomMargin: 10
-                width: resizeArea.containsMouse || resizeArea.pressed ? 2 : 1
-                radius: width / 2
-                color: resizeArea.containsMouse || resizeArea.pressed
-                       ? Colors.changeA(Colors.border, 0.78)
-                       : Colors.changeA(Colors.text, 0.12)
+            property int pressWidth: 0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on width { NumberAnimation { duration: 120 } }
-            }
-
-            MouseArea {
-                id: resizeArea
-                anchors.fill: parent
-                hoverEnabled: true
-                preventStealing: true
-                cursorShape: Qt.SizeHorCursor
-
-                property real pressSceneX: 0
-                property int pressWidth: 0
-
-                onPressed: function(mouse) {
-                    pressSceneX = mapToItem(root, mouse.x, mouse.y).x
-                    pressWidth = inspector.width
-                }
-
-                onPositionChanged: function(mouse) {
-                    if (!pressed)
-                        return
-
-                    var currentSceneX = mapToItem(root, mouse.x, mouse.y).x
-                    root.inspectorWidth = Math.max(
-                                root.minimumInspectorWidth,
-                                Math.min(root.maximumInspectorWidth,
-                                         pressWidth + pressSceneX - currentSceneX))
-                }
+            onDragStarted: pressWidth = inspector.width
+            onDragMoved: function(delta) {
+                root.inspectorWidth = Math.max(
+                            root.minimumInspectorWidth,
+                            Math.min(root.maximumInspectorWidth,
+                                     pressWidth - delta))
             }
         }
     }

@@ -93,6 +93,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/VariableTextField.qml
         qml/components/base/VariableTextArea.qml
         qml/components/base/ScrollBar.qml
+        qml/components/base/ResizeHandle.qml
         qml/components/base/MultiPropertyEdit.qml
         qml/components/base/ElementSelection.qml
         qml/components/base/ElementSelectionCompact.qml

@@ -66,16 +66,33 @@ Item {
         id: viewMouse
         anchors.fill: parent
         z: -1
-        acceptedButtons: Qt.MiddleButton
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         hoverEnabled: true
-        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor
 
         property real pressX: 0
         property real pressY: 0
         property real containerX: 0
         property real containerY: 0
 
+        function isOverContainer(x, y) {
+            return x >= container.x && x <= container.x + container.width
+                    && y >= container.y && y <= container.y + container.height
+        }
+
+        readonly property bool cursorOverContainer: isOverContainer(mouseX, mouseY)
+
+        cursorShape: pressed ? Qt.ClosedHandCursor
+                             : (cursorOverContainer ? Qt.ArrowCursor
+                                                    : Qt.OpenHandCursor)
+
         onPressed: function(mouse) {
+            // Left clicks inside the UI belong to its item slots and controls.
+            if (mouse.button === Qt.LeftButton
+                    && isOverContainer(mouse.x, mouse.y)) {
+                mouse.accepted = false
+                return
+            }
+
             pressX = mouse.x
             pressY = mouse.y
             containerX = container.x
