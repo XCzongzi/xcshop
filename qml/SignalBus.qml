@@ -6,6 +6,11 @@ QtObject{
     //主模块信号：用于在Main.qml中接收任意位置发送的信号
     signal sendToMain(string signalType , var parameters)
 
+    // 全局右键菜单：target 为触发控件，x/y 为其局部坐标。
+    signal contextMenuRequested(var target, real x, real y, var items,
+                                var contentComponent)
+    signal contextMenuCloseRequested()
+
     //元素名返回
     signal elementNameReturn(string text)
 

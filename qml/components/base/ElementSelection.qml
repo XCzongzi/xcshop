@@ -57,11 +57,7 @@ Rectangle {
 
     // ===== 路径校验与本地状态变更 =====
     function normalizedPath(filePath) {
-        if (filePath === undefined || filePath === null)
-            return ""
-        return String(filePath).trim()
-                               .replace(/^file:\/\/\/?/, "")
-                               .replace(/\\/g, "/")
+        return Global.resolveElementPath(filePath)
     }
 
     function setElement(filePath, notifyChange) {
@@ -70,12 +66,14 @@ Rectangle {
             clearElement(notifyChange)
             return
         }
-        var actualType = Global.elementTypeFromPath(path)
-        if (selectionId.length && actualType.toLowerCase() !== selectionId.toLowerCase()) {
+        var element = Global.parseElementPath(path)
+        if (!element || (selectionId.length
+                         && element.type.toLowerCase() !== selectionId.toLowerCase())) {
             validationMessage = "仅可连接" + selectionTypeName
             validationTimer.restart()
             return
         }
+        path = element.path
         var wasWaiting = waitingForSelection
         selectedElementPath = path
         waitingForSelection = false
@@ -83,7 +81,7 @@ Rectangle {
         if (wasWaiting)
             SignalBus.elementSelectionFocusChanged(false, {})
         if (notifyChange === undefined || notifyChange)
-            elementSelected(path)
+            elementSelected(element.relativePath)
     }
 
     function clearElement(notifyChange) {

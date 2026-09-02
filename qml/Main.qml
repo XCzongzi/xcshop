@@ -162,6 +162,26 @@ XCWindow {
             blurTarget: popupBlurSource
         }
 
+        //右键菜单
+        ContextMenu {
+            id: globalContextMenu
+            z: 1001
+        }
+
+        Connections {
+            target: SignalBus
+
+            function onContextMenuRequested(target, x, y, items, contentComponent) {
+                globalContextMenu.menuItems = items || []
+                globalContextMenu.contentComponent = contentComponent || null
+                globalContextMenu.openFor(target, x, y)
+            }
+
+            function onContextMenuCloseRequested() {
+                globalContextMenu.close()
+            }
+        }
+
 
         // ------------------------主窗口区-------------------
 

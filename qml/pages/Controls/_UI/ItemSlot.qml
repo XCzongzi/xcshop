@@ -46,11 +46,7 @@ Rectangle {
     XCFile { id: elementFile }
 
     function normalizedPath(filePath) {
-        if (filePath === undefined || filePath === null)
-            return ""
-        return String(filePath).trim()
-                               .replace(/^file:\/\/\/?/, "")
-                               .replace(/\\/g, "/")
+        return Global.resolveElementPath(filePath)
     }
 
     function itemIdFromValue(value) {
@@ -84,9 +80,10 @@ Rectangle {
             return
         }
 
-        var actualType = Global.elementTypeFromPath(path)
-        if (actualType.toLowerCase() !== "item")
+        var element = Global.parseElementPath(path)
+        if (!element || element.type.toLowerCase() !== "item")
             return
+        path = element.path
 
         var wasWaiting = waitingForSelection
         selectedElementPath = path
@@ -94,7 +91,7 @@ Rectangle {
         if (wasWaiting)
             SignalBus.elementSelectionFocusChanged(false, {})
         if (notifyChange === undefined || notifyChange)
-            elementSelected(path)
+            elementSelected(element.relativePath)
     }
 
     function clearElement(notifyChange) {

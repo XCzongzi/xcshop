@@ -88,7 +88,6 @@ BaseIOPage {
                 }
             }
         }
-        
     }
 
     Rectangle {
@@ -131,4 +130,5 @@ BaseIOPage {
             }
         }
     }
+
 }

@@ -99,6 +99,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/ElementSelectionCompact.qml
         qml/components/base/LargeIconButton.qml
         qml/components/base/IconButton.qml
+        qml/components/base/ContextMenu.qml
 
         qml/components/settings/SettingsPageHeader.qml
         qml/components/settings/SettingsCard.qml

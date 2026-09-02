@@ -91,8 +91,25 @@ QtObject{
             return ""
         return String(filePath).trim()
                                .replace(/^file:\/\/\/?/, "")
+                               .replace(/^file:/, "")
                                .replace(/\\/g, "/")
                                .replace(/\/+$/, "")
+    }
+
+    // Element references are persisted relative to the project root.  Keep the
+    // conversion here so selection widgets, element pages, and the relay bar
+    // all use exactly the same convention.
+    function isAbsoluteElementPath(path){
+        return /^[A-Za-z]:\//.test(path) || /^\/+/.test(path)
+    }
+
+    function resolveElementPath(filePath){
+        var path = normalizeElementPath(filePath)
+        if (!path.length || isAbsoluteElementPath(path) || !project_location.length)
+            return path
+
+        var projectRoot = normalizeElementPath(project_location)
+        return projectRoot + "/" + path.replace(/^\/+/, "")
     }
 
     function elementTypeFromPath(filePath){
@@ -110,7 +127,7 @@ QtObject{
     }
 
     function parseElementPath(filePath){
-        var path = normalizeElementPath(filePath)
+        var path = resolveElementPath(filePath)
         var type = elementTypeFromPath(path)
         if (!path.length || !type.length || !project_location.length)
             return null
@@ -135,6 +152,10 @@ QtObject{
         }
     }
 
+    function projectRelativeElementPath(filePath){
+        var parsed = parseElementPath(filePath)
+        return parsed ? parsed.relativePath : normalizeElementPath(filePath)
+    }
 
     //文件操作
     property int current_file_index:0
@@ -197,8 +218,11 @@ QtObject{
         } catch (error) {
             stored = null
         }
-        if (stored && typeof stored === "object")
-            return cloneRelayState(stored) || { "recent": [], "favorites": [], "groups": [] }
+        if (stored && typeof stored === "object") {
+            var hydrated = cloneRelayState(stored) || { "recent": [], "favorites": [], "groups": [] }
+            transformRelayRecordPaths(hydrated, resolveElementPath)
+            return hydrated
+        }
 
         return { "recent": [], "favorites": [], "groups": [] }
     }
@@ -208,7 +232,34 @@ QtObject{
         var serialized = cloneRelayState(state)
         if (!relayPath.length || !serialized)
             return
+        transformRelayRecordPaths(serialized, projectRelativeElementPath)
         xcfile.write(relayPath, JSON.stringify(serialized))
+    }
+
+    function transformRelayRecordPaths(value, transformPath){
+        if (!value || typeof value !== "object")
+            return false
+        var changed = false
+        if (Array.isArray(value)) {
+            for (var arrayIndex = 0; arrayIndex < value.length; ++arrayIndex)
+                changed = transformRelayRecordPaths(value[arrayIndex], transformPath) || changed
+            return changed
+        }
+
+        for (var key in value) {
+            if (!Object.prototype.hasOwnProperty.call(value, key))
+                continue
+            if (key === "path" && typeof value[key] === "string") {
+                var transformedPath = transformPath(value[key])
+                if (transformedPath !== value[key]) {
+                    value[key] = transformedPath
+                    changed = true
+                }
+            }
+            else
+                changed = transformRelayRecordPaths(value[key], transformPath) || changed
+        }
+        return changed
     }
 
     function saveElementRelayHeight(value){
