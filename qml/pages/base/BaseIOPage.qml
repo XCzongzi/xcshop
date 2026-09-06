@@ -23,7 +23,9 @@ BasePage{
         }
 
         try {
-            var parsed = JSON.parse(eio.read())
+            var serialized = eio.read()
+            var parsed = !serialized.trim().length && Global.current_element === "UI"
+                    ? ({}) : JSON.parse(serialized)
             if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
                 throw new Error("元素文件根节点必须是对象")
             root.eledata = parsed

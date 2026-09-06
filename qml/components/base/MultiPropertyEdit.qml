@@ -3,15 +3,13 @@ import QtQuick
 import xcshop
 
 // A compact property editor with a selector in its header and one custom
-// editor surface below it. Supply one Component for every option through
-// editorComponents; the selected component is created on demand.
+// editor surface below it. Add editor items directly; the visible one is
+// measured automatically.
 Item {
     id: root
 
     property string text: ""
     property var options: []
-    property var editorComponents: []
-    property Item activeContentItem: null
     property int selected: -1
     property int initialOption: 0
     property int headerHeight: 38
@@ -20,25 +18,27 @@ Item {
     property string emptyText: "请选择需要编辑的属性"
 
     readonly property bool hasLabel: text.length > 0
-    readonly property bool hasEditor: selected >= 0
-                                      && editorComponents
-                                      && selected < editorComponents.length
-                                      && editorComponents[selected]
-    readonly property real contentHeight: hasEditor
-                                        ? editorLoader.height
-                                        : (activeContentItem
-                                           ? activeContentItem.height
-                                           : fallbackContent.childrenRect.y + fallbackContent.childrenRect.height)
+    readonly property Item currentEditor: {
+        for (var index = 0; index < editorContent.children.length; ++index) {
+            var item = editorContent.children[index]
+            if (item.visible)
+                return item
+        }
+        return null
+    }
+    readonly property real contentHeight: currentEditor
+                                        ? currentEditor.y
+                                          + Math.max(currentEditor.implicitHeight,
+                                                     currentEditor.height)
+                                        : 0
 
-    // Keeps the old direct-child syntax working for simple, single-editor
-    // usages. New code should prefer editorComponents so every menu item owns
-    // its own editor.
-    default property alias content: fallbackContent.data
+    default property alias content: editorContent.data
 
     signal clicked()
 
     implicitWidth: 280
-    implicitHeight: headerHeight + contentPadding + Math.max(contentHeight, minimumEditorHeight)
+    implicitHeight: headerHeight + contentPadding
+                    + Math.max(contentHeight, minimumEditorHeight)
     height: implicitHeight
 
     function selectOption(index) {
@@ -158,26 +158,15 @@ Item {
         x: root.contentPadding
         y: root.headerHeight + root.contentPadding
         width: parent.width - root.contentPadding * 2
-        height: root.contentHeight
-
-        Loader {
-            id: editorLoader
-            visible: root.hasEditor
-            width: parent.width
-            height: item ? Math.max(root.minimumEditorHeight, item.implicitHeight, item.height)
-                         : root.minimumEditorHeight
-            sourceComponent: root.hasEditor ? root.editorComponents[root.selected] : null
-        }
+        height: Math.max(0, root.height - y)
 
         Item {
-            id: fallbackContent
-            visible: !root.hasEditor
-            width: parent.width
-            height: childrenRect.y + childrenRect.height
+            id: editorContent
+            anchors.fill: parent
         }
 
         XCText {
-            visible: !root.hasEditor && fallbackContent.children.length === 0
+            visible: !root.currentEditor
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             xcText: root.emptyText

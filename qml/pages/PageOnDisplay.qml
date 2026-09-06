@@ -225,7 +225,6 @@ BaseIOPage {
             y: memberBar_radioGroup.y + memberBar_radioGroup.height + 14
             width: parent.width - 32
             options: memberBar_radioGroup.selected === 0 ? ["项头文本", "代价元素", "项中文本", "代价值", "项尾文本"] : ["项头文本", "代价值", "项中文本", "代价元素", "项尾文本"]
-            activeContentItem: selected % 2 === 0 ? memberBar_textEditor : memberBar_valueEdit
             onSelectedChanged: {
                 if (selected % 2 === 0) {
                     memberBar_contentInput.setContent(memberBar.textContents[selected / 2])
@@ -342,7 +341,6 @@ BaseIOPage {
             y: 64
             width: parent.width - 32
             options: ["成功信息", "失败信息"]
-            activeContentItem: noticeEditor
             onSelectedChanged: {
                 noticeTextInput.setContent(noticeTextBar.textContents[selected])
                 noticeSoundInput.text = noticeTextBar.soundPaths[selected]

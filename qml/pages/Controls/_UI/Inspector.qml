@@ -25,6 +25,25 @@ Rectangle {
         onCenter: false
     }
 
+    MultiPropertyEdit {
+        id: propertyEditor
+        x: 16
+        y: 32
+        width: parent.width - 32
+        height: parent.height - y - 16
+        contentPadding: 0
+        options: ["全局属性", "当前栏位"]
+        GlobalProperties {
+            id: globalProperties
+            visible: propertyEditor.selected === 0
+        }
+
+        CurrentSlotProperties {
+            id: currentSlotProperties
+            visible: propertyEditor.selected === 1
+        }
+    }
+
     ResizeHandle {
         id: resizeHandle
         z: 10

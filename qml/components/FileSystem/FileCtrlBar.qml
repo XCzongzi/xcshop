@@ -12,6 +12,8 @@ Item{
     signal elementPathsDropped(var paths)
 
     function defaultElementContent(){
+        if (Global.current_element === "UI")
+            return JSON.stringify({})
         if (Global.current_element === "Item") {
             return JSON.stringify({
                 "item": "",

@@ -7,14 +7,13 @@ Item {
 
     property int minimumScale: 1
     property int maximumScale: 30
+    property int containerType: -1
     property bool viewWasManipulated: false
 
     function clamp(value, minimum, maximum) {
         return Math.max(minimum, Math.min(maximum, value))
     }
 
-    // The UI center may reach a Box edge, allowing roughly half of the UI
-    // to be outside the Box without letting it disappear completely.
     function minimumContainerX() {
         return -container.width / 2
     }
@@ -55,6 +54,10 @@ Item {
     ContainerUI {
         id: container
         uiscale: root.minimumScale
+        // Keep a valid value while a newly created UI is awaiting its
+        // container choice; the canvas itself remains hidden until then.
+        containerType: root.containerType >= 0 ? root.containerType : 0
+        visible: root.containerType >= 0
 
         onWidthChanged: root.updateViewAfterResize()
         onHeightChanged: root.updateViewAfterResize()
