@@ -5,7 +5,6 @@ import xcshop
 Rectangle{
     property int barWidth
     property bool isShowing: false
-    property string currentFilePath: ""
     property string pendingFolder: ""
     id: root
     property bool started: Global.get_fileName() != ""
@@ -23,8 +22,7 @@ Rectangle{
         treeAnim.start()
     }
     function floderReset(){
-        // 切换元素类型时，回到该类型当前文件所在的目录；否则文件列表在根目录，
-        // 即使 Global 中已有当前文件，也无法在列表里选中它。
+        // 切换元素类型时回到当前文件所在目录，使打开状态标记保持可见。
         if (!root.pendingFolder.length)
             root.pendingFolder = root.currentElementFolder()
         root.contentOpacity = 0
@@ -41,8 +39,6 @@ Rectangle{
         pendingFolder = ""
         xcFileTree.currentFolder = folder || ""
         root.floderSwitch()
-        // 同目录内切换文件不会触发 FolderListModel 的重新加载，因此需要主动刷新选中态。
-        xcFileTree.refreshCurrentSelectionLater()
     }
 
     Timer{       //似乎Global.current_element和xcFileTree.currentFolder一起改变的话会出问题，所以这边用Timer防止出问题
@@ -52,7 +48,6 @@ Rectangle{
             xcFileTree.currentFolder = root.pendingFolder
             root.pendingFolder = ""
             if(Global.current_element != "Total")treeAnim.start()
-            xcFileTree.refreshCurrentSelectionLater()
         }
         
     }
@@ -114,6 +109,9 @@ Rectangle{
         height: 32
         width:root.width - 3
         onBackbtnClicked: xcFileTree.directionBack()
+        onElementPathsDropped: function(paths) {
+            xcFileTree.moveEntriesToParentDirectory(paths)
+        }
         hideBackBtn: !xcFileTree.currentFolder
         filePath: Global.project_location + "/" + Global.current_element + xcFileTree.currentFolder
     }

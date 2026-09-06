@@ -166,6 +166,7 @@ XCWindow {
         ContextMenu {
             id: globalContextMenu
             z: 1001
+            onClosed: SignalBus.contextMenuClosed()
         }
 
         Connections {

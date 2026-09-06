@@ -1,114 +1,153 @@
 import QtQuick
+import QtQuick.Window
 import xcshop
 
-Rectangle{
+Rectangle {
     id: root
-    //width: 100
-    //height: 24
-    color: Colors.transparent
 
-    property string text
-    property bool btnSelected: false
-    property string icon
+    property string text: ""
+    property string icon: ""
+    property bool opened: false
+    property bool operationSelected: false
+    property bool operationMode: false
+    property bool draggable: false
+    property var dragPaths: []
+    property bool acceptsElementDrop: false
+    property bool dropHovered: false
+    property bool dragAllowed: false
+    readonly property bool highlighted: operationMode ? operationSelected : opened
 
-    property int imgSize: 18
+    signal pressed(var mouse)
+    signal clicked(var mouse)
+    signal contextMenuRequested(var mouse)
+    signal pathsDropped(var paths)
 
-    signal clicked()
+    radius: 3
+    color: dropHovered ? Colors.changeA(Colors.border, 0.34)
+                       : operationMode && operationSelected
+                         ? Colors.changeA(Colors.border, 0.28)
+                       : !operationMode && opened ? Colors.banned
+                                  : pointer.containsMouse ? Colors.fired : Colors.transparent
+    border.width: activeFocus || dropHovered ? 1 : 0
+    border.color: dropHovered ? Colors.border : Colors.changeA(Colors.border, 0.82)
 
-    property double borderOpacity: root.activeFocus? 1 : 0
-        border.color: Colors.changeA(Colors.border,borderOpacity)
-        border.width: 1
-        Behavior on borderOpacity{
-            enabled: !root.activeFocus
-            NumberAnimation{
-                duration: 300
-            }
-        }
+    Behavior on color { ColorAnimation { duration: 120 } }
 
-    function setSelection(selected,noAnimation){
-        imgAnim.enabled = !noAnimation
-        colorAnim.duration = noAnimation? 0 : 200
-        root.btnSelected = selected
-        root.imgSize = selected? 24 : 18
-        timer.start()
-    }
-    Timer{      //选中后禁用MouseArea时，仍会触发槽函数导致颜色设置被替代，因此用Timer来延迟颜色设置
-        id: timer
-        interval: 1
-        onTriggered:{
-            colorAnim.start()
-        }
-    }
-    ColorAnimation{
-        id: colorAnim
-        target: root
-        property: "color"
-        duration: 200
-        to: root.btnSelected? Colors.banned : Colors.transparent
+    Rectangle {
+        x: 0
+        anchors.verticalCenter: parent.verticalCenter
+        width: 3
+        height: parent.height - 6
+        radius: 2
+        visible: root.opened
+        color: Colors.border
+        opacity: root.operationMode ? 0.82 : 1
+
+        Behavior on opacity { NumberAnimation { duration: 120 } }
     }
 
     Image {
         x: 4
         anchors.verticalCenter: parent.verticalCenter
-        id: img
+        width: root.highlighted || pointer.containsMouse ? 22 : 18
+        height: width
         source: "qrc:/assets/gui/element/" + root.icon + ".png"
-        sourceSize.width: root.imgSize
-        sourceSize.height: root.imgSize
+        sourceSize.width: width
+        sourceSize.height: height
+
+        Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
     }
-    XCText{
-        id: fileText
+
+    XCText {
         x: 32
-        width: parent.width - 32
+        width: parent.width - 36
+        anchors.verticalCenter: parent.verticalCenter
         xcText: root.text
         xcFontSize: 12
+        onCenter: false
+        elide: Text.ElideRight
     }
-    // Text {
-    //     id: fileText
-    //     x: 32
-    //     width: parent.width - 32
-    //     anchors.verticalCenter: parent.verticalCenter
-    //     text: qsTr(root.text)
-    //     elide: Text.ElideRight
-    //     color: Colors.text
-    //     font.pixelSize: 12
-    //     font.family: "微软雅黑"
-    //     font.bold: true
-    // }
 
-    Behavior on imgSize{
-        id: imgAnim
-        NumberAnimation{
-            duration: 200
-            easing.type: Easing.InOutQuad
+    Item {
+        id: dragProxy
+        parent: root.Window.window ? root.Window.window.contentItem : root
+        width: 26
+        height: 26
+        z: 10000
+
+        Drag.active: pointer.drag.active
+        Drag.source: root
+        Drag.keys: ["xcshop-element-paths"]
+        Drag.hotSpot.x: width / 2
+        Drag.hotSpot.y: height / 2
+        Drag.imageSource: "qrc:/assets/gui/element/" + root.icon + ".png"
+
+        Image {
+            visible: dragProxy.Drag.active
+            anchors.fill: parent
+            source: dragProxy.Drag.imageSource
+            sourceSize.width: width
+            sourceSize.height: height
         }
     }
 
     MouseArea {
-        visible: !root.btnSelected
+        id: pointer
         anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         hoverEnabled: true
-        onClicked: root.clicked()
-        onEntered: {
-            parent.color = Colors.fired
-            root.imgSize = 24
-        }
-        onExited: {
-            parent.color = Colors.transparent
-            root.imgSize = 18
-        }
-        onPressed: {
-            parent.color = Colors.pressed
-            root.imgSize = 15
+        drag.target: root.dragAllowed ? dragProxy : null
+        drag.threshold: 6
+
+        onPressed: function(mouse) {
+            root.dragAllowed = root.draggable && mouse.button === Qt.LeftButton
             root.forceActiveFocus()
+            root.pressed(mouse)
+            if (root.dragAllowed) {
+                SignalBus.draggedElementPaths = root.dragPaths.slice()
+                var scenePosition = root.mapToItem(dragProxy.parent, mouse.x, mouse.y)
+                dragProxy.x = scenePosition.x - dragProxy.width / 2
+                dragProxy.y = scenePosition.y - dragProxy.height / 2
+            }
+        }
+        onClicked: function(mouse) {
+            if (mouse.button === Qt.RightButton)
+                root.contextMenuRequested(mouse)
+            else
+                root.clicked(mouse)
         }
         onReleased: {
-            if (containsMouse) {
-                parent.color = Colors.fired
-                root.imgSize = 24
-            }else{
-                parent.color = Colors.transparent
-                root.imgSize = 18
-            }
+            if (dragProxy.Drag.active)
+                dragProxy.Drag.drop()
+            root.dragAllowed = false
+            SignalBus.draggedElementPaths = []
+            dragProxy.x = 0
+            dragProxy.y = 0
+        }
+        onCanceled: {
+            root.dragAllowed = false
+            SignalBus.draggedElementPaths = []
+            dragProxy.Drag.cancel()
+            dragProxy.x = 0
+            dragProxy.y = 0
+        }
+    }
+
+    DropArea {
+        anchors.fill: parent
+        enabled: root.acceptsElementDrop
+        keys: ["xcshop-element-paths"]
+
+        onEntered: function(drag) {
+            root.dropHovered = true
+            drag.accepted = true
+        }
+        onExited: root.dropHovered = false
+        onDropped: function(drop) {
+            root.dropHovered = false
+            if (SignalBus.draggedElementPaths.length)
+                root.pathsDropped(SignalBus.draggedElementPaths.slice())
+            drop.acceptProposedAction()
         }
     }
 }

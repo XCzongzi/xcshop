@@ -3,275 +3,668 @@ import QtQuick
 import Qt.labs.folderlistmodel
 import xcshop
 
-Item{
-    id:root
-    //anchors.fill: parent
-    
+Item {
+    id: root
+
     property string currentFolder: ""
-    property string filePath: "file:" + Global.project_location + "/" + Global.current_element + currentFolder
-    property int selectionRetryCount: 0
+    readonly property string currentDirectory: Global.normalizeElementPath(
+                                                   Global.project_location + "/"
+                                                   + Global.current_element + currentFolder)
+    readonly property string filePath: "file:" + currentDirectory
+    property var selectedPaths: []
+    property string selectedDirectoryPath: ""
+    property var clipboardPaths: []
+    property int selectionAnchor: -1
+    property bool operationMode: false
+    property bool pendingOperation: false
+    property bool contextMenuActive: false
 
     signal floderSwitched()
     signal fileSwitched()
 
-    function directionBack(){
-        currentFolder = currentFolder.split('/').slice(0, -1).join('/')
-        root.floderSwitched()
+    focus: true
+
+    XCFile { id: fileOperations }
+
+    function directionBack() {
+        currentFolder = currentFolder.split("/").slice(0, -1).join("/")
+        finishOperation()
+        floderSwitched()
     }
-    Component.onCompleted:{
-        SignalBus.elementIndexReset.connect(set_selection)
+
+    function moveEntriesToParentDirectory(paths) {
+        if (!currentFolder.length)
+            return
+        var separator = currentDirectory.lastIndexOf("/")
+        if (separator > 0)
+            moveEntriesToDirectory(paths, currentDirectory.substring(0, separator))
     }
-    function refreshCurrentSelectionLater(){
-        var fileLocation = Global.get_fileLocation(true)
-        var fileName = Global.get_fileName()
-        selectionRetryCount = 0
-        Qt.callLater(function(){
-            root.refreshSelection(fileLocation, fileName)
-        })
+
+    function pathForFileName(fileName) {
+        return currentDirectory + "/" + fileName
     }
-    function refreshSelection(fileLocation, fileName){
-        //Console.output(filePath + "\n" + fileLocation)
-        if(filePath !== fileLocation)
-            return
 
-        // 延后/重试期间可能又打开了另一份文件，旧请求不得覆盖新选择。
-        if(Global.get_fileLocation(true) !== fileLocation || Global.get_fileName() !== fileName)
-            return
-
-        if(!fileName.length)
-            return
-
-        var selectionIndex = get_index(fileName)
-        var selectedItem = selectionIndex >= 0 ? fileList.itemAtIndex(selectionIndex) : null
-        if(!selectedItem){
-            // FolderListModel Ready 时，ListView 的 delegate 可能仍未创建完成。
-            // 在下一帧重试几次，避免首次跨类型打开时漏掉高亮。
-            if(selectionRetryCount < 5){
-                ++selectionRetryCount
-                selectionRetryTimer.fileLocation = fileLocation
-                selectionRetryTimer.fileName = fileName
-                selectionRetryTimer.restart()
-            }
-            return
-        }
-
-        // 清除旧文件的高亮，保证元素管理器始终只有一个当前文件。
-        for(var i = 0; i < fileList.count; ++i){
-            var item = fileList.itemAtIndex(i)
-            if(item)
-                item.setSelection(false, true)
-        }
-
-        selectedItem.setSelection(true, true)
-        selectionRetryCount = 0
-    }
-    function get_index(fileName){
-        for(var i = 0; i < folderFileModel.count; i++){
-            //Console.output(folderFileModel.get(i,"fileBaseName"))
-            //Console.output(fileName)
-            if(folderFileModel.get(i,"fileBaseName") == fileName){
+    function selectedIndex(path) {
+        var normalized = Global.normalizeElementPath(path)
+        for (var i = 0; i < selectedPaths.length; ++i) {
+            if (Global.normalizeElementPath(selectedPaths[i]) === normalized)
                 return i
-            }
         }
         return -1
     }
-    Timer{
-        id: selectionRetryTimer
-        interval: 16
-        property string fileLocation: ""
-        property string fileName: ""
-        onTriggered: root.refreshSelection(fileLocation, fileName)
+
+    function isSelected(path) {
+        return selectedIndex(path) >= 0
     }
-    // Timer{      //用Timer启动刷新，因为文件系统的变化可能有延迟
-    //     id: refreshTimer
-    //     interval: 1
-    //     onTriggered: {
-    //         root.refreshSelection(Global.get_fileLocation(true), Global.get_fileName())
-    //     }
-    // }//-------------//--------------------
-    function set_selection(selectionIndex){
-        indexResetTimer.selectionIndex = selectionIndex
-        indexResetTimer.start()
-        Console.output("selectionIndex")
+
+    function isOpened(path) {
+        return Global.normalizeElementPath(path)
+                === Global.normalizeElementPath(Global.get_filePath())
     }
-    Timer{  //这个timer须与refresh的timer间隔时间不同
-        id:indexResetTimer
-        interval: 18
-        property int selectionIndex
-        onTriggered: {
-            Console.output(selectionIndex + " " + folderFileModel.count)
-            if(selectionIndex > folderFileModel.count - 1){
-                Global.set_file("*","")
-            }else{
-                fileList.itemAtIndex(selectionIndex).setSelection(true,true)
-                Global.set_file("*",folderFileModel.get(selectionIndex,"fileBaseName"))
-            }
-            root.fileSwitched()
+
+    function beginOperation() {
+        operationMode = true
+    }
+
+    function clearSelection() {
+        selectedPaths = []
+        selectedDirectoryPath = ""
+        selectionAnchor = -1
+    }
+
+    function finishOperation() {
+        clearSelection()
+        operationMode = false
+        pendingOperation = false
+        contextMenuActive = false
+        root.forceActiveFocus()
+    }
+
+    function selectOnly(path, index) {
+        selectedDirectoryPath = ""
+        selectedPaths = [Global.normalizeElementPath(path)]
+        selectionAnchor = index
+    }
+
+    function selectDirectory(path) {
+        beginOperation()
+        selectedPaths = []
+        selectedDirectoryPath = Global.normalizeElementPath(path)
+        selectionAnchor = -1
+    }
+
+    function enterDirectory(path) {
+        var normalized = Global.normalizeElementPath(path)
+        var prefix = currentDirectory + "/"
+        if (normalized.indexOf(prefix) !== 0)
+            return
+        currentFolder += "/" + normalized.substring(prefix.length)
+        finishOperation()
+        floderSwitched()
+    }
+
+    function toggleSelection(path, index) {
+        beginOperation()
+        var normalized = Global.normalizeElementPath(path)
+        var next = selectedPaths.slice()
+        var existing = selectedIndex(normalized)
+        if (existing >= 0)
+            next.splice(existing, 1)
+        else
+            next.push(normalized)
+        selectedPaths = next
+        selectionAnchor = index
+    }
+
+    function selectRange(index) {
+        beginOperation()
+        if (selectionAnchor < 0) {
+            var firstName = folderFileModel.get(index, "fileName")
+            selectOnly(pathForFileName(firstName), index)
+            return
         }
-    }//----------------------
 
-    onFilePathChanged:{
-        //Global.set_file(root.currentFolder,"")
-        //refreshTimer.start()
-        root.fileSwitched()
-        root.refreshCurrentSelectionLater()
+        var start = Math.min(selectionAnchor, index)
+        var end = Math.max(selectionAnchor, index)
+        var paths = []
+        for (var i = start; i <= end; ++i)
+            paths.push(pathForFileName(folderFileModel.get(i, "fileName")))
+        selectedPaths = paths
     }
-    
 
-    // 文件列表模型
+    function selectAll() {
+        beginOperation()
+        var paths = []
+        for (var i = 0; i < folderFileModel.count; ++i)
+            paths.push(pathForFileName(folderFileModel.get(i, "fileName")))
+        selectedPaths = paths
+        selectionAnchor = paths.length ? 0 : -1
+    }
+
+    function prepareFileDrag(path, index, modifiers) {
+        beginOperation()
+        if (!(modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) && !isSelected(path))
+            selectOnly(path, index)
+    }
+
+    function handleFileClick(path, index, modifiers) {
+        if (modifiers & Qt.ControlModifier) {
+            toggleSelection(path, index)
+            return
+        }
+        if (modifiers & Qt.ShiftModifier) {
+            selectRange(index)
+            return
+        }
+
+        selectOnly(path, index)
+        openFile(path)
+    }
+
+    function openFile(path) {
+        var element = Global.parseElementPath(path)
+        if (!element)
+            return
+        Global.set_file(currentFolder, element.name)
+        fileSwitched()
+        SignalBus.elementOpened(element.type, element.path, element.name)
+        SignalBus.sendToMain("switched_file", {})
+        finishOperation()
+    }
+
+    function copySelection(paths) {
+        clipboardPaths = (paths || selectedPaths).slice()
+        finishOperation()
+    }
+
+    function pasteFiles(directoryPath) {
+        var targetDirectory = directoryPath || currentDirectory
+        var failed = 0
+        for (var i = 0; i < clipboardPaths.length; ++i) {
+            var sourceElement = Global.parseElementPath(clipboardPaths[i])
+            if (!sourceElement || sourceElement.type !== Global.current_element) {
+                ++failed
+                continue
+            }
+            var destination = fileOperations.copyToDirectory(clipboardPaths[i], targetDirectory)
+            if (!destination.length)
+                ++failed
+        }
+        if (failed)
+            showNotice("粘贴未完全成功", failed + " 个元素无法复制，源文件可能已移动或删除。")
+        finishOperation()
+    }
+
+    function cloneFile(path) {
+        var destination = fileOperations.clone(path)
+        if (!destination.length) {
+            showNotice("克隆失败", "无法克隆所选元素。")
+            finishOperation()
+            return
+        }
+        finishOperation()
+    }
+
+    function requestRename(path) {
+        var element = Global.parseElementPath(path)
+        if (!element)
+            return
+        pendingOperation = true
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupTextInput,
+            "properties": {
+                "title": "重命名元素",
+                "content": "请输入新的元素名",
+                "value": element.name,
+                "confirmText": "重命名"
+            },
+            "callback": function(result) {
+                if (result !== null && result !== undefined)
+                    root.renameFile(path, String(result))
+                root.finishOperation()
+            }
+        })
+    }
+
+    function renameFile(path, requestedName) {
+        var name = requestedName.trim()
+        if (!name.length || name === "." || name === ".." || /[\\/:*?"<>|]/.test(name)) {
+            showNotice("名称无效", "元素名不能为空，且不能包含 \\ / : * ? \" < > |。")
+            return
+        }
+
+        var element = Global.parseElementPath(path)
+        if (!element || name === element.name)
+            return
+        var destination = currentDirectory + "/" + name + ".xcse" + element.type
+        if (!fileOperations.rename(path, destination)) {
+            showNotice("重命名失败", "同名元素已存在，或文件当前不可写。")
+            return
+        }
+
+        destination = Global.normalizeElementPath(destination)
+        if (Global.normalizeElementPath(Global.get_filePath()) === Global.normalizeElementPath(path))
+            Global.set_file("*", name)
+        SignalBus.elementFilesMoved([{ "oldPath": path, "newPath": destination }])
+    }
+
+    function requestDelete(paths) {
+        var targets = (paths || selectedPaths).slice()
+        if (!targets.length)
+            return
+        pendingOperation = true
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": {
+                "title": targets.length > 1 ? "删除多个元素" : "删除元素",
+                "content": targets.length > 1
+                           ? "确定删除选中的 " + targets.length + " 个元素吗？此操作无法撤销。"
+                           : "确定删除“" + Global.parseElementPath(targets[0]).name + "”吗？此操作无法撤销。",
+                "doubleButton": true
+            },
+            "callback": function(result) {
+                if (result === 1)
+                    root.deleteFiles(targets)
+                root.finishOperation()
+            }
+        })
+    }
+
+    function requestDeleteDirectory(directoryPath) {
+        var path = Global.normalizeElementPath(directoryPath)
+        var directoryName = path.substring(path.lastIndexOf("/") + 1)
+        pendingOperation = true
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": {
+                "title": "删除目录",
+                "content": "确定删除目录“" + directoryName
+                           + "”及其中的全部内容吗？此操作无法撤销。",
+                "doubleButton": true
+            },
+            "callback": function(result) {
+                if (result === 1)
+                    root.deleteDirectory(path)
+                root.finishOperation()
+            }
+        })
+    }
+
+    function deleteDirectory(directoryPath) {
+        var path = Global.normalizeElementPath(directoryPath)
+        var containedFiles = fileOperations.filesInDirectory(path)
+        if (!fileOperations.removeDirectory(path)) {
+            showNotice("删除失败", "无法删除所选目录。")
+            return
+        }
+
+        if (containedFiles.length)
+            SignalBus.elementFilesDeleted(containedFiles)
+        var activePath = Global.normalizeElementPath(Global.get_filePath())
+        if (activePath.indexOf(path + "/") === 0) {
+            Global.set_file("*", "")
+            fileSwitched()
+        }
+    }
+
+    function deleteFiles(paths) {
+        var deleted = []
+        var activeDeleted = false
+        var activePath = Global.normalizeElementPath(Global.get_filePath())
+        for (var i = 0; i < paths.length; ++i) {
+            if (!fileOperations.remove_file(paths[i]))
+                continue
+            var normalized = Global.normalizeElementPath(paths[i])
+            deleted.push(normalized)
+            activeDeleted = activeDeleted || normalized === activePath
+        }
+        if (deleted.length)
+            SignalBus.elementFilesDeleted(deleted)
+        if (activeDeleted) {
+            Global.set_file("*", "")
+            fileSwitched()
+        }
+        if (deleted.length !== paths.length)
+            showNotice("删除未完全成功", (paths.length - deleted.length) + " 个元素无法删除。")
+    }
+
+    function moveEntriesToDirectory(paths, directory) {
+        var moved = []
+        var failed = 0
+        var didMove = false
+        var activePath = Global.normalizeElementPath(Global.get_filePath())
+        for (var i = 0; i < paths.length; ++i) {
+            var source = Global.normalizeElementPath(paths[i])
+            var sourceIsDirectory = fileOperations.isDirectory(source)
+            var containedFiles = sourceIsDirectory ? fileOperations.filesInDirectory(source) : []
+            var destination = Global.normalizeElementPath(
+                        fileOperations.moveToDirectory(source, directory))
+            if (!destination.length) {
+                ++failed
+                continue
+            }
+            if (destination === source)
+                continue
+
+            didMove = true
+            if (sourceIsDirectory) {
+                for (var j = 0; j < containedFiles.length; ++j) {
+                    var oldPath = Global.normalizeElementPath(containedFiles[j])
+                    moved.push({ "oldPath": oldPath,
+                                   "newPath": destination + oldPath.substring(source.length) })
+                }
+            } else {
+                moved.push({ "oldPath": source, "newPath": destination })
+            }
+
+            if (activePath === source || (sourceIsDirectory
+                                          && activePath.indexOf(source + "/") === 0)) {
+                var newActivePath = sourceIsDirectory
+                                    ? destination + activePath.substring(source.length)
+                                    : destination
+                var activeElement = Global.parseElementPath(newActivePath)
+                if (activeElement)
+                    Global.set_file(activeElement.folder, activeElement.name)
+            }
+        }
+        if (moved.length) {
+            SignalBus.elementFilesMoved(moved)
+            fileSwitched()
+        }
+        if (didMove && !moved.length)
+            fileSwitched()
+        if (failed)
+            showNotice("移动未完全成功", failed + " 个元素无法移动。")
+        finishOperation()
+    }
+
+    function relayEntry(text, key, paths) {
+        var snapshot = paths.slice()
+        return {
+            "text": text,
+            "action": function() {
+                SignalBus.elementsAddToRelayRequested(snapshot, key)
+                root.finishOperation()
+            }
+        }
+    }
+
+    function relayGroupItems(paths) {
+        var state = Global.elementRelayState(Global.project_location)
+        var items = [relayEntry("最近", "recent", paths),
+                     relayEntry("收藏", "favorites", paths)]
+        for (var i = 0; i < state.groups.length; ++i)
+            items.push(relayEntry(state.groups[i].name, "custom:" + state.groups[i].id, paths))
+        return items
+    }
+
+    function contextMenuItems(paths) {
+        var targets = paths.slice()
+        var single = targets.length === 1
+        var items = [
+            { "text": "复制", "action": function() { root.copySelection(targets) } },
+            { "text": "粘贴", "enabled": clipboardPaths.length > 0,
+              "action": function() { root.pasteFiles(root.currentDirectory) } }
+        ]
+        if (single) {
+            items.push({ "text": "克隆", "action": function() { root.cloneFile(targets[0]) } })
+            items.push({ "text": "重命名…", "action": function() { root.requestRename(targets[0]) } })
+        }
+        items.push({ "text": "删除", "shortcutKey": Qt.Key_Delete,
+                     "action": function() { root.requestDelete(targets) } })
+        items.push({ "separator": true })
+        items.push({ "text": "添加到中转区", "children": relayGroupItems(targets) })
+        if (single) {
+            items.push({ "separator": true })
+            items.push({ "text": "在资源管理器中打开",
+                         "action": function() {
+                             fileOperations.revealInFileManager(targets[0])
+                             root.finishOperation()
+                         } })
+        }
+        return items
+    }
+
+    function directoryContextMenuItems(directoryPath) {
+        var path = Global.normalizeElementPath(directoryPath)
+        return [
+            { "text": "打开", "action": function() { root.enterDirectory(path) } },
+            { "text": "粘贴", "enabled": clipboardPaths.length > 0,
+              "action": function() { root.pasteFiles(path) } },
+            { "text": "删除", "shortcutKey": Qt.Key_Delete,
+              "action": function() { root.requestDeleteDirectory(path) } },
+            { "separator": true },
+            { "text": "在资源管理器中浏览此目录",
+              "action": function() {
+                  fileOperations.revealInFileManager(path)
+                  root.finishOperation()
+              } }
+        ]
+    }
+
+    function blankContextMenuItems() {
+        return [
+            { "text": "粘贴", "enabled": clipboardPaths.length > 0,
+              "action": function() { root.pasteFiles(root.currentDirectory) } },
+            { "separator": true },
+            { "text": "在资源管理器中浏览此目录",
+              "action": function() {
+                  fileOperations.revealInFileManager(root.currentDirectory)
+                  root.finishOperation()
+              } }
+        ]
+    }
+
+    function showContextMenu(target, x, y, path, index) {
+        beginOperation()
+        if (!isSelected(path))
+            selectOnly(path, index)
+        contextMenuActive = true
+        SignalBus.contextMenuRequested(target, x, y, contextMenuItems(selectedPaths), null)
+    }
+
+    function showDirectoryContextMenu(target, x, y, directoryPath) {
+        selectDirectory(directoryPath)
+        contextMenuActive = true
+        SignalBus.contextMenuRequested(target, x, y,
+                                       directoryContextMenuItems(directoryPath), null)
+    }
+
+    function showBlankContextMenu(target, x, y) {
+        beginOperation()
+        clearSelection()
+        contextMenuActive = true
+        SignalBus.contextMenuRequested(target, x, y, blankContextMenuItems(), null)
+    }
+
+    function showNotice(title, content) {
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": { "title": title, "content": content }
+        })
+    }
+
+    onFilePathChanged: {
+        finishOperation()
+    }
+
+    Keys.onPressed: function(event) {
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_A) {
+            selectAll()
+            event.accepted = true
+        } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
+            if (selectedPaths.length)
+                copySelection(selectedPaths)
+            event.accepted = true
+        } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_V) {
+            if (clipboardPaths.length)
+                pasteFiles(selectedDirectoryPath.length
+                           ? selectedDirectoryPath : currentDirectory)
+            event.accepted = true
+        } else if (event.key === Qt.Key_Delete) {
+            if (selectedDirectoryPath.length)
+                requestDeleteDirectory(selectedDirectoryPath)
+            else
+                requestDelete(selectedPaths)
+            event.accepted = true
+        } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                   && selectedDirectoryPath.length) {
+            enterDirectory(selectedDirectoryPath)
+            event.accepted = true
+        } else if (event.key === Qt.Key_F2 && selectedPaths.length === 1) {
+            requestRename(selectedPaths[0])
+            event.accepted = true
+        } else if (event.key === Qt.Key_Escape) {
+            finishOperation()
+            event.accepted = true
+        }
+    }
+
     FolderListModel {
         id: folderFileModel
         folder: Qt.resolvedUrl(root.filePath)
         showDirs: false
-        showFiles: true      // 仅显示文件
-        //showDotAndDotDot: false
-        showHidden: false    // 不显示隐藏文件
+        showFiles: true
+        showHidden: false
         nameFilters: ["*.xcse" + Global.current_element]
-        onStatusChanged: {
-            
-            if(folderFileModel.status == FolderListModel.Ready){
-                Console.output("onStatusChanged: " + status)
-                // 触发这两个flick方法是为了让ListView刷新
-                fileList.flick(0,1)
-                direList.flick(0,1)
-                // Ready 只表示模型数据可用；delegate 仍可能在本轮事件循环内创建。
-                root.refreshCurrentSelectionLater()
-                
-
-            }
-        }
     }
+
     FolderListModel {
-        id: folderDireModel
+        id: folderDirectoryModel
         folder: Qt.resolvedUrl(root.filePath)
-        showDirs: true     // 仅显示子文件夹
+        showDirs: true
         showFiles: false
-        //showDotAndDotDot: false
-        showHidden: false    // 不显示隐藏文件
-        //nameFilters: ["*.xcse" + Global.current_element]
+        showHidden: false
     }
-    
-    
-    Flickable{      //用一个Flickable嵌套两个ListView，把文件与文件夹隔开
-        id:flickable
-        height: parent.height
-        width: flickable.contentHeight <= flickable.height? parent.width : (parent.width - 7)   //适应滚动条
+
+    Flickable {
+        id: flickable
+        anchors.fill: parent
+        anchors.rightMargin: scrollBar.visible ? scrollBar.width : 0
         clip: true
-        contentHeight: direList.contentHeight + fileList.contentHeight
-            ListView{       //文件夹列表
-                id: direList
-                height:contentHeight
-                width:parent.width
-    
-                clip: true
-                interactive:false
-    
-                model:folderDireModel
-                delegate: FileButton{
-                    required property var model
-                    text:model.fileBaseName
-                    width: parent.width
-                    height: 24
-                    icon:"File"
-                    onClicked:{
-                        root.currentFolder += "/" + model.fileBaseName
-                        root.floderSwitched()
-                    }
+        contentWidth: width
+        contentHeight: directoryList.height + fileList.height
+
+        DropArea {
+            width: flickable.width
+            height: Math.max(flickable.height, flickable.contentHeight)
+            keys: ["xcshop-element-paths"]
+
+            onEntered: function(drag) { drag.accepted = true }
+            onDropped: function(drop) {
+                if (SignalBus.draggedElementPaths.length)
+                    root.moveEntriesToDirectory(SignalBus.draggedElementPaths.slice(),
+                                                root.currentDirectory)
+                drop.acceptProposedAction()
+            }
+        }
+
+        MouseArea {
+            id: backgroundPointer
+            width: flickable.width
+            height: Math.max(flickable.height, flickable.contentHeight)
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: function(mouse) {
+                root.forceActiveFocus()
+                if (mouse.button === Qt.RightButton)
+                    root.showBlankContextMenu(backgroundPointer, mouse.x, mouse.y)
+                else
+                    root.finishOperation()
+            }
+        }
+
+        ListView {
+            id: directoryList
+            width: parent.width
+            height: contentHeight
+            interactive: false
+            model: folderDirectoryModel
+
+            delegate: FileButton {
+                id: directoryDelegate
+                required property var model
+                readonly property string directoryPath: root.currentDirectory + "/" + model.fileName
+                width: directoryList.width
+                height: 26
+                text: model.fileBaseName
+                icon: "File"
+                acceptsElementDrop: true
+                operationSelected: root.selectedDirectoryPath === directoryPath
+                operationMode: root.operationMode
+                draggable: true
+                dragPaths: [directoryPath]
+
+                onClicked: function(mouse) {
+                    if (mouse.button === Qt.LeftButton)
+                        root.enterDirectory(directoryPath)
+                }
+                onContextMenuRequested: function(mouse) {
+                    root.showDirectoryContextMenu(directoryDelegate, mouse.x, mouse.y,
+                                                  directoryPath)
+                }
+                onPathsDropped: function(paths) {
+                    root.moveEntriesToDirectory(paths, directoryPath)
                 }
             }
-            ListView{       //文件列表
-                y:direList.y+direList.height
-                id: fileList
-                height:contentHeight
-                width:parent.width
-        
-                clip: true
-                interactive:false
-        
-                model:folderFileModel
-                delegate: FileButton{
-                    required property var model
-                    text:model.fileBaseName
-                    width: parent.width
-                    height: 24
-                    icon:Global.current_element
-                    onClicked:{
-                        Global.set_file(root.currentFolder,text)
-                        for(var i = 0; i < fileList.count; i++) {
-                            fileList.itemAtIndex(i).setSelection(false)
-                        }
-                        setSelection(true)
-                        Global.current_file_index = model.index
-                        root.fileSwitched()
-                        SignalBus.elementOpened(Global.current_element, Global.get_filePath(), text)
-                        SignalBus.sendToMain("switched_file",{})
-                    }
+        }
+
+        ListView {
+            id: fileList
+            y: directoryList.height
+            width: parent.width
+            height: contentHeight
+            interactive: false
+            model: folderFileModel
+
+            delegate: FileButton {
+                id: fileDelegate
+                required property var model
+                readonly property string elementPath: root.pathForFileName(model.fileName)
+                width: fileList.width
+                height: 26
+                text: model.fileBaseName
+                icon: Global.current_element
+                opened: root.isOpened(elementPath)
+                operationSelected: root.isSelected(elementPath)
+                operationMode: root.operationMode
+                draggable: true
+                dragPaths: operationSelected ? root.selectedPaths : [elementPath]
+
+                onPressed: function(mouse) {
+                    if (mouse.button === Qt.LeftButton)
+                        root.prepareFileDrag(elementPath, model.index, mouse.modifiers)
+                }
+                onClicked: function(mouse) {
+                    root.handleFileClick(elementPath, model.index, mouse.modifiers)
+                }
+                onContextMenuRequested: function(mouse) {
+                    root.showContextMenu(fileDelegate, mouse.x, mouse.y, elementPath, model.index)
                 }
             }
-        
+        }
     }
 
-
-
-    Rectangle{      //滚动条
-        visible: flickable.contentHeight <= flickable.height? false : true
-        id: scrollerBar
-        x: parent.width - 6
-        width: 5
+    ScrollBar {
+        id: scrollBar
         height: parent.height
-        color: Colors.transparent
-
-        Rectangle{
-            id: scrollerHandle
-            width: 5
-            height:Math.max(30,flickable.height/(flickable.contentHeight/flickable.height))
-            //radius: 3
-            color: "gray"
-            Behavior on color {
-                ColorAnimation {
-                duration: 500
-                easing.type: Easing.InOutQuad
-                }
-            }
-            property bool scrollerEnabled: false    //防止flickable的丝滑动画被顶掉
-            MouseArea {
-                anchors.fill: parent
-                drag.target: scrollerHandle
-                drag.axis: Drag.YAxis
-                drag.minimumY: 0
-                drag.maximumY: scrollerBar.height - scrollerHandle.height
-                hoverEnabled: true
-                property bool pressed: false
-                onEntered: {
-                    scrollerHandle.color = Qt.darker("white",1.2)
-                }
-                onExited: {
-                    scrollerHandle.color = pressed? "white" : "gray"
-                }
-                onPressed: {
-                    scrollerHandle.color = "white"
-                    pressed = true
-                    scrollerHandle.scrollerEnabled = true
-                }
-                onReleased: {
-                    scrollerHandle.color = containsMouse? Qt.darker("white",1.2) : "gray"
-                    pressed = false
-                    scrollerHandle.scrollerEnabled = false
-                }
-            }
-            onYChanged: {
-                if(scrollerEnabled){
-                    flickable.contentY = scrollerHandle.y * (flickable.contentHeight - flickable.height) / (scrollerBar.height - scrollerHandle.height)
-                }
-                
-            }
-        }
-        Binding {
-        target: scrollerHandle
-        property: "y"
-        value: flickable.contentY * (scrollerBar.height - scrollerHandle.height) / (flickable.contentHeight - flickable.height)
-        }
-        
+        content_height: flickable.contentHeight
+        animatePosition: false
+        onHeight_outputChanged: if (visible) flickable.contentY = height_output
     }
 
+    Connections {
+        target: flickable
+        function onContentYChanged() {
+            if (scrollBar.visible)
+                scrollBar.setContentOffset(flickable.contentY)
+        }
+    }
+
+    Connections {
+        target: SignalBus
+        function onContextMenuClosed() {
+            if (root.contextMenuActive && !root.pendingOperation)
+                root.finishOperation()
+        }
+    }
 }

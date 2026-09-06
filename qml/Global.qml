@@ -158,7 +158,6 @@ QtObject{
     }
 
     //文件操作
-    property int current_file_index:0
     property XCFile xcfile: XCFile{}
 
     function loadSettings(){
@@ -293,10 +292,4 @@ QtObject{
         recentProjects = records
         saveSettings()
     }
-    //普通
-    function file_save_content(key, value){
-        
-    }
-    
-
 }

@@ -9,6 +9,7 @@ Item{
     property bool createFloder: false
 
     signal backbtnClicked()
+    signal elementPathsDropped(var paths)
 
     function defaultElementContent(){
         if (Global.current_element === "Item") {
@@ -31,12 +32,27 @@ Item{
     }
 
     TextButton{
+        id: backButton
         visible:!root.hideBackBtn
         x:2
         y:13
         text:"◂返回上一级 "
         radius: 3
+        buttonColor: backDropArea.containsDrag ? Colors.fired : Colors.transparent
         onClicked: root.backbtnClicked()
+    }
+
+    DropArea {
+        id: backDropArea
+        anchors.fill: backButton
+        enabled: backButton.visible && SignalBus.draggedElementPaths.length > 0
+        keys: ["xcshop-element-paths"]
+
+        onEntered: function(drag) { drag.accepted = true }
+        onDropped: function(drop) {
+            root.elementPathsDropped(SignalBus.draggedElementPaths.slice())
+            drop.acceptProposedAction()
+        }
     }
 
     XCFile{

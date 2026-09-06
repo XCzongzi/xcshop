@@ -26,6 +26,10 @@ Rectangle {
     property int draggedSourceIndex: -1
     property string dragTargetGroupKey: ""
     property int dragTargetSourceIndex: -1
+    property string draggedGroupKey: ""
+    property int draggedGroupIndex: -1
+    property string groupInsertionTargetKey: ""
+    property int groupInsertionIndex: -1
     readonly property bool groupDropPreviewActive: draggedRecord
                                                   && dragTargetGroupKey.length > 0
                                                   && dragTargetGroupKey !== currentGroupKey
@@ -145,6 +149,111 @@ Rectangle {
         rebuildItems()
     }
 
+    function customGroupIndex(key) {
+        return RelayState.customGroupIndex(relayState, key)
+    }
+
+    function showGroupContextMenu(target, x, y, groupData) {
+        if (!groupData || customGroupIndex(groupData.key) < 0)
+            return
+        var key = groupData.key
+        var label = groupData.label
+        SignalBus.contextMenuRequested(target, x, y, [
+            { "text": "重命名", "action": function() {
+                root.requestRenameGroup(key, label)
+            } },
+            { "text": "删除", "action": function() {
+                root.requestDeleteGroup(key, label)
+            } }
+        ], null)
+    }
+
+    function requestRenameGroup(key, currentName) {
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupTextInput,
+            "properties": {
+                "title": "重命名分组",
+                "content": "请输入新的分组名称",
+                "value": currentName,
+                "confirmText": "重命名"
+            },
+            "callback": function(result) {
+                if (result === null || result === undefined)
+                    return
+                var name = String(result).trim()
+                if (!name.length || name === currentName)
+                    return
+                if (RelayState.renameCustomGroup(relayState, key, name)) {
+                    persistState()
+                    rebuildTabs()
+                }
+            }
+        })
+    }
+
+    function requestDeleteGroup(key, groupName) {
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": {
+                "title": "删除分组",
+                "content": "确定删除分组“" + groupName
+                           + "”吗？分组中的元素文件不会被删除。",
+                "doubleButton": true
+            },
+            "callback": function(result) {
+                if (result !== 1 || !RelayState.removeCustomGroup(relayState, key))
+                    return
+                if (currentGroupKey === key) {
+                    currentGroupKey = "recent"
+                    currentPage = 0
+                }
+                persistState()
+                rebuildTabs()
+                rebuildItems()
+            }
+        })
+    }
+
+    function beginGroupDrag(key) {
+        var index = customGroupIndex(key)
+        if (index < 0)
+            return false
+        draggedGroupKey = key
+        draggedGroupIndex = index
+        groupInsertionTargetKey = ""
+        groupInsertionIndex = -1
+        return true
+    }
+
+    function setGroupInsertion(targetKey, index) {
+        if (draggedGroupIndex >= 0) {
+            groupInsertionTargetKey = targetKey
+            groupInsertionIndex = index
+        }
+    }
+
+    function clearGroupInsertion(targetKey) {
+        if (groupInsertionTargetKey !== targetKey)
+            return
+        groupInsertionTargetKey = ""
+        groupInsertionIndex = -1
+    }
+
+    function finishGroupDrag(sourceIndex, insertionIndex) {
+        cancelGroupDrag()
+        if (!RelayState.reorderCustomGroup(relayState, sourceIndex, insertionIndex))
+            return
+        persistState()
+        rebuildTabs()
+    }
+
+    function cancelGroupDrag() {
+        draggedGroupKey = ""
+        draggedGroupIndex = -1
+        groupInsertionTargetKey = ""
+        groupInsertionIndex = -1
+    }
+
     // ===== 元素集合变更 =====
     function addRecent(elementType, filePath, elementName) {
         var record = normalizedRecord(elementType, filePath, elementName)
@@ -154,6 +263,51 @@ Rectangle {
         persistState()
         if (currentGroupKey === "recent")
             rebuildItems()
+    }
+
+    function addElementsToGroup(filePaths, groupKey) {
+        var changed = false
+        for (var i = 0; i < filePaths.length; ++i) {
+            var record = normalizedRecord("", filePaths[i], "")
+            if (!record)
+                continue
+            RelayState.moveRecordToGroup(relayState, "", record, groupKey,
+                                         Global.normalizeElementPath)
+            changed = true
+        }
+        if (!changed)
+            return
+        persistState()
+        rebuildTabs()
+        rebuildItems()
+    }
+
+    function replaceElementPaths(moves) {
+        var changed = false
+        for (var i = 0; i < moves.length; ++i) {
+            var record = normalizedRecord("", moves[i].newPath, "")
+            if (!record)
+                continue
+            changed = RelayState.replaceRecordEverywhere(relayState, moves[i].oldPath,
+                                                          record, Global.normalizeElementPath)
+                      || changed
+        }
+        if (!changed)
+            return
+        persistState()
+        rebuildItems()
+    }
+
+    function removeElementPaths(filePaths) {
+        var changed = false
+        for (var i = 0; i < filePaths.length; ++i)
+            changed = RelayState.removeRecordEverywhere(relayState, filePaths[i],
+                                                         Global.normalizeElementPath)
+                      || changed
+        if (!changed)
+            return
+        persistState()
+        rebuildItems()
     }
 
     function isFavorite(filePath) {
@@ -286,6 +440,15 @@ Rectangle {
         target: SignalBus
         function onElementOpened(elementType, filePath, elementName) {
             root.addRecent(elementType, filePath, elementName)
+        }
+        function onElementsAddToRelayRequested(filePaths, groupKey) {
+            root.addElementsToGroup(filePaths, groupKey)
+        }
+        function onElementFilesMoved(moves) {
+            root.replaceElementPaths(moves)
+        }
+        function onElementFilesDeleted(filePaths) {
+            root.removeElementPaths(filePaths)
         }
         function onElementSelectionRequested(selectionId) {
             root.beginSelection(selectionId)

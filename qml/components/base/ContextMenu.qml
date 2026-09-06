@@ -9,7 +9,7 @@ Item {
     visible: opened || closing
     focus: opened
 
-    // 标准菜单项：{ text, icon, enabled, separator, children, action }
+    // 标准菜单项：{ text, icon, enabled, separator, children, shortcutKey, action }
     // children 为数组时会显示二级菜单；contentComponent 用于完全自定义菜单内容。
     property var menuItems: []
     property Component contentComponent: null
@@ -119,7 +119,30 @@ Item {
     onHeightChanged: if (opened) repositionTimer.restart()
     onSubmenuOpenedChanged: if (submenuOpened) repositionTimer.restart()
 
-    Keys.onEscapePressed: close()
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Escape) {
+            close()
+            event.accepted = true
+            return
+        }
+        for (var i = 0; i < menuItems.length; ++i) {
+            var item = menuItems[i]
+            if (item.shortcutKey === event.key && item.enabled !== false) {
+                invoke(item, i, -1)
+                event.accepted = true
+                return
+            }
+            var children = item.children || []
+            for (var childIndex = 0; childIndex < children.length; ++childIndex) {
+                if (children[childIndex].shortcutKey === event.key
+                        && children[childIndex].enabled !== false) {
+                    invoke(children[childIndex], childIndex, i)
+                    event.accepted = true
+                    return
+                }
+            }
+        }
+    }
 
     Timer {
         id: repositionTimer

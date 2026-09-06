@@ -102,7 +102,7 @@ function removePath(items, path, normalizePath) {
 function addRecent(state, record, normalizePath) {
     var recent = removePath(state.recent, record.path, normalizePath)
     recent.unshift(record)
-    state.recent = recent.slice(0, 60)
+    state.recent = recent
 }
 
 function toggleFavorite(state, record, normalizePath) {
@@ -115,6 +115,38 @@ function toggleFavorite(state, record, normalizePath) {
 
 function addCustomGroup(state, name, id) {
     state.groups.push({ "id": id, "name": name, "items": [] })
+}
+
+function renameCustomGroup(state, key, name) {
+    var index = customGroupIndex(state, key)
+    if (index < 0)
+        return false
+    state.groups[index].name = name
+    return true
+}
+
+function removeCustomGroup(state, key) {
+    var index = customGroupIndex(state, key)
+    if (index < 0)
+        return false
+    state.groups.splice(index, 1)
+    return true
+}
+
+function reorderCustomGroup(state, sourceIndex, insertionIndex) {
+    if (sourceIndex < 0 || sourceIndex >= state.groups.length
+            || insertionIndex < 0 || insertionIndex > state.groups.length)
+        return false
+
+    var destinationIndex = insertionIndex
+    if (sourceIndex < destinationIndex)
+        destinationIndex -= 1
+    if (sourceIndex === destinationIndex)
+        return false
+
+    var group = state.groups.splice(sourceIndex, 1)[0]
+    state.groups.splice(destinationIndex, 0, group)
+    return true
 }
 
 function moveRecordToGroup(state, sourceKey, record, targetKey, normalizePath) {
@@ -166,11 +198,33 @@ function reorderGroup(state, groupKey, record, targetIndex, normalizePath) {
 }
 
 function removeRecordEverywhere(state, path, normalizePath) {
+    var changed = indexOfPath(state.recent, path, normalizePath) >= 0
+                  || indexOfPath(state.favorites, path, normalizePath) >= 0
     state.recent = removePath(state.recent, path, normalizePath)
     state.favorites = removePath(state.favorites, path, normalizePath)
     for (var i = 0; i < state.groups.length; ++i) {
+        changed = indexOfPath(state.groups[i].items, path, normalizePath) >= 0 || changed
         state.groups[i].items = removePath(state.groups[i].items, path, normalizePath)
     }
+    return changed
+}
+
+function replaceRecordEverywhere(state, oldPath, record, normalizePath) {
+    var changed = false
+    function replace(items) {
+        for (var i = 0; i < items.length; ++i) {
+            if (normalizePath(items[i].path) === normalizePath(oldPath)) {
+                items[i] = clone(record)
+                changed = true
+            }
+        }
+    }
+
+    replace(state.recent)
+    replace(state.favorites)
+    for (var i = 0; i < state.groups.length; ++i)
+        replace(state.groups[i].items)
+    return changed
 }
 
 function removeRecordFromGroup(state, groupKey, path, normalizePath) {

@@ -35,7 +35,6 @@ Rectangle{
         }
     }
     Component.onCompleted: {
-        SignalBus.elementNameReturn(Global.get_fileName())
         root.opacity = 1
     }
 

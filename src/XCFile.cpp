@@ -1,91 +1,215 @@
 #include "XCFile.h"
-#include <regex>
+#include <QDesktopServices>
+#include <QFile>
 #include <QFileInfo>
+#include <QDirIterator>
+#include <QProcess>
+#include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTextStream>
 #include <QUrl>
 
-XCFile::XCFile(){
+XCFile::XCFile() = default;
 
+
+QString XCFile::localPath(const QString& path){
+    const QUrl url(path);
+    return url.isLocalFile() ? url.toLocalFile() : path;
 }
 
-
 bool XCFile::write(const QString& filePath,const QString& content){
-    QFile file(filePath);
+    const QString path = localPath(filePath);
+    if (!QDir().mkpath(QFileInfo(path).absolutePath()))
+        return false;
+    QFile file(path);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)){
         QTextStream out(&file);
         out << content;
-        file.close();
         return true;
-    }else{
-        return false;
     }
     return false;
 }
 
 QString XCFile::read(const QString& filePath){
-    QFile file(filePath);
+    QFile file(localPath(filePath));
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
         QTextStream in(&file);
-        QString content = in.readAll();
-        file.close();
-        return content;
-    }else{
-        return "";
+        return in.readAll();
     }
     return "";
 }
 
 bool XCFile::exists(const QString& filePath){
-    QFileInfo info(filePath);
+    QFileInfo info(localPath(filePath));
     return info.exists() && info.isFile();
 }
 
+bool XCFile::isDirectory(const QString& path){
+    return QFileInfo(localPath(path)).isDir();
+}
+
 bool XCFile::folder(const QString& folderPath){
-    QDir dir(folderPath);
+    QDir dir(localPath(folderPath));
     if (!dir.exists()){
-        return dir.mkpath(folderPath);
+        return dir.mkpath(".");
     }
     return true;
 }
 
 
 bool XCFile::rename(const QString& oldPath, const QString& newPath){
-    return QFile::rename(oldPath, newPath);
+    const QString source = localPath(oldPath);
+    const QString destination = localPath(newPath);
+    return source != destination && !QFile::exists(destination)
+            && QFile::rename(source, destination);
 }
 
 bool XCFile::copy(const QString& sourcePath, const QString& destinationPath){
-    const QUrl sourceUrl(sourcePath);
-    const QString localSource = sourceUrl.isLocalFile() ? sourceUrl.toLocalFile() : sourcePath;
-    QFileInfo destinationInfo(destinationPath);
+    const QString source = localPath(sourcePath);
+    const QString destination = localPath(destinationPath);
+    QFileInfo destinationInfo(destination);
     if (!QDir().mkpath(destinationInfo.absolutePath()))
         return false;
-    if (QFile::exists(destinationPath) && !QFile::remove(destinationPath))
+    if (QFile::exists(destination) && !QFile::remove(destination))
         return false;
-    return QFile::copy(localSource, destinationPath);
+    return QFile::copy(source, destination);
+}
+
+QString XCFile::availableFilePath(const QDir& directory, const QFileInfo& sourceInfo){
+    const QString originalPath = directory.filePath(sourceInfo.fileName());
+    if (!QFile::exists(originalPath))
+        return originalPath;
+
+    QString baseName = sourceInfo.isDir() ? sourceInfo.fileName()
+                                          : sourceInfo.completeBaseName();
+    const QRegularExpression numberedSuffix(QStringLiteral("^(.*) - [0-9]+$"));
+    const QRegularExpressionMatch match = numberedSuffix.match(baseName);
+    if (match.hasMatch())
+        baseName = match.captured(1);
+
+    const QString suffix = sourceInfo.isDir() ? QString() : sourceInfo.suffix();
+    for (int number = 1; ; ++number) {
+        const QString candidateName = baseName + QStringLiteral(" - ")
+                + QString::number(number) + (suffix.isEmpty() ? QString() : "." + suffix);
+        const QString candidatePath = directory.filePath(candidateName);
+        if (!QFile::exists(candidatePath))
+            return candidatePath;
+    }
+}
+
+QString XCFile::copyToDirectory(const QString& sourcePath, const QString& directoryPath){
+    const QString source = localPath(sourcePath);
+    const QFileInfo sourceInfo(source);
+    QDir destinationDirectory(localPath(directoryPath));
+    if (!sourceInfo.isFile() || (!destinationDirectory.exists() && !destinationDirectory.mkpath(".")))
+        return {};
+
+    const QString destination = availableFilePath(destinationDirectory, sourceInfo);
+    return QFile::copy(source, destination) ? QDir::cleanPath(destination) : QString();
+}
+
+bool XCFile::copyDirectory(const QString& sourcePath, const QString& destinationPath){
+    QDir sourceDirectory(sourcePath);
+    if (!sourceDirectory.exists() || !QDir().mkpath(destinationPath))
+        return false;
+
+    const QFileInfoList entries = sourceDirectory.entryInfoList(
+                QDir::NoDotAndDotDot | QDir::AllEntries);
+    for (const QFileInfo& entry : entries) {
+        const QString destination = QDir(destinationPath).filePath(entry.fileName());
+        if (entry.isDir()) {
+            if (!copyDirectory(entry.absoluteFilePath(), destination))
+                return false;
+        } else if (!QFile::copy(entry.absoluteFilePath(), destination)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+QString XCFile::moveToDirectory(const QString& sourcePath, const QString& directoryPath){
+    const QString source = QDir::cleanPath(localPath(sourcePath));
+    const QFileInfo sourceInfo(source);
+    QDir destinationDirectory(localPath(directoryPath));
+    if (!sourceInfo.exists() || (!destinationDirectory.exists() && !destinationDirectory.mkpath(".")))
+        return {};
+    if (QDir::cleanPath(sourceInfo.absolutePath()) == QDir::cleanPath(destinationDirectory.absolutePath()))
+        return source;
+
+    const QString destinationRoot = QDir::cleanPath(destinationDirectory.absolutePath());
+    const QString sourceRoot = QDir::cleanPath(sourceInfo.absoluteFilePath());
+    if (sourceInfo.isDir() && (destinationRoot == sourceRoot
+                               || destinationRoot.startsWith(sourceRoot + "/")))
+        return {};
+
+    const QString destination = availableFilePath(destinationDirectory, sourceInfo);
+    if (sourceInfo.isDir()) {
+        if (QDir().rename(source, destination))
+            return QDir::cleanPath(destination);
+        if (!copyDirectory(source, destination)) {
+            QDir(destination).removeRecursively();
+            return {};
+        }
+        if (QDir(source).removeRecursively())
+            return QDir::cleanPath(destination);
+        QDir(destination).removeRecursively();
+        return {};
+    }
+
+    if (QFile::rename(source, destination))
+        return QDir::cleanPath(destination);
+    if (!QFile::copy(source, destination))
+        return {};
+    if (QFile::remove(source))
+        return QDir::cleanPath(destination);
+    QFile::remove(destination);
+    return {};
 }
 
 bool XCFile::remove_file(const QString& filePath){
-    return QFile::remove(filePath);
+    return QFile::remove(localPath(filePath));
 }
 
-bool XCFile::remove_folder(const QString& folderPath){return 0;}
+QStringList XCFile::filesInDirectory(const QString& directoryPath){
+    QStringList files;
+    QDirIterator iterator(localPath(directoryPath), QDir::Files,
+                          QDirIterator::Subdirectories);
+    while (iterator.hasNext())
+        files.append(QDir::cleanPath(iterator.next()));
+    return files;
+}
 
-bool XCFile::clone(const QString& filePath){
-    QString prefix = filePath.section('.', 0, -2);  //把文件名跟后缀分开，以便于为克隆的文件编号（用 -0这样的数字编号）
-    QString suffix = filePath.section('.', -1);
+bool XCFile::removeDirectory(const QString& directoryPath){
+    QDir directory(localPath(directoryPath));
+    return directory.exists() && directory.removeRecursively();
+}
 
-    std::regex pattern("^[0-9]*$");  //检测如果分离后的文件名有被编号，就把编号去掉，回归编号前的文件名，以防止二次编号（选择编号后的文件复制时）
-    if(std::regex_match(prefix.section(" -",-1).toStdString(),pattern)){
-        prefix = prefix.section(" -", 0, -2);
-    }
-    prefix += " -";//为文件名加上编号的前缀
-    for(int i = 1; true; i++){
-        if(!QFile::exists(prefix + QString::number(i) + "." + suffix)){
-            return QFile::copy(filePath, prefix + QString::number(i) + "." + suffix);
-        }
-    }
-    
-    
+QString XCFile::clone(const QString& filePath){
+    const QString source = localPath(filePath);
+    return copyToDirectory(source, QFileInfo(source).absolutePath());
+}
+
+bool XCFile::revealInFileManager(const QString& filePath){
+    const QString path = localPath(filePath);
+    const QFileInfo info(path);
+    if (!info.exists())
+        return false;
+
+#ifdef Q_OS_WIN
+    if (info.isDir())
+        return QProcess::startDetached(QStringLiteral("explorer.exe"),
+                                       {QDir::toNativeSeparators(info.absoluteFilePath())});
+    return QProcess::startDetached(QStringLiteral("explorer.exe"),
+                                   {QStringLiteral("/select,"),
+                                    QDir::toNativeSeparators(info.absoluteFilePath())});
+#elif defined(Q_OS_MACOS)
+    return QProcess::startDetached(QStringLiteral("open"),
+                                   {QStringLiteral("-R"), info.absoluteFilePath()});
+#else
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(info.isDir()
+                                                         ? info.absoluteFilePath()
+                                                         : info.absolutePath()));
+#endif
 }
 
 QString XCFile::appDataPath(){

@@ -84,6 +84,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/XCFolderDialog.qml
         qml/components/popup/PopupLoader.qml
         qml/components/popup/PopupNotice.qml
+        qml/components/popup/PopupTextInput.qml
         qml/components/popup/PopupMappingHistory.qml
         qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml
@@ -119,7 +120,9 @@ qt_add_qml_module(appxcshop
         qml/pages/Controls/_Display/MinecraftTooltipPreview.qml
         qml/pages/Controls/_UI/ContainerBox.qml
         qml/pages/Controls/_UI/ContainerUI.qml
+        qml/pages/Controls/_UI/Inspector.qml
         qml/pages/Controls/_UI/ItemSlot.qml
+        qml/pages/Controls/_UI/LayoutManager.qml
         
         qml/pages/base/BasePage.qml
         qml/pages/base/BaseIOPage.qml

@@ -10,12 +10,7 @@ QtObject{
     signal contextMenuRequested(var target, real x, real y, var items,
                                 var contentComponent)
     signal contextMenuCloseRequested()
-
-    //元素名返回
-    signal elementNameReturn(string text)
-
-    //重新设置元素管理器的index
-    signal elementIndexReset(int index)
+    signal contextMenuClosed()
 
     //“选择元素”组件与元素中转区之间的通信接口
     signal elementSelectionRequested(string selectionId)
@@ -23,6 +18,7 @@ QtObject{
     signal elementSelectionResolved(string filePath)
     signal elementDragStateChanged(bool active)
     property string draggedElementPath: ""
+    property var draggedElementPaths: []
     signal elementSelectionRequestActivated(var selectionItem)
     signal elementSelectionFocusChanged(bool active, var sceneRect)
 
@@ -30,6 +26,9 @@ QtObject{
 
     //元素管理器与元素中转区
     signal elementOpened(string elementType, string filePath, string elementName)
+    signal elementsAddToRelayRequested(var filePaths, string groupKey)
+    signal elementFilesMoved(var moves)
+    signal elementFilesDeleted(var filePaths)
 
 
 
