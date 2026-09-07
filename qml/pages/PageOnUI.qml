@@ -10,6 +10,10 @@ BaseIOPage {
 
     // This is the resource/interface number (0-5), not the selected block ID.
     property int containerType: -1
+    property string containerId: ""
+    property string customName: ""
+    property string openCommand: ""
+    property bool changingContainerType: false
     // These two properties are the selection-page interfaces: callers may set
     // them when creating PageOnUI to hide entity containers or large chests.
     property bool showEntityContainers: true
@@ -19,6 +23,17 @@ BaseIOPage {
     readonly property var containerOptions: blockContainerOptions.concat(entityContainerOptions)
     readonly property bool containerConfigured: containerType >= 0
     readonly property bool editorReady: dataLoaded && containerConfigured
+                                      && !changingContainerType
+    readonly property string currentContainerTypeLabel: {
+        var label = containerCatalog.labelForContainer(containerId)
+        if (label.length)
+            return label
+        var interfaceLabels = ["普通容器（27 格）", "大型箱子（54 格）",
+                               "发射器／投掷器（9 格）", "漏斗（5 格）",
+                               "酿造台（5 格）", "熔炉类（3 格）"]
+        return containerType >= 0 && containerType < interfaceLabels.length
+                ? interfaceLabels[containerType] : "未选择"
+    }
 
     ContainerCatalog {
         id: containerCatalog
@@ -34,11 +49,52 @@ BaseIOPage {
         if (!root.updateDataOut())
             return false
 
+        root.containerId = containerId
         root.containerType = interfaceId
+        root.changingContainerType = false
+        return true
+    }
+
+    function beginContainerTypeChange() {
+        if (!root.dataLoaded)
+            return
+        if (root.containerId.length)
+            containerTypeSelection.selectedContainerId = root.containerId
+        else if (root.containerOptions.length)
+            containerTypeSelection.selectedContainerId = root.containerOptions[0].id
+        root.changingContainerType = true
+    }
+
+    function cancelContainerTypeChange() {
+        root.changingContainerType = false
+    }
+
+    function setCustomName(value) {
+        var nextValue = value === undefined || value === null ? "" : String(value)
+        root.eledata.customName = nextValue
+        if (!root.updateDataOut())
+            return false
+        root.customName = nextValue
+        return true
+    }
+
+    function setOpenCommand(value) {
+        var nextValue = value === undefined || value === null ? "" : String(value)
+        root.eledata.openCommand = nextValue
+        if (!root.updateDataOut())
+            return false
+        root.openCommand = nextValue
         return true
     }
 
     function elementReading() {
+        root.containerId = typeof root.eledata.container === "string"
+                ? root.eledata.container : ""
+        root.customName = typeof root.eledata.customName === "string"
+                ? root.eledata.customName : ""
+        root.openCommand = typeof root.eledata.openCommand === "string"
+                ? root.eledata.openCommand : ""
+
         var storedInterfaceId = Number(root.eledata.containerType)
         if (Number.isInteger(storedInterfaceId)
                 && storedInterfaceId >= 0
@@ -122,6 +178,7 @@ BaseIOPage {
 
         Inspector {
             id: inspector
+            uiPage: root
             x: parent.width - root.pageMargin - width
             y: root.pageMargin
             height: Math.max(0, parent.height - root.pageMargin * 2)
@@ -144,6 +201,7 @@ BaseIOPage {
         blockContainerOptions: root.blockContainerOptions
         entityContainerOptions: root.entityContainerOptions
         showEntityContainers: root.showEntityContainers
+        showCancelButton: root.changingContainerType
 
         Behavior on opacity {
             NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
@@ -152,5 +210,6 @@ BaseIOPage {
         onConfirmed: function(containerId) {
             root.setContainerType(containerId)
         }
+        onCanceled: root.cancelContainerTypeChange()
     }
 }

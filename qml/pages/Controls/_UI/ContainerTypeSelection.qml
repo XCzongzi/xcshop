@@ -9,9 +9,11 @@ Item {
     property var blockContainerOptions: []
     property var entityContainerOptions: []
     property bool showEntityContainers: true
+    property bool showCancelButton: false
     property string selectedContainerId: ""
 
     signal confirmed(string containerId)
+    signal canceled()
 
     Rectangle {
         anchors.fill: parent
@@ -47,21 +49,37 @@ Item {
             textColor: Colors.changeA(Colors.text, 0.78)
         }
 
-        TextButton {
-            id: confirmButton
+        Row {
+            id: actionRow
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            enabled: root.selectedContainerId.length > 0
-            height: 38
-            radius: 8
-            text: "确认并进入编辑"
-            textSize: 14
-            widthBorderSize: 16
-            buttonColor: Colors.changeA(Colors.border, 0.72)
-            firedColor: Colors.changeA(Colors.border, 0.88)
-            pressedColor: Colors.border
-            textColor: "#1b1b1b"
-            onClicked: root.confirmed(root.selectedContainerId)
+            spacing: 8
+
+            TextButton {
+                visible: root.showCancelButton
+                height: 38
+                radius: 8
+                text: "取消"
+                textSize: 14
+                widthBorderSize: 16
+                buttonColor: Colors.changeA(Colors.pressed, 0.82)
+                onClicked: root.canceled()
+            }
+
+            TextButton {
+                id: confirmButton
+                enabled: root.selectedContainerId.length > 0
+                height: 38
+                radius: 8
+                text: "选择该容器"
+                textSize: 14
+                widthBorderSize: 16
+                buttonColor: Colors.changeA(Colors.border, 0.72)
+                firedColor: Colors.changeA(Colors.border, 0.88)
+                pressedColor: Colors.border
+                textColor: "#1b1b1b"
+                onClicked: root.confirmed(root.selectedContainerId)
+            }
         }
 
         Flickable {
@@ -70,7 +88,7 @@ Item {
             y: selectionDescription.y + selectionDescription.height + 16
             width: parent.width - (selectionScrollBar.visible
                                    ? selectionScrollBar.width + 8 : 0)
-            height: Math.max(0, confirmButton.y - y - 16)
+            height: Math.max(0, actionRow.y - y - 16)
             contentWidth: width
             // Keep the content height valid during component construction.
             // A zero height makes the shared ScrollBar calculate an invalid

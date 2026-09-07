@@ -82,3 +82,12 @@ int ContainerCatalog::interfaceForContainer(const QString &containerId) const
     }
     return -1;
 }
+
+QString ContainerCatalog::labelForContainer(const QString &containerId) const
+{
+    for (const auto &container : containers) {
+        if (containerId == QLatin1String(container.id))
+            return QString::fromUtf8(container.label);
+    }
+    return {};
+}

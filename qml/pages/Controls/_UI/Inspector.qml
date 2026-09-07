@@ -7,6 +7,7 @@ Rectangle {
     property int desiredWidth: 260
     property int minimumWidth: 200
     property int maximumWidth: minimumWidth
+    property var uiPage: null
 
     signal widthRequested(int width)
 
@@ -36,6 +37,7 @@ Rectangle {
         GlobalProperties {
             id: globalProperties
             visible: propertyEditor.selected === 0
+            uiPage: root.uiPage
         }
 
         CurrentSlotProperties {

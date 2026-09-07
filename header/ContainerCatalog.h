@@ -19,4 +19,5 @@ public:
     Q_INVOKABLE QVariantList blockContainers(bool includeLargeChests) const;
     Q_INVOKABLE QVariantList entityContainers(bool includeEntities) const;
     Q_INVOKABLE int interfaceForContainer(const QString &containerId) const;
+    Q_INVOKABLE QString labelForContainer(const QString &containerId) const;
 };
