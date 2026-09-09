@@ -127,6 +127,8 @@ qt_add_qml_module(appxcshop
         qml/pages/Controls/_UI/Inspector.qml
         qml/pages/Controls/_UI/ItemSlot.qml
         qml/pages/Controls/_UI/LayoutManager.qml
+        qml/pages/Controls/_UI/SaleItemEditor.qml
+        qml/pages/Controls/_UI/ScoreboardFilter.qml
         
         qml/pages/base/BasePage.qml
         qml/pages/base/BaseIOPage.qml

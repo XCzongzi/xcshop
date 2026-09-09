@@ -43,6 +43,7 @@ Rectangle {
         CurrentSlotProperties {
             id: currentSlotProperties
             visible: propertyEditor.selected === 1
+            uiPage: root.uiPage
         }
     }
 

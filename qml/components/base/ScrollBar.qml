@@ -16,6 +16,7 @@ Rectangle{
     // They can turn this off to avoid the handle animation feeding an old
     // position back into the view while it is scrolling.
     property bool animatePosition: true
+    readonly property bool dragging: mouseArea.pressed
     visible: content_height > height
 
     onLayout_determinesChanged:{   //在页面变化时重置高度，防止出错
@@ -45,21 +46,19 @@ Rectangle{
             drag.minimumY: 0
             drag.maximumY: root.height - scroller.height
             hoverEnabled: true
-            property bool pressed: false
             onEntered: {
                 scroller.color = Qt.darker("white",1.2)
             }
             onExited: {
-                scroller.color = pressed? "white" : Colors.foreground
+                scroller.color = pressed ? "white" : Colors.foreground
             }
             onPressed: {
                 scroller.color = "white"
-                pressed = true
             }
             onReleased: {
                 scroller.color = containsMouse? Qt.darker("white",1.2) : Colors.foreground
-                pressed = false
             }
+            onCanceled: scroller.color = Colors.foreground
         }
         Behavior on color {
             ColorAnimation {
@@ -67,7 +66,7 @@ Rectangle{
             }
         }
         Behavior on y{
-            enabled: root.animatePosition
+            enabled: root.animatePosition && !root.dragging
             NumberAnimation {
                 duration: 30
                 easing.type: Easing.InOutQuad

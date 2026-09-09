@@ -32,6 +32,7 @@ Rectangle {
     signal selectionCancelled(string selectionId)
     signal elementSelected(string filePath)
     signal selectionCleared()
+    signal activated()
 
     width: size
     height: size
@@ -261,8 +262,10 @@ Rectangle {
         onClicked: {
             if (!root.lit) {
                 root.light()
+                root.activated()
                 return
             }
+            root.activated()
             if (root.waitingForSelection)
                 root.cancelElementSelection()
             else

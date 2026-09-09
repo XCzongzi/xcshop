@@ -170,6 +170,7 @@ Rectangle {
 
     Rectangle {
         id: typeBadge
+        visible: root.width >= 250
         x: 7
         anchors.verticalCenter: parent.verticalCenter
         width: typeText.width + 14
@@ -196,7 +197,7 @@ Rectangle {
 
     Item {
         id: selectionSummary
-        anchors.left: typeBadge.right
+        anchors.left: typeBadge.visible ? typeBadge.right : parent.left
         anchors.leftMargin: 9
         anchors.right: selectButton.left
         anchors.rightMargin: 8

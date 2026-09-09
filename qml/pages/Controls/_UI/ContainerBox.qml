@@ -8,6 +8,7 @@ Item {
     property int minimumScale: 1
     property int maximumScale: 30
     property int containerType: -1
+    property var uiPage: null
     property bool viewWasManipulated: false
 
     function clamp(value, minimum, maximum) {
@@ -57,6 +58,7 @@ Item {
         // Keep a valid value while a newly created UI is awaiting its
         // container choice; the canvas itself remains hidden until then.
         containerType: root.containerType >= 0 ? root.containerType : 0
+        uiPage: root.uiPage
         visible: root.containerType >= 0
 
         onWidthChanged: root.updateViewAfterResize()
