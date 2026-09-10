@@ -11,6 +11,9 @@ Rectangle {
     property bool externalDragActive: false
     property bool dropHovered: false
     property bool lit: false
+    property bool nestedPreviewed: false
+    property bool nestedOccupied: false
+    property bool nestingDrawMode: false
 
     readonly property bool isItemSlot: true
     readonly property bool hasSelection: selectedElementPath.length > 0
@@ -33,16 +36,23 @@ Rectangle {
     signal elementSelected(string filePath)
     signal selectionCleared()
     signal activated()
+    signal nestedSlotToggled()
 
     width: size
     height: size
     radius: 0
     z: itemTooltip.visible ? 1000 : 0
-    color: lit || slotMouse.containsMouse || dropHovered
-           ? Qt.rgba(1, 1, 1, 0.56)
-           : "transparent"
+    color: nestedPreviewed ? Colors.changeA(Colors.border, 0.28)
+                           : (lit || slotMouse.containsMouse || dropHovered
+                              ? Qt.rgba(1, 1, 1, 0.56)
+                              : "transparent")
 
     Behavior on color { ColorAnimation { duration: 20 } }
+
+    onNestingDrawModeChanged: {
+        if (nestingDrawMode && waitingForSelection)
+            cancelElementSelection()
+    }
 
     XCFile { id: elementFile }
 
@@ -182,6 +192,7 @@ Rectangle {
     }
 
     Image {
+        id: slotIcon
         anchors.fill: parent
         anchors.margins: Math.max(2, Math.round(root.size * 0.08))
         source: root.iconSource
@@ -189,12 +200,24 @@ Rectangle {
         smooth: false
         mipmap: false
         visible: root.hasSelection && status === Image.Ready
+        opacity: root.nestingDrawMode ? 0.42 : 1
+
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        z: 1
+        visible: root.nestedOccupied && !root.nestedPreviewed
+        color: Qt.rgba(0.18, 0.19, 0.22, 0.42)
+        border.width: 1
+        border.color: Qt.rgba(0.10, 0.11, 0.13, 0.58)
     }
 
     Item {
         id: itemTooltip
-        visible: root.hasSelection && slotMouse.containsMouse
-        z: 1
+        visible: root.hasSelection && slotMouse.containsMouse && !root.nestingDrawMode
+        z: 2
         width: tooltipContent.implicitWidth + 32
         height: tooltipContent.implicitHeight + 26
         x: slotMouse.mouseX + 12
@@ -260,6 +283,10 @@ Rectangle {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
         onClicked: {
+            if (root.nestingDrawMode) {
+                root.nestedSlotToggled()
+                return
+            }
             if (!root.lit) {
                 root.light()
                 root.activated()
@@ -275,6 +302,7 @@ Rectangle {
 
     DropArea {
         anchors.fill: parent
+        enabled: !root.nestingDrawMode
         keys: ["xcshop-element"]
         onEntered: function(drag) {
             root.dropHovered = true

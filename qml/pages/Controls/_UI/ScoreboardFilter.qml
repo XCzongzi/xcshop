@@ -4,6 +4,7 @@ import xcshop
 Rectangle {
     id: root
 
+    property bool compact: false
     property alias scoreboardName: scoreboardInput.text
     property alias targetName: targetInput.text
     property alias scoreRange: scoreInput.text
@@ -19,10 +20,10 @@ Rectangle {
 
     signal filterEdited(string scoreboardName, string targetName, string scoreRange)
 
-    implicitHeight: 236
+    implicitHeight: compact ? 34 : 236
     radius: 8
-    color: Colors.changeA(Colors.background, 0.28)
-    border.width: 1
+    color: compact ? Colors.transparent : Colors.changeA(Colors.background, 0.28)
+    border.width: compact ? 0 : 1
     border.color: Colors.changeA(Colors.text, 0.10)
 
     function setValues(scoreboardName, targetName, scoreRange) {
@@ -37,14 +38,16 @@ Rectangle {
     }
 
     XCText {
-        x: 10
-        y: 9
+        x: root.compact ? 0 : 10
+        y: root.compact ? (parent.height - height) / 2 : 9
+        width: root.compact ? 74 : implicitWidth
         xcText: "计分板筛选"
-        xcFontSize: 13
+        xcFontSize: root.compact ? 12 : 13
         onCenter: false
     }
 
     XCText {
+        visible: !root.compact
         x: 10
         y: 38
         width: parent.width - 20
@@ -57,15 +60,17 @@ Rectangle {
 
     XCTextField {
         id: scoreboardInput
-        x: 10
-        y: 56
-        width: parent.width - 20
+        x: root.compact ? 80 : 10
+        y: root.compact ? 2 : 56
+        width: root.compact ? Math.max(42, (parent.width - 90) / 3)
+                            : parent.width - 20
         height: 30
-        placeholderText: "objective"
+        placeholderText: root.compact ? "计分板" : "objective"
         onEditingFinished: root.commit()
     }
 
     XCText {
+        visible: !root.compact
         x: 10
         y: 94
         width: parent.width - 20
@@ -78,15 +83,17 @@ Rectangle {
 
     XCTextField {
         id: targetInput
-        x: 10
-        y: 112
-        width: parent.width - 20
+        x: root.compact ? scoreboardInput.x + scoreboardInput.width + 5 : 10
+        y: root.compact ? 2 : 112
+        width: root.compact ? Math.max(42, (parent.width - 90) / 3)
+                            : parent.width - 20
         height: 30
-        placeholderText: "@s、@p 或玩家名"
+        placeholderText: root.compact ? "目标" : "@s、@p 或玩家名"
         onEditingFinished: root.commit()
     }
 
     XCText {
+        visible: !root.compact
         x: 10
         y: 150
         width: parent.width - 20
@@ -99,16 +106,18 @@ Rectangle {
 
     XCTextField {
         id: scoreInput
-        x: 10
-        y: 168
-        width: parent.width - 20
+        x: root.compact ? targetInput.x + targetInput.width + 5 : 10
+        y: root.compact ? 2 : 168
+        width: root.compact ? Math.max(42, (parent.width - 90) / 3)
+                            : parent.width - 20
         height: 30
-        placeholderText: "10、5..10、..20 或 15.."
+        placeholderText: root.compact ? "分数范围" : "10、5..10、..20 或 15.."
         color: root.scoreRangeValid ? Colors.text : Colors.error
         onEditingFinished: root.commit()
     }
 
     XCText {
+        visible: !root.compact
         x: 10
         y: 203
         width: parent.width - 20

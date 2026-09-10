@@ -17,6 +17,9 @@ BaseIOPage {
     property bool pageInitialized: false
     property int currentSlotIndex: -1
     property int previewRevision: 0
+    property int layoutRevision: 0
+    property string selectedNestedGroupId: ""
+    property bool nestingDrawMode: false
     // These two properties are the selection-page interfaces: callers may set
     // them when creating PageOnUI to hide entity containers or large chests.
     property bool showEntityContainers: true
@@ -46,6 +49,7 @@ BaseIOPage {
     }
 
     signal slotItemsChanged(int slotIndex)
+    signal layoutDataChanged()
 
     function defaultSaleItem(preview) {
         return {
@@ -110,6 +114,290 @@ BaseIOPage {
             root.currentSlotIndex = -1
     }
 
+    function defaultLayoutFilter() {
+        return { "scoreboard": "", "target": "", "score": "" }
+    }
+
+    function normalizeLayoutFilter(value) {
+        var source = value && typeof value === "object" && !Array.isArray(value)
+                ? value : ({})
+        return {
+            "scoreboard": typeof source.scoreboard === "string" ? source.scoreboard : "",
+            "target": typeof source.target === "string" ? source.target : "",
+            "score": typeof source.score === "string" ? source.score : ""
+        }
+    }
+
+    function createNestedGroupId(index) {
+        return "nested-" + Date.now() + "-" + index + "-"
+                + Math.floor(Math.random() * 1000000)
+    }
+
+    function ensureLayoutData() {
+        var sourcePlaceholder = root.eledata.placeholderItem
+        if (!sourcePlaceholder || typeof sourcePlaceholder !== "object"
+                || Array.isArray(sourcePlaceholder))
+            sourcePlaceholder = ({})
+        root.eledata.placeholderItem = {
+            "enabled": sourcePlaceholder.enabled === true,
+            "element": typeof sourcePlaceholder.element === "string"
+                    ? Global.projectRelativeElementPath(sourcePlaceholder.element) : ""
+        }
+
+        var sourceGroups = Array.isArray(root.eledata.nestedGroups)
+                ? root.eledata.nestedGroups : []
+        var groups = []
+        var usedIds = ({})
+        for (var groupIndex = 0; groupIndex < sourceGroups.length; ++groupIndex) {
+            var sourceGroup = sourceGroups[groupIndex]
+            if (!sourceGroup || typeof sourceGroup !== "object"
+                    || Array.isArray(sourceGroup))
+                sourceGroup = ({})
+
+            var groupId = typeof sourceGroup.id === "string"
+                    ? sourceGroup.id.trim() : ""
+            if (!groupId.length || usedIds[groupId])
+                groupId = root.createNestedGroupId(groupIndex)
+            usedIds[groupId] = true
+
+            var sourceSlots = Array.isArray(sourceGroup.slots) ? sourceGroup.slots : []
+            var slots = []
+            var usedSlots = ({})
+            for (var slotIndex = 0; slotIndex < sourceSlots.length; ++slotIndex) {
+                var numericSlot = Number(sourceSlots[slotIndex])
+                if (!Number.isInteger(numericSlot) || numericSlot < 0
+                        || numericSlot >= root.currentSlotCount || usedSlots[numericSlot])
+                    continue
+                usedSlots[numericSlot] = true
+                slots.push(numericSlot)
+            }
+            slots.sort(function(first, second) { return first - second })
+
+            groups.push({
+                "id": groupId,
+                "name": typeof sourceGroup.name === "string"
+                        && sourceGroup.name.trim().length
+                        ? sourceGroup.name.trim() : "嵌套组 " + (groupIndex + 1),
+                "enabled": sourceGroup.enabled !== false,
+                "element": typeof sourceGroup.element === "string"
+                        ? Global.projectRelativeElementPath(sourceGroup.element) : "",
+                "filter": root.normalizeLayoutFilter(sourceGroup.filter),
+                "slots": slots
+            })
+        }
+        root.eledata.nestedGroups = groups
+
+        if (root.nestedGroupIndex(root.selectedNestedGroupId) < 0) {
+            root.selectedNestedGroupId = ""
+            root.nestingDrawMode = false
+        }
+    }
+
+    function placeholderData() {
+        return root.eledata.placeholderItem || { "enabled": false, "element": "" }
+    }
+
+    function nestedGroups() {
+        return Array.isArray(root.eledata.nestedGroups) ? root.eledata.nestedGroups : []
+    }
+
+    function nestedGroupIndex(groupId) {
+        var groups = root.nestedGroups()
+        for (var index = 0; index < groups.length; ++index) {
+            if (groups[index].id === groupId)
+                return index
+        }
+        return -1
+    }
+
+    function selectedNestedGroup() {
+        var index = root.nestedGroupIndex(root.selectedNestedGroupId)
+        return index >= 0 ? root.nestedGroups()[index] : null
+    }
+
+    function saveLayoutChange(refreshSlotPreviews) {
+        var saved = root.updateDataOut()
+        root.layoutRevision++
+        root.layoutDataChanged()
+        if (refreshSlotPreviews === true) {
+            root.previewRevision++
+            for (var index = 0; index < root.currentSlotCount; ++index)
+                root.slotItemsChanged(index)
+        }
+        return saved
+    }
+
+    function notifyLayoutLoaded() {
+        root.layoutRevision++
+        root.layoutDataChanged()
+    }
+
+    function setPlaceholderEnabled(enabled) {
+        root.eledata.placeholderItem.enabled = enabled === true
+        root.saveLayoutChange(true)
+    }
+
+    function setPlaceholderElement(filePath) {
+        root.eledata.placeholderItem.element = Global.projectRelativeElementPath(filePath)
+        root.saveLayoutChange(true)
+    }
+
+    function uniqueNestedGroupName() {
+        var groups = root.nestedGroups()
+        var number = 1
+        while (true) {
+            var candidate = "嵌套组 " + number
+            var exists = false
+            for (var index = 0; index < groups.length; ++index) {
+                if (groups[index].name === candidate) {
+                    exists = true
+                    break
+                }
+            }
+            if (!exists)
+                return candidate
+            ++number
+        }
+    }
+
+    function addNestedGroup() {
+        var groups = root.nestedGroups()
+        var group = {
+            "id": root.createNestedGroupId(groups.length),
+            "name": root.uniqueNestedGroupName(),
+            "enabled": true,
+            "element": "",
+            "filter": root.defaultLayoutFilter(),
+            "slots": []
+        }
+        groups.push(group)
+        root.selectedNestedGroupId = group.id
+        root.nestingDrawMode = false
+        root.saveLayoutChange(false)
+    }
+
+    function selectNestedGroup(groupId) {
+        if (root.selectedNestedGroupId === groupId) {
+            root.selectBasicLayout()
+            return
+        }
+        if (root.nestedGroupIndex(groupId) < 0)
+            return
+        root.selectedNestedGroupId = groupId
+        root.nestingDrawMode = false
+        root.layoutRevision++
+        root.layoutDataChanged()
+    }
+
+    function selectBasicLayout() {
+        root.selectedNestedGroupId = ""
+        root.nestingDrawMode = false
+        root.layoutRevision++
+        root.layoutDataChanged()
+    }
+
+    function renameNestedGroup(groupId, name) {
+        var index = root.nestedGroupIndex(groupId)
+        var nextName = name === undefined || name === null ? "" : String(name).trim()
+        if (index < 0 || !nextName.length || root.nestedGroups()[index].name === nextName)
+            return
+        root.nestedGroups()[index].name = nextName
+        root.saveLayoutChange(false)
+    }
+
+    function removeNestedGroup(groupId) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups().splice(index, 1)
+        if (root.selectedNestedGroupId === groupId) {
+            root.selectedNestedGroupId = ""
+            root.nestingDrawMode = false
+        }
+        root.saveLayoutChange(false)
+    }
+
+    function moveNestedGroup(fromIndex, toIndex) {
+        var groups = root.nestedGroups()
+        if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0
+                || toIndex >= groups.length || fromIndex === toIndex)
+            return
+        var moved = groups.splice(fromIndex, 1)[0]
+        groups.splice(toIndex, 0, moved)
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupEnabled(groupId, enabled) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups()[index].enabled = enabled === true
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupElement(groupId, filePath) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups()[index].element = Global.projectRelativeElementPath(filePath)
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupFilter(groupId, scoreboardName, targetName, scoreRange) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups()[index].filter = {
+            "scoreboard": scoreboardName,
+            "target": targetName,
+            "score": scoreRange
+        }
+        root.saveLayoutChange(false)
+    }
+
+    function setNestingDrawMode(enabled) {
+        root.nestingDrawMode = enabled === true && root.selectedNestedGroupId.length > 0
+        root.layoutRevision++
+        root.layoutDataChanged()
+    }
+
+    function groupContainsSlot(group, slotIndex) {
+        return group && Array.isArray(group.slots)
+                && group.slots.indexOf(slotIndex) >= 0
+    }
+
+    function isSlotInSelectedNestedGroup(slotIndex) {
+        var revision = root.layoutRevision
+        return root.groupContainsSlot(root.selectedNestedGroup(), slotIndex)
+    }
+
+    function isSlotNested(slotIndex) {
+        var revision = root.layoutRevision
+        var groups = root.nestedGroups()
+        for (var index = 0; index < groups.length; ++index) {
+            if (groups[index].enabled === true
+                    && root.groupContainsSlot(groups[index], slotIndex))
+                return true
+        }
+        return false
+    }
+
+    function toggleNestedSlot(slotIndex) {
+        if (!root.nestingDrawMode)
+            return
+        var group = root.selectedNestedGroup()
+        if (!group)
+            return
+        var index = group.slots.indexOf(slotIndex)
+        if (index >= 0)
+            group.slots.splice(index, 1)
+        else {
+            group.slots.push(slotIndex)
+            group.slots.sort(function(first, second) { return first - second })
+        }
+        root.saveLayoutChange(false)
+    }
+
     function slotItems(slotIndex) {
         if (!Array.isArray(root.eledata.slots)
                 || slotIndex < 0 || slotIndex >= root.eledata.slots.length)
@@ -133,8 +421,13 @@ BaseIOPage {
         var revision = root.previewRevision
         var items = root.slotItems(slotIndex)
         var index = root.previewItemIndex(slotIndex)
-        return index >= 0 && typeof items[index].element === "string"
+        var selectedItem = index >= 0 && typeof items[index].element === "string"
                 ? items[index].element : ""
+        if (selectedItem.length)
+            return selectedItem
+        var placeholder = root.placeholderData()
+        return placeholder.enabled === true && typeof placeholder.element === "string"
+                ? placeholder.element : ""
     }
 
     function notifySlotChanged(slotIndex) {
@@ -244,7 +537,9 @@ BaseIOPage {
         root.containerType = interfaceId
         root.changingContainerType = false
         root.ensureSlotData()
+        root.ensureLayoutData()
         root.updateDataOut()
+        root.notifyLayoutLoaded()
         root.notifySlotChanged(root.currentSlotIndex)
         return true
     }
@@ -296,7 +591,9 @@ BaseIOPage {
                 && storedInterfaceId < Constants.containerCount.length) {
             root.containerType = storedInterfaceId
             root.ensureSlotData()
+            root.ensureLayoutData()
             root.updateDataOut()
+            root.notifyLayoutLoaded()
             root.notifySlotChanged(root.currentSlotIndex)
             root.pageInitialized = true
             return
@@ -309,10 +606,7 @@ BaseIOPage {
 
     property int inspectorWidth: 260
     property int minimumInspectorWidth: 200
-    property int minimumWorkspaceWidth: 280
-    property int layoutBarHeight: 72
-    property int minimumLayoutBarHeight: 72
-    property int minimumCanvasHeight: 200
+    property int minimumWorkspaceWidth: 460
     property int pageMargin: 10
     property int panelSpacing: 10
     readonly property int maximumInspectorWidth: Math.max(
@@ -320,10 +614,6 @@ BaseIOPage {
                                                      width - minimumWorkspaceWidth
                                                      - pageMargin * 2
                                                      - panelSpacing)
-    readonly property int maximumLayoutBarHeight: Math.max(
-                                                       minimumLayoutBarHeight,
-                                                       height - pageMargin * 2
-                                                       - panelSpacing - minimumCanvasHeight)
 
     Item {
         id: editorWorkspace
@@ -342,13 +632,7 @@ BaseIOPage {
             y: root.pageMargin
             width: Math.max(0, inspector.x - root.panelSpacing - x)
             z: 1
-            desiredHeight: root.layoutBarHeight
-            minimumHeight: root.minimumLayoutBarHeight
-            maximumHeight: root.maximumLayoutBarHeight
-
-            onHeightRequested: function(height) {
-                root.layoutBarHeight = height
-            }
+            uiPage: root
         }
 
         Rectangle {

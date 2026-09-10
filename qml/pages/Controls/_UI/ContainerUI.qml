@@ -38,6 +38,10 @@ Rectangle{
                 if (root.uiPage)
                     root.uiPage.setCurrentSlot(index)
             }
+            onNestedSlotToggled: {
+                if (root.uiPage)
+                    root.uiPage.toggleNestedSlot(index)
+            }
             onElementSelected: function(filePath) {
                 if (root.uiPage)
                     root.uiPage.setSlotPreviewElement(index, filePath)
@@ -51,6 +55,9 @@ Rectangle{
                 if (!root.uiPage)
                     return
                 setLit(root.uiPage.currentSlotIndex === index)
+                nestedPreviewed = root.uiPage.isSlotInSelectedNestedGroup(index)
+                nestedOccupied = root.uiPage.isSlotNested(index)
+                nestingDrawMode = root.uiPage.nestingDrawMode
                 setElement(root.uiPage.previewItemForSlot(index), false)
             }
 
@@ -61,6 +68,7 @@ Rectangle{
                     if (slotIndex === saleSlot.index)
                         saleSlot.syncFromPage()
                 }
+                function onLayoutDataChanged() { saleSlot.syncFromPage() }
             }
 
             Component.onCompleted: syncFromPage()
