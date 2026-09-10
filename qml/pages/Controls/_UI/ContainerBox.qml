@@ -78,6 +78,7 @@ Item {
         property real pressY: 0
         property real containerX: 0
         property real containerY: 0
+        property bool pressMoved: false
 
         function isOverContainer(x, y) {
             return x >= container.x && x <= container.x + container.width
@@ -95,6 +96,7 @@ Item {
             pressY = mouse.y
             containerX = container.x
             containerY = container.y
+            pressMoved = false
             root.viewWasManipulated = true
         }
 
@@ -102,9 +104,17 @@ Item {
             if (!pressed)
                 return
 
+            if (Math.abs(mouse.x - pressX) > 4 || Math.abs(mouse.y - pressY) > 4)
+                pressMoved = true
+
             container.x = containerX + mouse.x - pressX
             container.y = containerY + mouse.y - pressY
             root.constrainView()
+        }
+
+        onClicked: function(mouse) {
+            if (mouse.button === Qt.LeftButton && !pressMoved && root.uiPage)
+                root.uiPage.clearCurrentSlot()
         }
 
         onWheel: function(wheel) {

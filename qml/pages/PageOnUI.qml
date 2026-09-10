@@ -106,11 +106,7 @@ BaseIOPage {
             root.eledata.slots[slotIndex] = { "items": normalizedItems }
         }
 
-        if (root.currentSlotCount > 0
-                && (root.currentSlotIndex < 0
-                    || root.currentSlotIndex >= root.currentSlotCount))
-            root.currentSlotIndex = 0
-        else if (root.currentSlotCount === 0)
+        if (root.currentSlotIndex >= root.currentSlotCount)
             root.currentSlotIndex = -1
     }
 
@@ -445,6 +441,10 @@ BaseIOPage {
         if (slotIndex < 0 || slotIndex >= root.currentSlotCount)
             return
         root.currentSlotIndex = slotIndex
+    }
+
+    function clearCurrentSlot() {
+        root.currentSlotIndex = -1
     }
 
     function addSaleItem(slotIndex) {

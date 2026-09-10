@@ -36,6 +36,17 @@ QtObject {
         border = color
     }
 
+    function colorFromSettings(value) {
+        if (typeof value === "string" && value.length)
+            return value
+        if (value && value.r !== undefined && value.g !== undefined
+                && value.b !== undefined) {
+            return Qt.rgba(Number(value.r), Number(value.g), Number(value.b),
+                           value.a !== undefined ? Number(value.a) : 1)
+        }
+        return null
+    }
+
     function accentForColorScheme(scheme) {
         var accentByScheme = {
             slate: accentChoices[0], glacier: accentChoices[0],
@@ -82,19 +93,24 @@ QtObject {
     function loadSettings(settings) {
         if (!settings)
             return
-        if (settings.themeColor)
-            themeColor = settings.themeColor
         if (settings.colorScheme)
             applyColorScheme(settings.colorScheme)
-        if (settings.backgroundColor)
-            backgroundColor = settings.backgroundColor
-        border = themeColor
+
+        // The accent is independent of the palette. Restore it after applying
+        // the palette so applyColorScheme() cannot replace the saved choice.
+        var savedThemeColor = colorFromSettings(settings.themeColor)
+        if (savedThemeColor !== null)
+            setThemeColor(savedThemeColor)
+
+        var savedBackgroundColor = colorFromSettings(settings.backgroundColor)
+        if (savedBackgroundColor !== null)
+            backgroundColor = savedBackgroundColor
     }
 
     function settingsData() {
         return {
-            themeColor: themeColor,
-            backgroundColor: backgroundColor,
+            themeColor: themeColor.toString(),
+            backgroundColor: backgroundColor.toString(),
             colorScheme: colorScheme
         }
     }

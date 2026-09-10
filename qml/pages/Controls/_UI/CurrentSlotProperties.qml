@@ -36,6 +36,7 @@ Item {
     Flickable {
         id: editorFlickable
         anchors.fill: parent
+        visible: root.hasCurrentSlot
         clip: true
         contentWidth: width
         contentHeight: editorColumn.height
@@ -46,6 +47,13 @@ Item {
             id: editorColumn
             width: editorFlickable.width
             spacing: 10
+
+            XCText {
+                width: parent.width
+                xcText: "container." + root.slotIndex
+                onCenter: false
+                xcFontSize: 15
+            }
 
             TextButton {
                 id: addButton
@@ -123,8 +131,19 @@ Item {
         onMovementEnded: slotScrollBar.animatePosition = true
     }
 
+    XCText {
+        visible: !root.hasCurrentSlot
+        width: parent.width
+        xcText: "未选择待编辑的栏位"
+        onCenter: false
+        xcFontSize: 13
+        boldFont: false
+        textColor: Colors.banned
+    }
+
     ScrollBar {
         id: slotScrollBar
+        visible: root.hasCurrentSlot
         z: 1
         x: parent.width + 8
         height: parent.height
