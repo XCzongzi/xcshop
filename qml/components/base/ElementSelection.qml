@@ -16,6 +16,15 @@ Rectangle {
     // ===== 派生展示状态 =====
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property bool highlighted: waitingForSelection || externalDragActive || dropHovered
+    readonly property string elementIconSource: {
+        switch (selectionId.toLowerCase()) {
+        case "ui": return "qrc:/assets/gui/element/UI.png"
+        case "item": return "qrc:/assets/gui/element/Item.png"
+        case "cost": return "qrc:/assets/gui/element/Cost.png"
+        case "display": return "qrc:/assets/gui/element/Display.png"
+        default: return "qrc:/assets/gui/element/File.png"
+        }
+    }
     readonly property string selectionTypeName: {
         switch (selectionId.toLowerCase()) {
         case "ui": return "界面元素"
@@ -172,33 +181,6 @@ Rectangle {
         onCenter: false
     }
 
-    // ===== 选择状态摘要 =====
-    Rectangle {
-        id: statusBadge
-        anchors.right: selectButton.left
-        anchors.rightMargin: 10
-        y: 14
-        width: statusText.width + 16
-        height: 26
-        radius: 13
-        color: root.hasSelection ? Colors.changeA(Colors.border, 0.18)
-                                 : (root.waitingForSelection ? Colors.changeA(Colors.border, 0.12)
-                                                             : Colors.changeA(Colors.text, 0.06))
-        border.width: 1
-        border.color: root.hasSelection || root.waitingForSelection
-                      ? Colors.changeA(Colors.border, 0.44)
-                      : Colors.changeA(Colors.text, 0.10)
-
-        XCText {
-            id: statusText
-            anchors.centerIn: parent
-            xcText: root.hasSelection ? "已连接" : (root.waitingForSelection ? "等待选择" : "未选择")
-            xcFontSize: 11
-            boldFont: false
-            textColor: root.hasSelection || root.waitingForSelection ? Colors.border : Colors.banned
-        }
-    }
-
     // ===== 发起或取消中转区选择 =====
     TextButton {
         id: selectButton
@@ -269,26 +251,16 @@ Rectangle {
             }
         }
 
-        Rectangle {
+        Image {
             id: elementMark
             x: 18
             anchors.verticalCenter: parent.verticalCenter
             width: 46
             height: 46
-            radius: 12
-            color: root.hasSelection ? Colors.changeA(Colors.border, 0.18)
-                                     : Colors.changeA(Colors.text, 0.055)
-            border.width: 1
-            border.color: root.hasSelection ? Colors.changeA(Colors.border, 0.54)
-                                            : Colors.changeA(Colors.text, 0.12)
-
-            XCText {
-                anchors.centerIn: parent
-                xcText: root.hasSelection ? "↗" : "+"
-                xcFontSize: root.hasSelection ? 22 : 27
-                boldFont: false
-                textColor: root.hasSelection ? Colors.border : Colors.banned
-            }
+            source: root.elementIconSource
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            mipmap: false
         }
 
         Column {

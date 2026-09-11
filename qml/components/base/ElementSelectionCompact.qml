@@ -15,6 +15,15 @@ Rectangle {
 
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property bool highlighted: waitingForSelection || externalDragActive || dropHovered
+    readonly property string elementIconSource: {
+        switch (selectionId.toLowerCase()) {
+        case "ui": return "qrc:/assets/gui/element/UI.png"
+        case "item": return "qrc:/assets/gui/element/Item.png"
+        case "cost": return "qrc:/assets/gui/element/Cost.png"
+        case "display": return "qrc:/assets/gui/element/Display.png"
+        default: return "qrc:/assets/gui/element/File.png"
+        }
+    }
     readonly property string selectionTypeName: {
         switch (selectionId.toLowerCase()) {
         case "ui": return "界面元素"
@@ -168,36 +177,50 @@ Rectangle {
         }
     }
 
-    Rectangle {
-        id: typeBadge
+    Item {
+        id: typeSummary
         visible: root.width >= 250
         x: 7
-        anchors.verticalCenter: parent.verticalCenter
-        width: typeText.width + 14
-        height: 28
-        radius: 6
-        color: root.hasSelection || root.highlighted
-               ? Colors.changeA(Colors.border, 0.18)
-               : Colors.changeA(Colors.text, 0.055)
-        border.width: 1
-        border.color: root.hasSelection || root.highlighted
-                      ? Colors.changeA(Colors.border, 0.48)
-                      : Colors.changeA(Colors.text, 0.12)
+        width: typeIcon.width + 7 + typeText.width + 10
+        height: parent.height
+
+        Image {
+            id: typeIcon
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 24
+            height: 24
+            source: root.elementIconSource
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            mipmap: false
+        }
 
         XCText {
             id: typeText
-            anchors.centerIn: parent
+            anchors.left: typeIcon.right
+            anchors.leftMargin: 7
+            anchors.verticalCenter: parent.verticalCenter
             xcText: root.selectionTypeName
             xcFontSize: 11
             boldFont: false
-            textColor: root.hasSelection || root.highlighted ? Colors.border : Colors.banned
+            textColor: Colors.text
         }
+    }
 
+    Rectangle {
+        id: typeSeparator
+        visible: typeSummary.visible
+        anchors.left: typeSummary.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 1
+        color: Colors.changeA(Colors.text, 0.14)
     }
 
     Item {
         id: selectionSummary
-        anchors.left: typeBadge.visible ? typeBadge.right : parent.left
+        anchors.left: typeSeparator.visible ? typeSeparator.right : parent.left
         anchors.leftMargin: 9
         anchors.right: selectButton.left
         anchors.rightMargin: 8
