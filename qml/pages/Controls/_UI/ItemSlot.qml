@@ -194,7 +194,6 @@ Rectangle {
     Image {
         id: slotIcon
         anchors.fill: parent
-        anchors.margins: Math.max(2, Math.round(root.size * 0.08))
         source: root.iconSource
         fillMode: Image.PreserveAspectFit
         smooth: false

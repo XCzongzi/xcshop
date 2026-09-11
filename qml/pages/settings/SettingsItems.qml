@@ -7,7 +7,7 @@ import "qrc:/assets/js/request.js" as XHR
 Item {
     id: root
 
-    readonly property string itemsRootPath: APP_DIRPATH + "/../assets/minecraft/items"
+    readonly property string itemsRootPath: APP_DIRPATH + "/assets/minecraft/items"
     readonly property string vanillaItemsPath: itemsRootPath + "/items.json"
     readonly property string customItemsPath: itemsRootPath + "/custom-items.json"
     readonly property string versionMetadataPath: itemsRootPath + "/version.json"

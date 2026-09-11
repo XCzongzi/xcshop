@@ -69,7 +69,7 @@ QtObject{
         if (!itemName.length)
             return ""
 
-        return APP_DIRPATH + "/../assets/minecraft/items/assets/"
+        return APP_DIRPATH + "/assets/minecraft/items/assets/"
                 + namespaceName + "/" + itemName + ".png"
     }
 
