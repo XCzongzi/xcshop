@@ -42,14 +42,21 @@ Rectangle {
     function revealSelectedGroup() {
         if (!root.uiPage)
             return
+        tabFlickable.setContentX(tabFlickable.contentX)
         var index = root.uiPage.nestedGroupIndex(root.uiPage.selectedNestedGroupId)
         var item = index >= 0 ? nestedGroupRepeater.itemAt(index) : null
         if (!item)
             return
-        if (item.x < tabFlickable.contentX)
-            tabFlickable.contentX = item.x
-        else if (item.x + item.width > tabFlickable.contentX + tabFlickable.width)
-            tabFlickable.contentX = item.x + item.width - tabFlickable.width
+        var itemLeft = tabRow.x + item.x
+        var itemRight = itemLeft + item.width
+        var visibleLeft = tabFlickable.contentX + tabFlickable.edgeInset
+        var visibleRight = tabFlickable.contentX + tabFlickable.width
+                - tabFlickable.edgeInset
+        if (itemLeft < visibleLeft)
+            tabFlickable.setContentX(itemLeft - tabFlickable.edgeInset)
+        else if (itemRight > visibleRight)
+            tabFlickable.setContentX(itemRight - tabFlickable.width
+                                     + tabFlickable.edgeInset)
     }
 
     function syncEditors() {
@@ -167,6 +174,17 @@ Rectangle {
 
     Flickable {
         id: tabFlickable
+        readonly property bool overflowing: tabRow.width > width
+        readonly property real edgeInset: overflowing ? 26 : 0
+
+        function setContentX(value) {
+            contentX = Math.max(0, Math.min(contentWidth - width, value))
+        }
+
+        function scrollPage(direction) {
+            setContentX(contentX + direction * Math.max(84, width * 0.7))
+        }
+
         anchors.left: parent.left
         anchors.leftMargin: 180
         anchors.right: addGroupButton.left
@@ -174,25 +192,29 @@ Rectangle {
         y: 8
         height: 34
         clip: true
-        contentWidth: tabRow.width
+        contentWidth: tabRow.width + edgeInset * 2
         contentHeight: height
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
 
+        onWidthChanged: Qt.callLater(root.revealSelectedGroup)
+
         WheelHandler {
             target: null
             onWheel: function(event) {
-                var delta = event.angleDelta.y !== 0
-                        ? event.angleDelta.y : event.pixelDelta.y
-                tabFlickable.contentX = Math.max(
-                            0, Math.min(tabFlickable.contentWidth - tabFlickable.width,
-                                        tabFlickable.contentX - delta))
+                var delta = event.angleDelta.x !== 0
+                        ? event.angleDelta.x : event.angleDelta.y
+                if (delta === 0)
+                    delta = event.pixelDelta.x !== 0
+                            ? event.pixelDelta.x : event.pixelDelta.y
+                tabFlickable.setContentX(tabFlickable.contentX - delta)
                 event.accepted = true
             }
         }
 
         Row {
             id: tabRow
+            x: tabFlickable.edgeInset
             height: parent.height
             spacing: 5
 
@@ -338,6 +360,43 @@ Rectangle {
             }
 
         }
+    }
+
+    TextButton {
+        visible: tabFlickable.overflowing
+        enabled: tabFlickable.contentX > 0.5
+        z: 40
+        x: tabFlickable.x
+        y: 9
+        width: 24
+        height: 28
+        radius: 7
+        text: "‹"
+        textSize: 18
+        boldFont: false
+        buttonColor: Colors.changeA(Colors.foreground, 0.96)
+        firedColor: Colors.changeA(Colors.border, 0.20)
+        pressedColor: Colors.changeA(Colors.border, 0.34)
+        onClicked: tabFlickable.scrollPage(-1)
+    }
+
+    TextButton {
+        visible: tabFlickable.overflowing
+        enabled: tabFlickable.contentX
+                 < tabFlickable.contentWidth - tabFlickable.width - 0.5
+        z: 40
+        x: tabFlickable.x + tabFlickable.width - width
+        y: 9
+        width: 24
+        height: 28
+        radius: 7
+        text: "›"
+        textSize: 18
+        boldFont: false
+        buttonColor: Colors.changeA(Colors.foreground, 0.96)
+        firedColor: Colors.changeA(Colors.border, 0.20)
+        pressedColor: Colors.changeA(Colors.border, 0.34)
+        onClicked: tabFlickable.scrollPage(1)
     }
 
     TextButton {
@@ -528,7 +587,10 @@ Rectangle {
         target: root.uiPage
 
         function onLayoutDataChanged() { root.refresh() }
-        function onSelectedNestedGroupIdChanged() { Qt.callLater(root.syncEditors) }
+        function onSelectedNestedGroupIdChanged() {
+            Qt.callLater(root.syncEditors)
+            Qt.callLater(root.revealSelectedGroup)
+        }
     }
 
     Component.onCompleted: refresh()

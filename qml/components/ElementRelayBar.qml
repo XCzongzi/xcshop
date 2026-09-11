@@ -90,6 +90,30 @@ Rectangle {
             })
         }
         tabs = nextTabs
+        Qt.callLater(root.revealCurrentGroup)
+    }
+
+    function revealCurrentGroup() {
+        var index = -1
+        for (var i = 0; i < tabs.length; ++i) {
+            if (tabs[i].key === currentGroupKey) {
+                index = i
+                break
+            }
+        }
+        var item = index >= 0 ? tabRepeater.itemAt(index) : null
+        if (!item)
+            return
+        var itemLeft = tabRow.x + item.x
+        var itemRight = itemLeft + item.width
+        var visibleLeft = tabScroller.contentX + tabScroller.edgeInset
+        var visibleRight = tabScroller.contentX + tabScroller.width
+                - tabScroller.edgeInset
+        if (itemLeft < visibleLeft)
+            tabScroller.setContentX(itemLeft - tabScroller.edgeInset)
+        else if (itemRight > visibleRight)
+            tabScroller.setContentX(itemRight - tabScroller.width
+                                    + tabScroller.edgeInset)
     }
 
     function normalizedRecord(elementType, filePath, elementName) {
@@ -147,6 +171,7 @@ Rectangle {
         currentGroupKey = key
         currentPage = 0
         rebuildItems()
+        Qt.callLater(root.revealCurrentGroup)
     }
 
     function customGroupIndex(key) {
@@ -549,28 +574,95 @@ Rectangle {
 
         Flickable {
             id: tabScroller
+            readonly property bool overflowing: tabRow.width > width
+            readonly property real edgeInset: overflowing ? 26 : 0
+
+            function setContentX(value) {
+                contentX = Math.max(0, Math.min(contentWidth - width, value))
+            }
+
+            function scrollPage(direction) {
+                setContentX(contentX + direction * Math.max(84, width * 0.7))
+            }
+
             anchors.left: pager.right
             anchors.leftMargin: 10
             anchors.right: root.selectionMode ? selectionHint.left : addGroupButton.left
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             height: 34
-            contentWidth: tabRow.width
+            contentWidth: tabRow.width + edgeInset * 2
+            contentHeight: height
             clip: true
+            flickableDirection: Flickable.HorizontalFlick
             boundsBehavior: Flickable.StopAtBounds
+
+            onWidthChanged: Qt.callLater(root.revealCurrentGroup)
+
+            WheelHandler {
+                target: null
+                onWheel: function(event) {
+                    var delta = event.angleDelta.x !== 0
+                            ? event.angleDelta.x : event.angleDelta.y
+                    if (delta === 0)
+                        delta = event.pixelDelta.x !== 0
+                                ? event.pixelDelta.x : event.pixelDelta.y
+                    tabScroller.setContentX(tabScroller.contentX - delta)
+                    event.accepted = true
+                }
+            }
 
             Row {
                 id: tabRow
+                x: tabScroller.edgeInset
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 5
 
                 Repeater {
+                    id: tabRepeater
                     model: root.tabs
                     delegate: RelayTabCard{
                         relayBar: root
                     }
                 }
             }
+        }
+
+        TextButton {
+            visible: tabScroller.overflowing
+            enabled: tabScroller.contentX > 0.5
+            z: 10
+            x: tabScroller.x
+            anchors.verticalCenter: parent.verticalCenter
+            width: 24
+            height: 28
+            radius: 7
+            text: "‹"
+            textSize: 18
+            boldFont: false
+            buttonColor: Colors.changeA(Colors.foreground, 0.96)
+            firedColor: Colors.changeA(Colors.border, 0.20)
+            pressedColor: Colors.changeA(Colors.border, 0.34)
+            onClicked: tabScroller.scrollPage(-1)
+        }
+
+        TextButton {
+            visible: tabScroller.overflowing
+            enabled: tabScroller.contentX
+                     < tabScroller.contentWidth - tabScroller.width - 0.5
+            z: 10
+            x: tabScroller.x + tabScroller.width - width
+            anchors.verticalCenter: parent.verticalCenter
+            width: 24
+            height: 28
+            radius: 7
+            text: "›"
+            textSize: 18
+            boldFont: false
+            buttonColor: Colors.changeA(Colors.foreground, 0.96)
+            firedColor: Colors.changeA(Colors.border, 0.20)
+            pressedColor: Colors.changeA(Colors.border, 0.34)
+            onClicked: tabScroller.scrollPage(1)
         }
 
         TextButton {
