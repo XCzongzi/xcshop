@@ -111,7 +111,6 @@ XCWindow {
             if (typeChanged) {
                 // floderReset 的计时器会读取此值，避免切换类型时回到根目录。
                 elementExplorer.pendingFolder = element.folder
-                elementExplorer.started = true
                 root.typeSwitch(element.type, false)
                 return
             }
@@ -129,7 +128,10 @@ XCWindow {
             barWidth: 150
             onStartedChanged:{
                 Console.output("ElementExplorer started to be changed to " + elementExplorer.started)
-                if(Global.project_location !="")root.typeSwitch(Global.current_element,true)
+                // 仅在当前类型刚获得有效选择时重载编辑页；切换到没有
+                // 选择的类型由 typeSwitch 自己显示 PageWithEmpty。
+                if (elementExplorer.started && Global.project_location != "")
+                    root.typeSwitch(Global.current_element, true)
             }
         }
 

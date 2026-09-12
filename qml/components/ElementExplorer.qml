@@ -7,7 +7,9 @@ Rectangle{
     property bool isShowing: false
     property string pendingFolder: ""
     id: root
-    property bool started: Global.get_fileName() != ""
+    // 当前元素类型是否已有选中的文件。保持绑定，避免在其它类型打开
+    // 文件后，切到尚未选择文件的类型时沿用旧的 true 状态。
+    readonly property bool started: Global.get_fileName().length > 0
     width: isShowing ? barWidth : 0
     height: parent.height
     x:65
@@ -145,9 +147,6 @@ Rectangle{
         opacity: root.contentOpacity
         onFloderSwitched:{
             root.floderSwitch()
-        }
-        onFileSwitched:{
-            root.started = Global.get_fileName() != ""
         }
     }
 }
