@@ -16,8 +16,9 @@ Item{
     property int layout_height: parent.height
     property int layout_width
     property int layout_amount: 1
+    property real minimumScale: 1.0
 
-    property double scale: Math.max(Math.min(layout_width/layout_amount/300 , layout_height/200),1)
+    property double scale: Math.max(Math.min(layout_width/layout_amount/300 , layout_height/200), minimumScale)
 
 
     Rectangle{

@@ -6,7 +6,7 @@ BasePage {
     id: root
     color: Colors.transparent
     fullScreen: true
-    readonly property bool compactLayout: height < 560
+    readonly property bool compactLayout: height < 560 || width < 900
 
     XCFile { id: projectFile }
 
@@ -44,105 +44,6 @@ BasePage {
         pageEvent("Start.", { "object": "projectOpened" })
     }
 
-    component ActionCard: Rectangle {
-        id: card
-        property string title: ""
-        property string iconSource: ""
-        property string shortcutText: ""
-        property bool hovered: false
-        property bool pressed: false
-        readonly property real compactScale: root.compactLayout ? 0.82 : 1.0
-        signal clicked()
-
-        height: Math.round(136 * compactScale)
-        radius: 16
-        color: hovered ? Colors.changeA(Colors.pressed, 1.0) : Colors.changeA(Colors.foreground, 1.0)
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, hovered ? 0.20 : 0.10)
-
-        layer.enabled: true
-        layer.effect: XCShadow {
-            shadowColor: Colors.changeA(Colors.shadow, card.hovered ? 0.68 : 0.52)
-            shadowBlur: card.hovered ? 0.76 : 0.68
-            shadowHorizontalOffset: 2
-            shadowVerticalOffset: card.hovered ? 5 : 4
-        }
-
-        Behavior on color { ColorAnimation { duration: 140 } }
-        Behavior on border.color { ColorAnimation { duration: 140 } }
-        Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
-        scale: pressed ? 0.98 : 1.0
-
-        LightEffect {
-            z: 0
-            anchors.fill: parent
-            lightSource_x: actionMouse.mouseX
-            lightSource_y: actionMouse.mouseY
-            lightSource_r: 80
-            blur: 1.5
-            lightColor: Colors.changeA(Colors.text, 0.12)
-            opacity: card.hovered ? 0.22 : 0.12
-            Behavior on opacity { NumberAnimation { duration: 160 } }
-        }
-
-        Image {
-            x: Math.round(24 * compactScale)
-            y: Math.round(24 * compactScale)
-            width: Math.round(56 * compactScale)
-            height: width
-            source: card.iconSource
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            mipmap: true
-        }
-
-        Rectangle {
-            visible: card.shortcutText.length > 0
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.topMargin: 20
-            anchors.rightMargin: 20
-            width: shortcut.width + 16
-            height: 23
-            radius: 7
-            color: Colors.changeA(Colors.background, 0.22)
-            border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.12)
-            XCText {
-                id: shortcut
-                anchors.centerIn: parent
-                xcText: card.shortcutText
-                xcFontSize: 10
-                textColor: Colors.changeA(Colors.text, 0.80)
-            }
-        }
-
-        Column {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: Math.round(20 * compactScale)
-            anchors.rightMargin: Math.round(20 * compactScale)
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: Math.round(19 * compactScale)
-            spacing: 5
-
-            XCText { xcText: card.title; onCenter: false; xcFontSize: Math.round(19 * compactScale) }
-        }
-
-        MouseArea {
-            id: actionMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onEntered: { card.hovered = true; card.y = -4 }
-            onExited: { card.hovered = false; card.pressed = false; card.y = 0 }
-            onPressed: card.pressed = true
-            onReleased: card.pressed = false
-            onClicked: card.clicked()
-        }
-    }
-
     component RecentProjectRow: Rectangle {
         id: recentEntry
         required property var model
@@ -160,28 +61,18 @@ BasePage {
         Behavior on border.color { ColorAnimation { duration: 120 } }
         Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
         scale: pressed ? 0.98 : 1.0
-
-        Rectangle {
-            x: 12
-            anchors.verticalCenter: parent.verticalCenter
-            width: 34
-            height: 34
-            radius: 10
-            color: Colors.changeA(Colors.border, recentEntry.hovered ? 0.28 : 0.18)
-            XCText { anchors.centerIn: parent; xcText: "P"; xcFontSize: 12; textColor: Colors.border }
-        }
         XCText {
-            x: 57
+            x: 16
             y: 10
-            width: parent.width - x - 14
+            width: parent.width - x - 16
             xcText: recentEntry.model.name
             onCenter: false
             xcFontSize: 13
         }
         XCText {
-            x: 57
+            x: 16
             y: 31
-            width: parent.width - x - 14
+            width: parent.width - x - 16
             xcText: recentEntry.model.namespace + (recentEntry.model.version ? "  ·  " + recentEntry.model.version : "")
             onCenter: false
             xcFontSize: 10
@@ -265,9 +156,9 @@ BasePage {
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 1
-                        XCText { xcText: "XCShop"; onCenter: false; xcFontSize: 22 }
+                        XCText { xcText: "Minecraft xcshop"; onCenter: false; xcFontSize: 22 }
                         XCText {
-                            xcText: "Minecraft 商店数据包编辑器"
+                            xcText: "UI商店生成器"
                             onCenter: false
                             xcFontSize: 11
                             boldFont: false
@@ -309,18 +200,22 @@ BasePage {
                             id: actionRow
                             width: parent.width
                             spacing: 14
-                            ActionCard {
-                                width: (actionRow.width - actionRow.spacing) / 2
-                                title: "创建项目"
-                                iconSource: "qrc:/assets/gui/controls/new_project.png"
-                                shortcutText: "新建"
+                            LargeIconButton {
+                                title: "创建"
+                                subtitle: "新的xcshop项目"
+                                icon: "qrc:/assets/gui/controls/new_project.png"
+                                layout_width: actionRow.width
+                                layout_amount: 2
+                                minimumScale: root.compactLayout ? 0.88 : 1.0
                                 onClicked: root.pageEvent("Start.", { "object": "create" })
                             }
-                            ActionCard {
-                                width: (actionRow.width - actionRow.spacing) / 2
-                                title: "打开项目"
-                                iconSource: "qrc:/assets/gui/controls/open_project.png"
-                                shortcutText: "选择文件夹"
+                            LargeIconButton {
+                                title: "打开"
+                                subtitle: "已有xcshop项目"
+                                icon: "qrc:/assets/gui/controls/open_project.png"
+                                layout_width: actionRow.width
+                                layout_amount: 2
+                                minimumScale: root.compactLayout ? 0.88 : 1.0
                                 onClicked: projectFolderDialog.openXC("project",
                                                                       Global.recentProjects.length
                                                                       ? Global.recentProjects[0].path : APP_DIRPATH)
@@ -374,8 +269,11 @@ BasePage {
                     anchors.verticalCenter: parent.verticalCenter
                     radius: 20
                     color: Colors.changeA(Colors.foreground, 0.70)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.10)
+                    // border.width: 1
+                    // border.color: Colors.changeA(Colors.text, 0.10)
+
+                    layer.enabled: true
+                    layer.effect: XCShadow{}
 
                     Column {
                         anchors.left: parent.left
