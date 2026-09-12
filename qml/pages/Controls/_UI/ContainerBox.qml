@@ -4,6 +4,7 @@ import xcshop
 Item {
     id: root
     clip: true
+    focus: true
 
     property int minimumScale: 1
     property int maximumScale: 30
@@ -92,6 +93,9 @@ Item {
                                                     : Qt.OpenHandCursor)
 
         onPressed: function(mouse) {
+            // 画布没有编辑文本控件可自然接收焦点；显式取得焦点，避免
+            // Delete、F2 等按键继续落到元素管理器。
+            root.forceActiveFocus()
             pressX = mouse.x
             pressY = mouse.y
             containerX = container.x

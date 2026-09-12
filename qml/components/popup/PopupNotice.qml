@@ -5,6 +5,7 @@ import xcshop
 Item {
     id: root
     anchors.fill: parent
+    focus: true
 
     // Main.qml 在 Loader 创建完成后注入这两个属性。
     property string title: "提示"
@@ -23,6 +24,7 @@ Item {
         dialog.opacity = 0
         dialog.scale = 0.96
         openAnimation.restart()
+        Qt.callLater(function() { root.forceActiveFocus() })
     }
 
     function close(closeResult) {
@@ -31,6 +33,10 @@ Item {
         result = closeResult === undefined ? 0 : closeResult
         closeAnimation.restart()
     }
+
+    Keys.onEscapePressed: close(0)
+    Keys.onReturnPressed: close(1)
+    Keys.onEnterPressed: close(1)
 
     Rectangle {
         id: scrim

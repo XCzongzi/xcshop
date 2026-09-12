@@ -128,9 +128,9 @@ XCWindow {
             barWidth: 150
             onStartedChanged:{
                 Console.output("ElementExplorer started to be changed to " + elementExplorer.started)
-                // 仅在当前类型刚获得有效选择时重载编辑页；切换到没有
-                // 选择的类型由 typeSwitch 自己显示 PageWithEmpty。
-                if (elementExplorer.started && Global.project_location != "")
+                // 打开或删除当前类型的文件都会改变 started。两种情况都
+                // 必须刷新页面，才能在删除后切回 PageWithEmpty。
+                if (Global.project_location != "")
                     root.typeSwitch(Global.current_element, true)
             }
         }

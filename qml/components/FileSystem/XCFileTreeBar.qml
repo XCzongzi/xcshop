@@ -62,6 +62,24 @@ Item {
                 === Global.normalizeElementPath(Global.get_filePath())
     }
 
+    // 打开标识和多选操作态是两套视觉状态。没有多选时，将当前目录中
+    // 带打开标识的文件作为快捷键操作目标。
+    function openedFileInCurrentFolder() {
+        var openedPath = Global.normalizeElementPath(Global.get_filePath())
+        var element = Global.parseElementPath(openedPath)
+        if (!element || element.type !== Global.current_element
+                || element.folder !== currentFolder)
+            return ""
+        return openedPath
+    }
+
+    function shortcutFileTargets() {
+        if (selectedPaths.length)
+            return selectedPaths.slice()
+        var openedPath = openedFileInCurrentFolder()
+        return openedPath.length ? [openedPath] : []
+    }
+
     function beginOperation() {
         operationMode = true
     }
@@ -493,8 +511,9 @@ Item {
             selectAll()
             event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
-            if (selectedPaths.length)
-                copySelection(selectedPaths)
+            var copyTargets = shortcutFileTargets()
+            if (copyTargets.length)
+                copySelection(copyTargets)
             event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_V) {
             if (clipboardPaths.length)
@@ -505,14 +524,16 @@ Item {
             if (selectedDirectoryPath.length)
                 requestDeleteDirectory(selectedDirectoryPath)
             else
-                requestDelete(selectedPaths)
+                requestDelete(shortcutFileTargets())
             event.accepted = true
         } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
                    && selectedDirectoryPath.length) {
             enterDirectory(selectedDirectoryPath)
             event.accepted = true
-        } else if (event.key === Qt.Key_F2 && selectedPaths.length === 1) {
-            requestRename(selectedPaths[0])
+        } else if (event.key === Qt.Key_F2) {
+            var renameTargets = shortcutFileTargets()
+            if (renameTargets.length === 1)
+                requestRename(renameTargets[0])
             event.accepted = true
         } else if (event.key === Qt.Key_Escape) {
             finishOperation()

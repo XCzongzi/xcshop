@@ -281,6 +281,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
+        onPressed: root.forceActiveFocus()
         onClicked: {
             if (root.nestingDrawMode) {
                 root.nestedSlotToggled()
