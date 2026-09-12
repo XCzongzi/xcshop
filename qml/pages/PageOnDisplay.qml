@@ -116,7 +116,6 @@ BaseIOPage {
     ContentBar {
         id: frameBar
         title: "框架"
-        subtitle: "此处定义头部、尾部文本以及各元素间的分隔"
         x: 16
         y: previewBar.y + previewBar.height + 16
         min_width: 400
@@ -131,7 +130,7 @@ BaseIOPage {
         MultiPropertyEdit {
             id: frameBar_multiPropertyEdit
             x: 16
-            y: 64
+            y: 48
             width: parent.width - 32
             options: ["头部文本", "尾部文本", "分隔文本"]
             onSelectedChanged: frameBar_contentInput.setContent(frameBar.textContents[selected])
@@ -182,7 +181,6 @@ BaseIOPage {
     ContentBar {
         id: memberBar
         title: "成员"
-        subtitle: "此处定义显示每一代价元素时的格式"
         x: root.layout? frameBar.x + frameBar.width + 16 : 16
         y: root.layout? frameBar.y : frameBar.y + frameBar.height + 16
         min_width: 400
@@ -209,7 +207,7 @@ BaseIOPage {
         RadioGroup {
             id: memberBar_radioGroup
             x: 16
-            y: 80
+            y: 54
             text: "提示顺序"
             options: ["元素 + 值", "值 + 元素"]
             onClicked: {
@@ -323,7 +321,6 @@ BaseIOPage {
     ContentBar {
         id: noticeTextBar
         title: "提示信息"
-        subtitle: "购买成功或失败时的提示与音效"
         min_width: 400
         contentHeight: noticeMultiPropertyEdit.y + noticeMultiPropertyEdit.height + 16
         x: root.layout? memberBar.x + memberBar.width + 16 : 16
@@ -338,7 +335,7 @@ BaseIOPage {
         MultiPropertyEdit {
             id: noticeMultiPropertyEdit
             x: 16
-            y: 64
+            y: 48
             width: parent.width - 32
             options: ["成功信息", "失败信息"]
             onSelectedChanged: {

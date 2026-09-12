@@ -427,7 +427,6 @@ Item {
             id: header
             width: parent.width
             title: "物品映射表"
-            subtitle: "读取当前 Minecraft 原版物品清单；图标按命名空间存储在 assets/minecraft/items/assets/<namespace>/。"
         }
 
         ContentBar {
@@ -435,12 +434,11 @@ Item {
             width: parent.width
             expanded: true
             title: "从本地游戏中更新物品贴图"
-            subtitle: "选择 Minecraft 客户端 .jar；资源会提取到 items/temp，并依据模型配置生成方块物品栏图标。"
             contentHeight: statusText.y + statusText.height + 16
 
             TextButton {
                 x: 16
-                y: 70
+                y: 48
                 width: 160
                 height: 32
                 radius: 7
@@ -455,7 +453,7 @@ Item {
 
             Rectangle {
                 x: 188
-                y: 76
+                y: 54
                 width: Math.max(120, parent.width - x - 16)
                 height: 12
                 radius: 6
@@ -474,7 +472,7 @@ Item {
             XCText {
                 id: statusText
                 x: 188
-                y: 96
+                y: 74
                 width: parent.width - x - 16
                 xcText: root.importStatus.length ? root.importStatus : "未选择游戏文件；不会删除已有的自定义物品图标。"
                 onCenter: false
@@ -490,13 +488,12 @@ Item {
             width: parent.width
             expanded: true
             title: "添加自定义物品"
-            subtitle: "自定义条目可删除，原版条目始终保持只读。"
             contentHeight: addFields.y + addFields.height + (root.formError.length ? 24 : 0) + 16
 
             Flow {
                 id: addFields
                 x: 16
-                y: 70
+                y: 48
                 width: parent.width - 32
                 spacing: 10
 
@@ -543,7 +540,6 @@ Item {
             width: parent.width
             expanded: true
             title: "当前的物品映射表"
-            subtitle: "Minecraft " + root.gameVersion + " · 共 " + root.itemMappings.length + " 项，当前显示 " + root.filteredItems.length + " 项。"
             contentHeight: root.listContentHeight
 
             TextButton {
@@ -639,7 +635,7 @@ Item {
             XCTextField {
                 id: itemSearchField
                 x: 16
-                y: 70
+                y: 48
                 width: Math.max(180, parent.width - 16 - sourceSelector.width - 26)
                 placeholderText: "按物品 ID 搜索，例如 minecraft:diamond"
                 onTextChanged: {
@@ -653,7 +649,7 @@ Item {
                 z: 20
                 anchors.right: parent.right
                 anchors.rightMargin: 16
-                y: 70
+                y: 48
                 per_width: 108
                 per_height: 32
                 options: ["全部", "原版", "自定义", "未匹配"]
@@ -665,7 +661,7 @@ Item {
 
             XCText {
                 x: 16
-                y: 108
+                y: 86
                 width: parent.width - 32
                 xcText: root.mappingDownloadStatus
                 visible: root.mappingDownloadStatus.length > 0
@@ -680,7 +676,7 @@ Item {
 
             Rectangle {
                 x: 16
-                y: 130
+                y: 108
                 width: parent.width - 32
                 height: 1
                 color: Colors.changeA(Colors.text, 0.10)
@@ -689,7 +685,7 @@ Item {
             Item {
                 id: tableHeader
                 x: 16
-                y: 138
+                y: 116
                 width: parent.width - 32
                 height: 24
                 XCText { x: 8; width: 48; xcText: "图标"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
@@ -702,7 +698,7 @@ Item {
             ListView {
                 id: itemTable
                 x: 16
-                y: 166
+                y: 144
                 width: parent.width - 32
                 height: parent.height - y - 12
                 clip: true

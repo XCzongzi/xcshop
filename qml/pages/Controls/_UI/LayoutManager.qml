@@ -450,21 +450,10 @@ Rectangle {
                 onCenter: false
             }
 
-            XCText {
-                x: 16
-                y: 34
-                width: 210
-                xcText: "未设置商品的物品槽将默认填充此 Item"
-                xcFontSize: 10
-                boldFont: false
-                onCenter: false
-                textColor: Colors.banned
-            }
-
             XCCheckBox {
                 id: placeholderEnabled
                 x: 16
-                y: 62
+                y: 38
                 text: "启用占位商品"
                 onToggled: function(checked) {
                     if (root.uiPage)
@@ -474,8 +463,8 @@ Rectangle {
 
             ElementSelectionCompact {
                 id: placeholderSelection
-                x: 210
-                y: 23
+                x: 130
+                y: 6
                 width: Math.max(0, parent.width - x - 16)
                 selectionId: "item"
                 enabled: placeholderEnabled.checked

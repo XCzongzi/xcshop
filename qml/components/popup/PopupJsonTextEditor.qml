@@ -322,16 +322,10 @@ Item {
         Rectangle { width: parent.width; height: 5; radius: 15; color: Colors.border }
 
         XCText { x: 24; y: 22; xcText: root.title; onCenter: false; xcFontSize: 21 }
-        XCText {
-            x: 24; y: 51; width: parent.width - 48
-            xcText: "按片段编写 Minecraft 文本组件：颜色、粗体、斜体、下划线、删除线和随机字符都会导出为标准 JSON。"
-            onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned
-        }
-
-        Rectangle { x: 24; y: 78; width: parent.width - 48; height: 1; color: Colors.changeA(Colors.text, 0.10) }
+        Rectangle { x: 24; y: 58; width: parent.width - 48; height: 1; color: Colors.changeA(Colors.text, 0.10) }
 
         Rectangle {
-            x: 24; y: 94; width: parent.width * 0.61 - 34; height: parent.height - 164
+            x: 24; y: 74; width: parent.width * 0.61 - 34; height: parent.height - 144
             radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
             border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
 
@@ -374,7 +368,7 @@ Item {
                         id: segmentTextInput
                         x: 10; y: 34; width: parent.width - 20; height: 32
                         text: root.textForEditor(segmentCard.model.text)
-                        placeholderText: "输入文字；\\n 换行，\\\\n 显示 \\n"
+                        placeholderText: "输入文字"
                         onTextEdited: root.updateSegment(segmentCard.index, "text", root.textFromEditor(text))
                     }
 
@@ -429,7 +423,7 @@ Item {
         }
 
         Rectangle {
-            x: parent.width * 0.61; y: 94; width: parent.width * 0.39 - 24; height: parent.height - 164
+            x: parent.width * 0.61; y: 74; width: parent.width * 0.39 - 24; height: parent.height - 144
             radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
             border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
 

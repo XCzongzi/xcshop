@@ -26,10 +26,9 @@ BaseIOPage {
         contentHeight: displayInput_textField.y + displayInput_textField.height + 18
 
         title: "显示名称"
-        subtitle: "代价在正文中显示的名称"
         XCTextField {
             id: displayInput_textField
-            y: 72
+            y: 48
             x: 20
             width: parent.width - 40
             placeholderText: "例如：钻石、经验等级或自定义货币"
@@ -50,12 +49,11 @@ BaseIOPage {
                                              : checkBox.y + checkBox.height + 24
 
         title: "代价类型"
-        subtitle: "选择商店扣除资源的方式"
 
         RadioGroup {
             id: typeInput_radioGroup
             x: 16
-            y: 72
+            y: 48
             text: ""
             options: ["经验等级", "物品数量", "计分板分数", "目标选择器"]
             onClicked: {

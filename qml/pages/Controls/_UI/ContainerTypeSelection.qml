@@ -37,18 +37,6 @@ Item {
             xcFontSize: 24
         }
 
-        XCText {
-            id: selectionDescription
-            y: selectionTitle.height + 6
-            width: parent.width
-            xcText: "请选择该 UI 对应的 Minecraft 存储容器。确认后将保存容器界面编号并进入编辑工作区。"
-            onCenter: false
-            xcWrapMode: true
-            xcFontSize: 14
-            boldFont: false
-            textColor: Colors.changeA(Colors.text, 0.78)
-        }
-
         Row {
             id: actionRow
             anchors.horizontalCenter: parent.horizontalCenter
@@ -85,7 +73,7 @@ Item {
         Flickable {
             id: optionsFlickable
             x: 0
-            y: selectionDescription.y + selectionDescription.height + 16
+            y: selectionTitle.height + 16
             width: parent.width - (selectionScrollBar.visible
                                    ? selectionScrollBar.width + 8 : 0)
             height: Math.max(0, actionRow.y - y - 16)

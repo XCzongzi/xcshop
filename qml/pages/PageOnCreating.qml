@@ -17,7 +17,7 @@ BasePage {
     readonly property var templateItems: templates && templates.Intros ? templates.Intros : []
     property int currentTemplate: -1
     property string currentVersion: ""
-    property string templateIntroduction: "选择左侧模板后，可在这里查看它的介绍与适用版本。"
+    property string templateIntroduction: ""
     property bool templatesLoading: false
     property string templateStatus: ""
     property double controlsOpacity: 1
@@ -57,13 +57,13 @@ BasePage {
         }
         currentTemplate = -1
         currentVersion = ""
-        templateIntroduction = "选择左侧模板后，可在这里查看它的介绍与适用版本。"
+        templateIntroduction = ""
     }
 
     function selectTemplate(index) {
         currentTemplate = index
         currentVersion = ""
-        templateIntroduction = "暂无本地介绍。点击“刷新介绍”可获取最新说明。"
+        templateIntroduction = "暂无介绍"
 
         try {
             var detail = JSON.parse(xcFile.read("templates/" + index + ".json"))
@@ -220,15 +220,7 @@ BasePage {
                     anchors.leftMargin: 28
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
-                    XCText { xcText: "CREATE PROJECT"; onCenter: false; xcFontSize: 12; textColor: Colors.changeA(Colors.text, 0.72) }
-                    XCText { xcText: "创建一个新的 XCShop 项目"; onCenter: false; xcFontSize: 27 }
-                    XCText {
-                        xcText: "先填写项目资料，再选择一个模板和目标版本即可开始。"
-                        onCenter: false
-                        xcFontSize: 14
-                        boldFont: false
-                        textColor: Colors.changeA(Colors.text, 0.78)
-                    }
+                    XCText { xcText: "新建项目"; onCenter: false; xcFontSize: 27 }
                 }
 
                 Rectangle {

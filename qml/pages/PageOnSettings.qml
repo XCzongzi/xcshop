@@ -49,8 +49,7 @@ BasePage {
                 }
                 Item { width: 1; height: 12 }
                 XCText { xcText: "设置"; onCenter: false; xcFontSize: 25 }
-                XCText { width: parent.width; xcText: "自定义编辑器的界面与本地资源"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                Item { width: 1; height: 18 }
+                Item { width: 1; height: 12 }
                 Repeater {
                     id: sectionButtons
                     model: root.sections
@@ -62,12 +61,7 @@ BasePage {
                         onClicked: root.currentSection = index
                     }
                 }
-                Item { width: 1; height: Math.max(1, parent.height - y - 58) }
-                Rectangle {
-                    width: parent.width; height: note.height + 16; radius: 8
-                    color: Colors.changeA(Colors.background, 0.34)
-                    XCText { id: note; anchors.centerIn: parent; width: parent.width - 18; xcText: "这些设置仅影响编辑器显示，不会写入数据包。"; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                }
+                Item { width: 1; height: Math.max(1, parent.height - y) }
             }
         }
 

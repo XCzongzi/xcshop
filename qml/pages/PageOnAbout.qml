@@ -20,57 +20,6 @@ BasePage {
         }
     }
 
-    component FeatureCard: Rectangle {
-        id: featureCard
-        property string symbol: ""
-        property string title: ""
-        property string description: ""
-
-        width: Math.max(150, Math.min(228, (featuresFlow.width - featuresFlow.spacing * 2) / 3))
-        height: 112
-        radius: 10
-        color: Colors.changeA(Colors.background, 0.34)
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.09)
-
-        Rectangle {
-            x: 14
-            y: 14
-            width: 30
-            height: 30
-            radius: 8
-            color: Colors.changeA(Colors.border, 0.22)
-
-            XCText {
-                anchors.centerIn: parent
-                xcText: featureCard.symbol
-                xcFontSize: 15
-                textColor: Colors.border
-            }
-        }
-
-        XCText {
-            x: 54
-            y: 14
-            width: parent.width - x - 14
-            xcText: featureCard.title
-            onCenter: false
-            xcFontSize: 14
-        }
-
-        XCText {
-            x: 14
-            y: 56
-            width: parent.width - 28
-            xcText: featureCard.description
-            onCenter: false
-            xcWrapMode: true
-            xcFontSize: 12
-            boldFont: false
-            textColor: Colors.banned
-        }
-    }
-
     Rectangle {
         id: shell
         anchors.fill: parent
@@ -207,78 +156,6 @@ BasePage {
 
                 Rectangle {
                     width: parent.width
-                    height: introductionText.height + 42
-                    radius: 12
-                    color: Colors.changeA(Colors.foreground, 0.70)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.09)
-
-                    Rectangle {
-                        x: 0
-                        y: 18
-                        width: 3
-                        height: parent.height - 36
-                        radius: 2
-                        color: Colors.border
-                    }
-
-                    XCText {
-                        id: introductionText
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: 24
-                        width: parent.width - 48
-                        xcText: "把模板、物品与界面配置这些重复且容易出错的工作，整理为清晰、可编辑的可视化流程，让你更专注于商店内容本身。"
-                        onCenter: false
-                        xcWrapMode: true
-                        xcFontSize: 15
-                        boldFont: false
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: featuresTitle.height + featuresFlow.height + 54
-                    radius: 12
-                    color: Colors.changeA(Colors.foreground, 0.70)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.09)
-
-                    XCText {
-                        id: featuresTitle
-                        x: 20
-                        y: 18
-                        xcText: "它能做什么"
-                        onCenter: false
-                        xcFontSize: 18
-                    }
-
-                    Flow {
-                        id: featuresFlow
-                        x: 20
-                        y: featuresTitle.y + featuresTitle.height + 14
-                        width: parent.width - 40
-                        spacing: 10
-
-                        FeatureCard {
-                            symbol: "01"
-                            title: "模板配置"
-                            description: "集中管理商店模板，快速建立可复用的基础结构。"
-                        }
-                        FeatureCard {
-                            symbol: "02"
-                            title: "物品信息"
-                            description: "浏览与补充物品映射，减少手动录入带来的遗漏。"
-                        }
-                        FeatureCard {
-                            symbol: "03"
-                            title: "界面编辑"
-                            description: "在编辑器中直接组织布局与展示内容，所见即所得。"
-                        }
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
                     height: projectColumn.height + 36
                     radius: 12
                     color: Colors.changeA(Colors.foreground, 0.70)
@@ -291,22 +168,13 @@ BasePage {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.margins: 20
-                        spacing: 8
+                        spacing: 10
 
                         XCText {
                             width: parent.width
                             xcText: "项目与反馈"
                             onCenter: false
                             xcFontSize: 18
-                        }
-                        XCText {
-                            width: parent.width
-                            xcText: "欢迎通过 GitHub 关注项目进展、提交问题或分享你的使用建议。"
-                            onCenter: false
-                            xcWrapMode: true
-                            xcFontSize: 13
-                            boldFont: false
-                            textColor: Colors.banned
                         }
                         Row {
                             spacing: 10
@@ -333,14 +201,6 @@ BasePage {
                     }
                 }
 
-                XCText {
-                    width: parent.width
-                    xcText: "感谢每一位使用、反馈与支持这个项目的人。"
-                    onCenter: false
-                    xcFontSize: 12
-                    boldFont: false
-                    textColor: Colors.banned
-                }
             }
         }
 

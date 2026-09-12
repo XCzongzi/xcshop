@@ -113,23 +113,12 @@ BaseIOPage {
         min_width: itemInput.min_width
         contentHeight: costInput_box.y + costInput_box.height + 16
         title: "触发代价"
-        subtitle: "最终消耗为选择的多个代价元素之和"
         Column{
             id: costInput_box
             spacing: 8
             x: 16
-            y: 64
+            y: 48
             width: parent.width - 32
-            Rectangle{
-                width: parent.width
-                height: 1
-                color: Colors.banned
-            }
-            XCText{
-                text: "设置购买此物所需的价格"
-                onCenter: false
-                y: 8
-            }
             ListModel{
                 id: costListModel
             }

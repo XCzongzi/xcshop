@@ -73,7 +73,6 @@ Item {
             SettingsPageHeader {
                 width: parent.width
                 title: "界面"
-                subtitle: "调整主题、背景和全局动画速度，让编辑器更符合你的使用习惯。"
             }
 
             ContentBar {
@@ -81,11 +80,10 @@ Item {
                 width: parent.width
                 expanded: true
                 title: "主题与配色"
-                subtitle: "选择颜色组合，随后选择主题色"
                 contentHeight: schemeGrid.y + schemeGrid.height + 16
                 Column {
                     id: schemeGrid
-                    x: 16; y: 76
+                    x: 16; y: 48
                     width: parent.width - 32
                     spacing: 10
 
@@ -204,7 +202,6 @@ Item {
                 width: parent.width
                 expanded: true
                 title: "背景"
-                subtitle: "选择窗口背景的呈现方式；图片模糊可改善文字可读性。"
                 contentHeight: blurRow.visible ? blurRow.y + blurRow.height + 16
                                                                        : imageEffect.visible ? imageEffect.y + imageEffect.height + 16
                                                                                            : backgroundType.y + backgroundType.height + 16
@@ -212,7 +209,7 @@ Item {
                 RadioGroup {
                     id: backgroundType
                     x: 16
-                    y: 70
+                    y: 48
                     text: "背景类型"
                     options: ["纯色", "图片"]
                     initialOption: root.backgroundTypeIndex()
@@ -228,7 +225,7 @@ Item {
                     visible: Global.backgroundMode === "image" || Global.backgroundMode === "imageBlur"
                     spacing: 10
                     TextButton { text: "选择图片"; height: 32; radius: 7; textSize: 13; widthBorderSize: 10; buttonColor: Colors.pressed; onClicked: imageFileDialog.openXC(false, "background") }
-                    XCText { width: Math.max(120, backgroundBar.width - 160); xcText: Global.backgroundImage.length ? Global.backgroundImage : "未选择图片，使用内置背景预览"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; elide: Text.ElideMiddle }
+                    XCText { width: Math.max(120, backgroundBar.width - 160); xcText: Global.backgroundImage.length ? Global.backgroundImage : "未选择图片"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; elide: Text.ElideMiddle }
                 }
                 RadioGroup {
                     id: imageEffect
@@ -259,16 +256,15 @@ Item {
                 width: parent.width
                 expanded: true
                 title: "动画"
-                subtitle: "调整后续界面动效的全局速度。"
                 contentHeight: animationSlider.y + animationSlider.height + 16
                 Row {
-                    x: 16; y: 70; spacing: 14
+                    x: 16; y: 48; spacing: 14
                     XCText { xcText: "当前速度"; onCenter: false; xcFontSize: 14; width: 92 }
                     XCText { xcText: Global.animationSpeed.toFixed(2) + "×"; onCenter: false; xcFontSize: 16; textColor: Colors.border }
                 }
                 Slider {
                     id: animationSlider
-                    x: 16; y: 102
+                    x: 16; y: 80
                     width: Math.min(420, parent.width - 32)
                     from: 0.25; to: 3; stepSize: 0.05; value: Global.animationSpeed
                     onMoved: { Global.animationSpeed = value; Global.saveSettings() }

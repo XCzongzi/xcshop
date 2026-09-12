@@ -47,7 +47,6 @@ BasePage {
     component ActionCard: Rectangle {
         id: card
         property string title: ""
-        property string description: ""
         property string iconSource: ""
         property string shortcutText: ""
         property bool hovered: false
@@ -55,7 +54,7 @@ BasePage {
         readonly property real compactScale: root.compactLayout ? 0.82 : 1.0
         signal clicked()
 
-        height: Math.round(172 * compactScale)
+        height: Math.round(136 * compactScale)
         radius: 16
         color: hovered ? Colors.changeA(Colors.pressed, 1.0) : Colors.changeA(Colors.foreground, 1.0)
         border.width: 1
@@ -129,15 +128,6 @@ BasePage {
             spacing: 5
 
             XCText { xcText: card.title; onCenter: false; xcFontSize: Math.round(19 * compactScale) }
-            XCText {
-                width: parent.width
-                xcText: card.description
-                onCenter: false
-                xcWrapMode: true
-                xcFontSize: Math.round(12 * compactScale)
-                boldFont: false
-                textColor: Colors.banned
-            }
         }
 
         MouseArea {
@@ -313,7 +303,7 @@ BasePage {
                         width: parent.width
                         spacing: 13
 
-                        XCText { xcText: "从这里开始，\n构建你的商店。"; onCenter: false; xcFontSize: 34 }
+                        XCText { xcText: "商店项目"; onCenter: false; xcFontSize: 34 }
 
                         Row {
                             id: actionRow
@@ -322,7 +312,6 @@ BasePage {
                             ActionCard {
                                 width: (actionRow.width - actionRow.spacing) / 2
                                 title: "创建项目"
-                                description: "从模板和目标版本开始配置"
                                 iconSource: "qrc:/assets/gui/controls/new_project.png"
                                 shortcutText: "新建"
                                 onClicked: root.pageEvent("Start.", { "object": "create" })
@@ -330,7 +319,6 @@ BasePage {
                             ActionCard {
                                 width: (actionRow.width - actionRow.spacing) / 2
                                 title: "打开项目"
-                                description: "继续编辑已保存的项目内容"
                                 iconSource: "qrc:/assets/gui/controls/open_project.png"
                                 shortcutText: "选择文件夹"
                                 onClicked: projectFolderDialog.openXC("project",
@@ -396,20 +384,13 @@ BasePage {
                         anchors.margins: 20
                         spacing: 4
                         XCText { xcText: "最近项目"; onCenter: false; xcFontSize: 19 }
-                        XCText {
-                            xcText: Global.recentProjects.length > 0 ? "快速回到你上次的工作" : "打开过的项目会显示在这里"
-                            onCenter: false
-                            xcFontSize: 12
-                            boldFont: false
-                            textColor: Colors.banned
-                        }
                     }
 
                     Rectangle {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
-                        anchors.topMargin: 76
+                        anchors.topMargin: 56
                         anchors.leftMargin: 20
                         anchors.rightMargin: 20
                         height: 1
@@ -420,7 +401,7 @@ BasePage {
                         visible: Global.recentProjects.length === 0
                         anchors.centerIn: parent
                         width: parent.width - 50
-                        height: 142
+                        height: 96
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: 50
@@ -437,17 +418,6 @@ BasePage {
                             onCenter: true
                             xcFontSize: 14
                         }
-                        XCText {
-                            anchors.top: parent.top
-                            anchors.topMargin: 91
-                            width: parent.width
-                            xcText: "创建新项目，或打开已有项目开始编辑。"
-                            onCenter: true
-                            xcWrapMode: true
-                            xcFontSize: 12
-                            boldFont: false
-                            textColor: Colors.banned
-                        }
                     }
 
                     ListView {
@@ -459,7 +429,7 @@ BasePage {
                         anchors.bottom: parent.bottom
                         anchors.leftMargin: 20
                         anchors.rightMargin: 20
-                        anchors.topMargin: 92
+                        anchors.topMargin: 72
                         anchors.bottomMargin: 20
                         clip: true
                         spacing: 8

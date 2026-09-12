@@ -14,7 +14,7 @@ BasePage {
         x: root.pageMargin
         y: 16
         width: parent.width - root.pageMargin * 2
-        contentHeight: 116
+        contentHeight: 78
         expanded: true
 
         XCText { x: 20; y: 18; xcText: "当前项目"; onCenter: false; xcFontSize: 17 }
@@ -28,22 +28,6 @@ BasePage {
             boldFont: false
             textColor: Colors.banned
             elide: Text.ElideMiddle
-        }
-        Rectangle {
-            x: 20
-            y: 82
-            width: parent.width - 40
-            height: 1
-            color: Colors.changeA(Colors.text, 0.09)
-        }
-        XCText {
-            x: 20
-            y: 91
-            xcText: "使用左侧导航切换 UI、物品、代价和展示内容。"
-            onCenter: false
-            xcFontSize: 11
-            boldFont: false
-            textColor: Colors.changeA(Colors.text, 0.58)
         }
     }
 
