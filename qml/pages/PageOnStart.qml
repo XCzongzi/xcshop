@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import xcshop
 
 BasePage {
@@ -73,7 +74,7 @@ BasePage {
             x: 16
             y: 31
             width: parent.width - x - 16
-            xcText: recentEntry.model.namespace + (recentEntry.model.version ? "  ·  " + recentEntry.model.version : "")
+            xcText: recentEntry.model.version + "  ·  " + recentEntry.model.path
             onCenter: false
             xcFontSize: 10
             boldFont: false
@@ -106,6 +107,12 @@ BasePage {
             y: -height * 0.57
             radius: width / 2
             color: Colors.changeA(Colors.border, 0.075)
+            layer.enabled: true
+            layer.effect: GaussianBlur {
+                radius: 56
+                samples: 63
+                transparentBorder: true
+            }
         }
         Rectangle {
             visible: Global.backgroundMode === "color"
@@ -115,6 +122,12 @@ BasePage {
             y: parent.height - 230
             radius: width / 2
             color: Colors.changeA(Colors.border, 0.045)
+            layer.enabled: true
+            layer.effect: GaussianBlur {
+                radius: 48
+                samples: 63
+                transparentBorder: true
+            }
         }
 
         Item {
