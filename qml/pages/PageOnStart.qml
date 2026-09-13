@@ -45,6 +45,18 @@ BasePage {
         pageEvent("Start.", { "object": "projectOpened" })
     }
 
+    function showRecentProjectContextMenu(target, x, y, projectPath) {
+        SignalBus.contextMenuRequested(target, x, y, [
+            { "text": "删除记录", "action": function() {
+                Global.removeRecentProject(projectPath)
+            } },
+            { "separator": true },
+            { "text": "在资源管理器中打开", "action": function() {
+                projectFile.revealInFileManager(projectPath)
+            } }
+        ], null)
+    }
+
     component RecentProjectRow: Rectangle {
         id: recentEntry
         required property var model
@@ -83,13 +95,24 @@ BasePage {
         }
         MouseArea {
             anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onEntered: recentEntry.hovered = true
             onExited: { recentEntry.hovered = false; recentEntry.pressed = false }
-            onPressed: recentEntry.pressed = true
+            onPressed: function(mouse) {
+                if (mouse.button === Qt.LeftButton)
+                    recentEntry.pressed = true
+            }
             onReleased: recentEntry.pressed = false
-            onClicked: root.openProject(recentEntry.model.path)
+            onClicked: function(mouse) {
+                if (mouse.button === Qt.RightButton) {
+                    root.showRecentProjectContextMenu(recentEntry, mouse.x, mouse.y,
+                                                      recentEntry.model.path)
+                    return
+                }
+                root.openProject(recentEntry.model.path)
+            }
         }
     }
 
@@ -286,7 +309,11 @@ BasePage {
                     // border.color: Colors.changeA(Colors.text, 0.10)
 
                     layer.enabled: true
-                    layer.effect: XCShadow{}
+                    // 卡片使用半透明前景色；默认阴影会从背后透出，在浅色
+                    // 主题中使整个面板发暗。保留轻微投影即可。
+                    layer.effect: XCShadow {
+                        shadowColor: Colors.changeA(Colors.shadow, 0.20)
+                    }
 
                     Column {
                         anchors.left: parent.left

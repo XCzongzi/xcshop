@@ -27,7 +27,7 @@ BasePage {
     readonly property bool projectNameGood: projectNameValue.trim().length > 0
                                              && !/[\\\\/:*?"<>|]/.test(projectNameValue)
                                              && !/[. ]$/.test(projectNameValue)
-    readonly property bool namespaceGood: /^[a-z0-9_.-]+$/.test(namespaceValue)
+    readonly property bool namespaceGood: /^[a-z0-9_]+$/.test(namespaceValue)
     readonly property bool canCreate: projectNameGood
                                       && namespaceGood
                                       && storagePathValue.trim().length > 0
@@ -202,39 +202,10 @@ BasePage {
             y: 56
             spacing: 16
 
-            Rectangle {
-                width: parent.width
-                height: 156
-                radius: 14
-                color: Colors.changeA(Colors.foreground, 0.86)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.10)
-
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Colors.changeA(Colors.border, 0.30) }
-                    GradientStop { position: 1.0; color: Colors.changeA(Colors.foreground, 0.90) }
-                }
-
-                Column {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 28
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6
-                    XCText { xcText: "新建项目"; onCenter: false; xcFontSize: 27 }
-                }
-
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 28
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 72
-                    height: 72
-                    radius: 20
-                    color: Colors.changeA(Colors.background, 0.28)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.12)
-                    XCText { anchors.centerIn: parent; xcText: "+"; xcFontSize: 38; textColor: Colors.border; boldFont: false }
-                }
+            XCText {
+                xcText: "创建项目"
+                onCenter: false
+                xcFontSize: 22
             }
 
             Rectangle {
@@ -254,15 +225,7 @@ BasePage {
                     anchors.margins: 20
                     spacing: 12
 
-                    XCText { xcText: "1. 项目基础信息"; onCenter: false; xcFontSize: 18 }
-                    XCText {
-                        width: parent.width
-                        xcText: "名称用于创建文件夹；命名空间只支持小写字母、数字、下划线、点和连字符。"
-                        onCenter: false
-                        xcFontSize: 12
-                        boldFont: false
-                        textColor: Colors.banned
-                    }
+                    XCText { xcText: "基础信息"; onCenter: false; xcFontSize: 18 }
                     Row {
                         width: parent.width
                         spacing: 16
@@ -317,15 +280,7 @@ BasePage {
                     anchors.margins: 20
                     spacing: 14
 
-                    XCText { xcText: "2. 存储与生成位置"; onCenter: false; xcFontSize: 18 }
-                    XCText {
-                        width: parent.width
-                        xcText: "项目文件和最终生成的数据包可以放在不同位置。"
-                        onCenter: false
-                        xcFontSize: 12
-                        boldFont: false
-                        textColor: Colors.banned
-                    }
+                    XCText { xcText: "相关路径"; onCenter: false; xcFontSize: 18 }
                     XCKeyInput {
                         id: input_storagePath
                         keyText: "项目存储位置"
@@ -376,7 +331,7 @@ BasePage {
                 border.width: 1
                 border.color: Colors.changeA(Colors.text, 0.09)
 
-                XCText { x: 20; y: 18; xcText: "3. 选择生成模板"; onCenter: false; xcFontSize: 18 }
+                XCText { x: 20; y: 18; xcText: "生成模板"; onCenter: false; xcFontSize: 18 }
                 XCText {
                     x: 20
                     y: 46
@@ -529,8 +484,8 @@ BasePage {
                     anchors.leftMargin: 20
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - actionRow.width - 52
-                    xcText: root.canCreate ? "已准备就绪：将按所选模板创建项目。"
-                                           : "请完成项目资料、路径、模板与目标版本的选择。"
+                    xcText: root.canCreate ? "准备就绪，随时可以创建"
+                                           : "请继续完成项目信息填写"
                     onCenter: false
                     xcFontSize: 12
                     boldFont: false
