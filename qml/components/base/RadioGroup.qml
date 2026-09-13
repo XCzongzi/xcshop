@@ -50,8 +50,8 @@ Rectangle {
             radius: 6
             color: Colors.changeA(Colors.border, 0.72)
 
-            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-            Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            Behavior on x { NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic } }
         }
 
         Row {

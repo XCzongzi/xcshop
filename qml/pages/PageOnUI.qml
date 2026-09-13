@@ -623,7 +623,7 @@ BaseIOPage {
         opacity: root.editorReady ? 1 : 0
 
         Behavior on opacity {
-            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 220 / Global.animationSpeed; easing.type: Easing.OutCubic }
         }
 
         LayoutManager {
@@ -689,7 +689,7 @@ BaseIOPage {
         showCancelButton: root.changingContainerType
 
         Behavior on opacity {
-            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 220 / Global.animationSpeed; easing.type: Easing.OutCubic }
         }
 
         onConfirmed: function(containerId) {

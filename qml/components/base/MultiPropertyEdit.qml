@@ -108,8 +108,8 @@ Item {
                     radius: height / 2
                     color: Colors.border
 
-                    Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                    Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic } }
                 }
 
                 Row {

@@ -29,7 +29,7 @@ Rectangle {
         topRightRadius: root.mainWindow.visibility === Window.Maximized? 0 :Constants.window_radius
         Behavior on opacity{
             NumberAnimation{
-                duration: 250
+                duration: 250 / Global.animationSpeed
             }
         }
     }

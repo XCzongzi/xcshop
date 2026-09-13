@@ -47,8 +47,8 @@ Item {
         border.color: root.checked ? Colors.changeA(Colors.border, 0.95)
                                    : Colors.changeA(Colors.text, root.hovered ? 0.32 : 0.16)
 
-        Behavior on color { ColorAnimation { duration: 130 } }
-        Behavior on border.color { ColorAnimation { duration: 130 } }
+        Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
 
         Canvas {
             id: checkMark
@@ -71,7 +71,7 @@ Item {
                 context.stroke()
             }
 
-            Behavior on opacity { NumberAnimation { duration: 100 } }
+            Behavior on opacity { NumberAnimation { duration: 100 / Global.animationSpeed } }
         }
     }
 

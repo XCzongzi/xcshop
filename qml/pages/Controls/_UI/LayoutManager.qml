@@ -145,7 +145,7 @@ Rectangle {
         border.width: !root.nestedPreview ? 1 : 0
         border.color: Colors.changeA(Colors.border, 0.76)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
         XCText {
             anchors.centerIn: parent
@@ -255,8 +255,8 @@ Rectangle {
                         Drag.hotSpot.x: groupMouse.mouseX
                         Drag.hotSpot.y: groupMouse.mouseY
 
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        Behavior on scale { NumberAnimation { duration: 90 } }
+                        Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
+                        Behavior on scale { NumberAnimation { duration: 90 / Global.animationSpeed } }
 
                         XCText {
                             id: groupLabel

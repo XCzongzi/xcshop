@@ -87,9 +87,9 @@ Item {
         Drag.hotSpot.y: cardMouse.mouseY
         Drag.mimeData: ({ "text/plain": root.path })
 
-        Behavior on color { ColorAnimation { duration: 110 } }
-        Behavior on border.color { ColorAnimation { duration: 110 } }
-        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: 110 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: 110 / Global.animationSpeed } }
+        Behavior on scale { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
 
         Image {
             id: elementIcon
@@ -248,6 +248,6 @@ Item {
         radius: 2
         color: Colors.changeA(Colors.border, 0.96)
 
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        Behavior on opacity { NumberAnimation { duration: 100 / Global.animationSpeed } }
     }
 }

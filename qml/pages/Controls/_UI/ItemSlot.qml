@@ -47,7 +47,7 @@ Rectangle {
                               ? Qt.rgba(1, 1, 1, 0.56)
                               : "transparent")
 
-    Behavior on color { ColorAnimation { duration: 20 } }
+    Behavior on color { ColorAnimation { duration: 20 / Global.animationSpeed } }
 
     onNestingDrawModeChanged: {
         if (nestingDrawMode && waitingForSelection)
@@ -201,7 +201,7 @@ Rectangle {
         visible: root.hasSelection && status === Image.Ready
         opacity: root.nestingDrawMode ? 0.42 : 1
 
-        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed } }
     }
 
     Rectangle {

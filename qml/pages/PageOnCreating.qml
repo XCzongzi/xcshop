@@ -36,7 +36,7 @@ BasePage {
                                       && currentVersion.length > 0
 
     Behavior on visualContentOffset {
-        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
     }
 
     Component.onCompleted: {
@@ -161,7 +161,7 @@ BasePage {
         target: root
         property: "x"
         to: -root.width
-        duration: 650
+        duration: 650 / Global.animationSpeed
         easing.type: Easing.InOutCubic
         onFinished: root.pageEvent("Creating.projectCreated", {})
     }
@@ -193,7 +193,7 @@ BasePage {
         y: -root.visualContentOffset
         opacity: root.controlsOpacity
 
-        Behavior on opacity { NumberAnimation { duration: 220 } }
+        Behavior on opacity { NumberAnimation { duration: 220 / Global.animationSpeed } }
 
         Column {
             id: contentColumn

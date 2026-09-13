@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import xcshop
 
 
 
@@ -28,8 +29,8 @@ TextArea{
         border.color: root.activeFocus ? Colors.changeA(Colors.border, 0.82)
                                        : Colors.changeA(Colors.text, 0.10)
 
-        Behavior on color { ColorAnimation { duration: 130 } }
-        Behavior on border.color { ColorAnimation { duration: 130 } }
+        Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
 
         Rectangle{
             visible: root.activeFocus

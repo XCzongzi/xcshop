@@ -230,7 +230,7 @@ XCWindow {
                 id: opcAnim
                 target: pageLoader.item
                 property: "opacity"
-                duration: 250
+                duration: 250 / Global.animationSpeed
                 to: 0
                 easing.type: Easing.OutQuad
                 onFinished: {

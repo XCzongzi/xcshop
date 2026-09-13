@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import xcshop
 
 Item {
@@ -117,7 +116,7 @@ Item {
                                         border.width: parent.selected ? 2 : 1
                                         border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.text, 0.32)
                                         scale: parent.pressed ? 0.90 : (parent.hovered && !parent.selected ? 1.10 : 1.0)
-                                        Behavior on scale { NumberAnimation { duration: 120 } }
+                                        Behavior on scale { NumberAnimation { duration: 120 / Global.animationSpeed } }
                                     }
                                     MouseArea {
                                         anchors.fill: parent
@@ -170,7 +169,7 @@ Item {
                                         color: parent.schemeChoice.background
                                         border.width: parent.selected ? 2 : 1; border.color: parent.selected ? Colors.themeColor : Qt.rgba(0, 0, 0, 0.18)
                                         scale: parent.pressed ? 0.975 : (parent.hovered && !parent.selected ? 1.025 : 1.0)
-                                        Behavior on scale { NumberAnimation { duration: 120 } }
+                                        Behavior on scale { NumberAnimation { duration: 120 / Global.animationSpeed } }
                                         Rectangle { x: 8; y: 8; width: parent.width - 16; height: 16; radius: 4; color: parent.parent.schemeChoice.foreground }
                                         Rectangle { x: 12; y: 12; width: 34; height: 3; radius: 2; color: parent.parent.schemeChoice.text }
                                         XCText { x: 52; y: 8; width: 66; height: 16; xcText: parent.parent.schemeChoice.name; onCenter: false; xcFontSize: 11; boldFont: false; textColor: parent.parent.schemeChoice.text }
@@ -246,8 +245,12 @@ Item {
                     y: imageEffect.y + imageEffect.height + 10
                     visible: Global.backgroundMode === "imageBlur"
                     spacing: 10
-                    XCText { xcText: "模糊强度"; onCenter: false; xcFontSize: 13; boldFont: false; width: 70 }
-                    Slider { width: Math.min(240, backgroundBar.width - 130); from: 0; to: 1; value: Global.backgroundBlur; onMoved: { Global.backgroundBlur = value; Global.saveSettings() } }
+                    XCText { id: blurLabel; xcText: "模糊强度"; onCenter: false; xcFontSize: 13; boldFont: false; width: 70 }
+                    XCSlider {
+                        width: Math.min(260, Math.max(0, backgroundBar.width - blurRow.x - blurLabel.width - blurRow.spacing - 16))
+                        from: 0; to: 1; value: Global.backgroundBlur
+                        onMoved: { Global.backgroundBlur = value; Global.saveSettings() }
+                    }
                 }
             }
 
@@ -262,11 +265,11 @@ Item {
                     XCText { xcText: "当前速度"; onCenter: false; xcFontSize: 14; width: 92 }
                     XCText { xcText: Global.animationSpeed.toFixed(2) + "×"; onCenter: false; xcFontSize: 16; textColor: Colors.border }
                 }
-                Slider {
+                XCSlider {
                     id: animationSlider
                     x: 16; y: 80
-                    width: Math.min(420, parent.width - 32)
-                    from: 0.25; to: 3; stepSize: 0.05; value: Global.animationSpeed
+                    width: Math.min(360, Math.max(0, parent.width - 32))
+                    from: 0.1; to: 5; stepSize: 0.05; value: Global.animationSpeed
                     onMoved: { Global.animationSpeed = value; Global.saveSettings() }
                 }
             }

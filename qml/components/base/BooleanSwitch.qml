@@ -19,8 +19,8 @@ Rectangle {
     border.width: 1
     border.color: checked ? Colors.border : Colors.changeA(Colors.text, 0.12)
 
-    Behavior on color { ColorAnimation { duration: 130 } }
-    Behavior on border.color { ColorAnimation { duration: 130 } }
+    Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+    Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
 
     XCText {
         anchors.centerIn: parent

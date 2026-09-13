@@ -62,13 +62,13 @@ Rectangle{
         }
         Behavior on color {
             ColorAnimation {
-            duration: 500
+            duration: 500 / Global.animationSpeed
             }
         }
         Behavior on y{
             enabled: root.animatePosition && !root.dragging
             NumberAnimation {
-                duration: 30
+                duration: 30 / Global.animationSpeed
                 easing.type: Easing.InOutQuad
             }
         }

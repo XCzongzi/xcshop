@@ -31,7 +31,7 @@ Rectangle {
     border.width: activeFocus || dropHovered ? 1 : 0
     border.color: dropHovered ? Colors.border : Colors.changeA(Colors.border, 0.82)
 
-    Behavior on color { ColorAnimation { duration: 120 } }
+    Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
     Rectangle {
         x: 0
@@ -43,7 +43,7 @@ Rectangle {
         color: Colors.border
         opacity: root.operationMode ? 0.82 : 1
 
-        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed } }
     }
 
     Image {
@@ -55,7 +55,7 @@ Rectangle {
         sourceSize.width: width
         sourceSize.height: height
 
-        Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+        Behavior on width { NumberAnimation { duration: 140 / Global.animationSpeed; easing.type: Easing.OutCubic } }
     }
 
     XCText {

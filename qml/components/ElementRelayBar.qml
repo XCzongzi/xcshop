@@ -56,7 +56,7 @@ Rectangle {
                                 : Colors.changeA(Colors.text, 0.12)
     clip: false
 
-    Behavior on border.color { ColorAnimation { duration: 160 } }
+    Behavior on border.color { ColorAnimation { duration: 160 / Global.animationSpeed } }
 
     XCFile { id: relayFile }
 

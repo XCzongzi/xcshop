@@ -34,9 +34,9 @@ Rectangle {
     z: dropTarget ? 10 : 0
     transformOrigin: Item.Center
 
-    Behavior on color { ColorAnimation { duration: 110 } }
-    Behavior on border.color { ColorAnimation { duration: 110 } }
-    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+    Behavior on color { ColorAnimation { duration: 110 / Global.animationSpeed } }
+    Behavior on border.color { ColorAnimation { duration: 110 / Global.animationSpeed } }
+    Behavior on scale { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
 
     XCText {
         id: tabLabel

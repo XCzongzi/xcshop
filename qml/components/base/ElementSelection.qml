@@ -61,8 +61,8 @@ Rectangle {
     border.color: highlighted ? Colors.changeA(Colors.border, 0.82)
                               : Colors.changeA(Colors.text, 0.11)
 
-    Behavior on border.color { ColorAnimation { duration: 160 } }
-    Behavior on color { ColorAnimation { duration: 160 } }
+    Behavior on border.color { ColorAnimation { duration: 160 / Global.animationSpeed } }
+    Behavior on color { ColorAnimation { duration: 160 / Global.animationSpeed } }
 
     // ===== 路径校验与本地状态变更 =====
     function normalizedPath(filePath) {
@@ -216,7 +216,7 @@ Rectangle {
         color: root.highlighted ? Colors.changeA(Colors.border, 0.09)
                                 : Colors.changeA(Colors.background, 0.24)
 
-        Behavior on color { ColorAnimation { duration: 160 } }
+        Behavior on color { ColorAnimation { duration: 160 / Global.animationSpeed } }
 
         Canvas {    //虚线边框绘制
             id: dashedBorder

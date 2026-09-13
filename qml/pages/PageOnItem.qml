@@ -302,7 +302,7 @@ BaseIOPage {
                     duration: 0
                     onFinished: duration = 0
                     function enable(){
-                        duration = 120
+                        duration = 120 / Global.animationSpeed
                     }
                 }
 

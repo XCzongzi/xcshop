@@ -149,16 +149,16 @@ Item {
 
     ParallelAnimation {
         id: openAnimation
-        PropertyAnimation { target: scrim; property: "opacity"; to: 0.42; duration: 180; easing.type: Easing.OutCubic }
-        PropertyAnimation { target: dialog; property: "opacity"; to: 1; duration: 180; easing.type: Easing.OutCubic }
-        PropertyAnimation { target: dialog; property: "scale"; to: 1; duration: 220; easing.type: Easing.OutBack }
+        PropertyAnimation { target: scrim; property: "opacity"; to: 0.42; duration: 180 / Global.animationSpeed; easing.type: Easing.OutCubic }
+        PropertyAnimation { target: dialog; property: "opacity"; to: 1; duration: 180 / Global.animationSpeed; easing.type: Easing.OutCubic }
+        PropertyAnimation { target: dialog; property: "scale"; to: 1; duration: 220 / Global.animationSpeed; easing.type: Easing.OutBack }
     }
 
     ParallelAnimation {
         id: closeAnimation
-        PropertyAnimation { target: scrim; property: "opacity"; to: 0; duration: 150; easing.type: Easing.InCubic }
-        PropertyAnimation { target: dialog; property: "opacity"; to: 0; duration: 130; easing.type: Easing.InCubic }
-        PropertyAnimation { target: dialog; property: "scale"; to: 0.97; duration: 150; easing.type: Easing.InCubic }
+        PropertyAnimation { target: scrim; property: "opacity"; to: 0; duration: 150 / Global.animationSpeed; easing.type: Easing.InCubic }
+        PropertyAnimation { target: dialog; property: "opacity"; to: 0; duration: 130 / Global.animationSpeed; easing.type: Easing.InCubic }
+        PropertyAnimation { target: dialog; property: "scale"; to: 0.97; duration: 150 / Global.animationSpeed; easing.type: Easing.InCubic }
         onFinished: root.closed(root.result)
     }
 }

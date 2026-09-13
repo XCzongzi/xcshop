@@ -20,13 +20,13 @@ Item {
     property real holeHeight: 0
     property color maskColor: Colors.changeA(Colors.shadow, 0.78)
 
-    Behavior on opacity { NumberAnimation { duration: 200 } }
+    Behavior on opacity { NumberAnimation { duration: 200 / Global.animationSpeed } }
     NumberAnimation{
         id:destroy
         target: selectionMask
         property: "opacity"
         to: 0
-        duration: 120
+        duration: 120 / Global.animationSpeed
         onFinished: {
             selectionMask.visible = false
         }

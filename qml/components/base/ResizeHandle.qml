@@ -26,9 +26,9 @@ Item {
         color: root.highlighted ? Colors.changeA(Colors.border, 0.78)
                                 : Colors.changeA(Colors.text, 0.12)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
-        Behavior on width { NumberAnimation { duration: 120 } }
-        Behavior on height { NumberAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
+        Behavior on width { NumberAnimation { duration: 120 / Global.animationSpeed } }
+        Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed } }
     }
 
     MouseArea {

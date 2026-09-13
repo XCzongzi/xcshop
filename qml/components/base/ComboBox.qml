@@ -28,8 +28,8 @@ Item {
         border.color: root.opened || root.hovered ? Colors.changeA(Colors.border, 0.60)
                                                    : Colors.changeA(Colors.text, 0.10)
 
-        Behavior on color { ColorAnimation { duration: 130 } }
-        Behavior on border.color { ColorAnimation { duration: 130 } }
+        Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
 
         XCText {
             x: 11
@@ -115,6 +115,6 @@ Item {
             }
         }
 
-        Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic } }
     }
 }

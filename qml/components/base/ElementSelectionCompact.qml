@@ -71,8 +71,8 @@ Rectangle {
     border.color: highlighted ? Colors.changeA(Colors.border, 0.82)
                               : Colors.changeA(Colors.text, 0.11)
 
-    Behavior on border.color { ColorAnimation { duration: 160 } }
-    Behavior on color { ColorAnimation { duration: 160 } }
+    Behavior on border.color { ColorAnimation { duration: 160 / Global.animationSpeed } }
+    Behavior on color { ColorAnimation { duration: 160 / Global.animationSpeed } }
 
     function normalizedPath(filePath) {
         return Global.resolveElementPath(filePath)

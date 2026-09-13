@@ -57,7 +57,7 @@ Rectangle{
         id: treeAnim
         target: root
         property: "contentOpacity"
-        duration: 120
+        duration: 120 / Global.animationSpeed
         to: 1
     }
 
@@ -88,11 +88,14 @@ Rectangle{
     Behavior on width { 
         id: widthAnim
         enabled: false
-        SpringAnimation { 
-            spring: 1.5
-            damping: 0.2 
+        SpringAnimation {
+            // Scale spring and damping together so the panel keeps its
+            // original elastic response while its settling time follows the
+            // configured animation speed.
+            spring: 1.5 * Global.animationSpeed * Global.animationSpeed
+            damping: 0.2 * Global.animationSpeed
             epsilon: 0.01
-        } 
+        }
     }
 
 

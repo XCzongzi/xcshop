@@ -44,7 +44,7 @@ FocusScope{
         Behavior on borderOpacity{
             enabled: !root.activeFocus
             NumberAnimation{
-                duration: 180
+                duration: 180 / Global.animationSpeed
             }
         }
         XCText{
@@ -73,7 +73,7 @@ FocusScope{
                 property: "height"
                 from: 0
                 to: root.contentHeight
-                duration: 420
+                duration: 420 / Global.animationSpeed
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: [1.00, 0.00, 0.40, 1.33,1,1]
                 onFinished: {
@@ -93,12 +93,12 @@ FocusScope{
         //基础动画
         Behavior on color {
                 ColorAnimation{
-                duration: 180
+                duration: 180 / Global.animationSpeed
                 }
             }
         Behavior on opacity {
                 NumberAnimation{
-                    duration: 300
+                    duration: 300 / Global.animationSpeed
                 }
             }
 

@@ -34,7 +34,7 @@ Item{
         layer.effect: XCShadow{shadowVerticalOffset: 3 - y}
         Behavior on y{
             NumberAnimation{
-                duration: 50
+                duration: 50 / Global.animationSpeed
             }
         }
         property bool hovered: false

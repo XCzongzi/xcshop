@@ -1,4 +1,5 @@
 import QtQuick
+import xcshop
 
 Rectangle{
     id: root
@@ -31,7 +32,7 @@ Rectangle{
     enabled: opacity > 0.01
     Behavior on opacity {
         NumberAnimation{
-            duration: 500
+            duration: 500 / Global.animationSpeed
         }
     }
     Component.onCompleted: {

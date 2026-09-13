@@ -465,7 +465,7 @@ Item {
                     height: parent.height
                     radius: parent.radius
                     color: Colors.border
-                    Behavior on width { NumberAnimation { duration: 120 } }
+                    Behavior on width { NumberAnimation { duration: 120 / Global.animationSpeed } }
                 }
             }
 
@@ -839,7 +839,7 @@ Item {
                            ? Colors.changeA(Colors.border, 0.92)
                            : Colors.changeA(Colors.banned, 0.62)
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
                     MouseArea {
                         id: scrollHandle
@@ -901,7 +901,7 @@ Item {
                    ? Colors.changeA(Colors.border, 0.92)
                    : Colors.changeA(Colors.banned, 0.62)
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
             MouseArea {
                 id: pageScrollHandle

@@ -15,7 +15,7 @@ BasePage {
 
     Behavior on visualContentOffset {
         NumberAnimation {
-            duration: 180
+            duration: 180 / Global.animationSpeed
             easing.type: Easing.OutCubic
         }
     }

@@ -70,9 +70,9 @@ BasePage {
         border.width: 1
         border.color: hovered ? Colors.changeA(Colors.border, 0.42) : Colors.changeA(Colors.text, 0.07)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
-        Behavior on border.color { ColorAnimation { duration: 120 } }
-        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: 120 / Global.animationSpeed } }
+        Behavior on scale { NumberAnimation { duration: 90 / Global.animationSpeed; easing.type: Easing.OutCubic } }
         scale: pressed ? 0.98 : 1.0
         XCText {
             x: 16

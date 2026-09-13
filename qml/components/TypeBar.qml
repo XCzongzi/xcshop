@@ -39,14 +39,14 @@ Rectangle {
         id: x_animation
         NumberAnimation{
             easing.type: Easing.InQuint
-            duration: 370
+            duration: 370 / Global.animationSpeed
         }
     }
     Behavior on opacity{
         id: opa_animation
         NumberAnimation{
             easing.type: Easing.InQuint
-            duration: 370
+            duration: 370 / Global.animationSpeed
         }
     }
 
@@ -61,7 +61,7 @@ Rectangle {
         //radius: 5
         Behavior on y{
             NumberAnimation{
-                duration: 120
+                duration: 120 / Global.animationSpeed
                 easing.type: Easing.InOutQuad
             }
         }
@@ -198,7 +198,7 @@ Rectangle {
         border.color: Colors.text
         Behavior on opacity{
             NumberAnimation{
-                duration: 200
+                duration: 200 / Global.animationSpeed
             }
         }
         Column{
@@ -249,7 +249,7 @@ Rectangle {
         }
         Behavior on opacity{
             NumberAnimation{
-                duration: 200
+                duration: 200 / Global.animationSpeed
             }
         }
     }

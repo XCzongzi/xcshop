@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
+import xcshop
 
 Window {
     id: root
@@ -43,7 +44,7 @@ Window {
         color: Colors.background_n
 
         Behavior on color {
-            ColorAnimation { duration: 500 }
+            ColorAnimation { duration: 500 / Global.animationSpeed }
         }
 
         Item{

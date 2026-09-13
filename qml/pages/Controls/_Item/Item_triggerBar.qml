@@ -48,7 +48,7 @@ Rectangle{
         target: frame
         property: "y"
         to: -offset
-        duration: 120
+        duration: 120 / Global.animationSpeed
         easing.type: Easing.InCubic
         onFinished: {
             frame.y = 0
@@ -63,7 +63,7 @@ Rectangle{
     Behavior on height{     //配合函数输入框的高度动画
         enabled: field_function.visible
         NumberAnimation{
-            duration: 120
+            duration: 120 / Global.animationSpeed
             easing.type: Easing.InOutQuad
         }
     }
@@ -143,7 +143,7 @@ Rectangle{
                 target: root
                 property: "x"
                 to: root.width
-                duration: 200
+                duration: 200 / Global.animationSpeed
                 onFinished: {
                     root.opacity = 0
                     root.deleteClicked()

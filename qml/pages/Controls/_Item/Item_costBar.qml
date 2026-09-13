@@ -28,7 +28,7 @@ Item {
         id: shiftAnimation
         target: frame
         property: "y"
-        duration: 120
+        duration: 120 / Global.animationSpeed
         easing.type: Easing.InCubic
         onFinished: {
             frame.y = 0
@@ -86,7 +86,7 @@ Item {
         target: frame
         property: "x"
         to: root.width
-        duration: 200
+        duration: 200 / Global.animationSpeed
         easing.type: Easing.InCubic
         onStarted: root.deleting = true
         onFinished: {

@@ -1,4 +1,5 @@
 import QtQuick
+import xcshop
 
 Item {
     id: root
@@ -24,7 +25,7 @@ Item {
 
         Behavior on opacity {
             enabled: root.animationEnabled
-            NumberAnimation { duration: root.duration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.duration / Global.animationSpeed; easing.type: Easing.OutCubic }
         }
     }
 
@@ -37,7 +38,7 @@ Item {
 
         Behavior on opacity {
             enabled: root.animationEnabled
-            NumberAnimation { duration: root.duration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.duration / Global.animationSpeed; easing.type: Easing.OutCubic }
         }
     }
 }

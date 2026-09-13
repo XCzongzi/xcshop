@@ -36,7 +36,7 @@ Rectangle {
                            : Colors.changeA(Colors.text, 0.10)
 
     Behavior on height {
-        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic }
     }
 
     function syncData(data) {
@@ -60,7 +60,7 @@ Rectangle {
                ? Colors.changeA(Colors.fired, 0.36)
                : Colors.changeA(Colors.background, 0.20)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
         XCText {
             id: expandMark

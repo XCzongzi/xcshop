@@ -37,7 +37,7 @@ Item {
 
     Behavior on height {
         NumberAnimation {
-            duration: 120
+            duration: 120 / Global.animationSpeed
             easing.type: Easing.InOutQuad
         }
     }

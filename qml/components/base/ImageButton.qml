@@ -47,7 +47,7 @@ Rectangle {
     }
 
     Behavior on imgSize_ {
-        NumberAnimation { duration: 50; easing.type: Easing.InOutQuad }
+        NumberAnimation { duration: 50 / Global.animationSpeed; easing.type: Easing.InOutQuad }
     }
 
     MouseArea {
