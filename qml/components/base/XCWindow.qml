@@ -53,11 +53,11 @@ Window {
                 id: backgroundImage
                 anchors.fill: parent
                 source: root.backgroundSource.length ? root.backgroundSource : "qrc:/assets/gui/png/background1.png"
-                visible: root.backgroundMode === "image" || root.backgroundMode === "imageBlur"
+                visible: root.backgroundMode === "image"
                 fillMode: Image.PreserveAspectCrop
-                layer.enabled: root.backgroundMode === "imageBlur"
+                layer.enabled: root.backgroundBlur > 0
                 layer.effect: MultiEffect {
-                    blurEnabled: true
+                    blurEnabled: root.backgroundBlur > 0
                     blur: root.backgroundBlur
                 }
             }

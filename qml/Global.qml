@@ -13,7 +13,7 @@ QtObject{
     property Image mainWindow_background
 
     property real animationSpeed: 1.0
-    property string backgroundMode: "color" // color / image / imageBlur
+    property string backgroundMode: "color" // color / image
     property string backgroundImage: ""
     property real backgroundBlur: 0.45
     property string settingsPath: ""
@@ -169,7 +169,11 @@ QtObject{
                 return
             Colors.loadSettings(saved)
             if (saved.animationSpeed) animationSpeed = saved.animationSpeed
-            if (saved.backgroundMode) backgroundMode = saved.backgroundMode
+            if (saved.backgroundMode)
+                // Older settings used a separate imageBlur mode. Blur is now
+                // controlled solely by backgroundBlur, so preserve the image
+                // while migrating the legacy mode.
+                backgroundMode = saved.backgroundMode === "imageBlur" ? "image" : saved.backgroundMode
             if (saved.backgroundImage) backgroundImage = saved.backgroundImage
             if (saved.backgroundBlur !== undefined) backgroundBlur = saved.backgroundBlur
             if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, 6)

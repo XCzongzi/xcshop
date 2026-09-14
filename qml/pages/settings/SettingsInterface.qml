@@ -202,7 +202,6 @@ Item {
                 expanded: true
                 title: "背景"
                 contentHeight: blurRow.visible ? blurRow.y + blurRow.height + 16
-                                                                       : imageEffect.visible ? imageEffect.y + imageEffect.height + 16
                                                                                            : backgroundType.y + backgroundType.height + 16
 
                 RadioGroup {
@@ -219,31 +218,18 @@ Item {
                 }
                 Row {
                     id: imageRow
-                    x: 32
+                    x: 16
                     y: backgroundType.y + backgroundType.height + 12
-                    visible: Global.backgroundMode === "image" || Global.backgroundMode === "imageBlur"
+                    visible: Global.backgroundMode === "image"
                     spacing: 10
                     TextButton { text: "选择图片"; height: 32; radius: 7; textSize: 13; widthBorderSize: 10; buttonColor: Colors.pressed; onClicked: imageFileDialog.openXC(false, "background") }
                     XCText { width: Math.max(120, backgroundBar.width - 160); xcText: Global.backgroundImage.length ? Global.backgroundImage : "未选择图片"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; elide: Text.ElideMiddle }
                 }
-                RadioGroup {
-                    id: imageEffect
-                    x: 32
-                    y: imageRow.y + imageRow.height + 10
-                    visible: imageRow.visible
-                    text: "图片效果"
-                    options: ["原图", "高斯模糊"]
-                    initialOption: Global.backgroundMode === "imageBlur" ? 1 : 0
-                    onClicked: {
-                        Global.backgroundMode = selected === 1 ? "imageBlur" : "image"
-                        Global.saveSettings()
-                    }
-                }
                 Row {
                     id: blurRow
-                    x: 48
-                    y: imageEffect.y + imageEffect.height + 10
-                    visible: Global.backgroundMode === "imageBlur"
+                    x: 16
+                    y: imageRow.y + imageRow.height + 10
+                    visible: imageRow.visible
                     spacing: 10
                     XCText { id: blurLabel; xcText: "模糊强度"; onCenter: false; xcFontSize: 13; boldFont: false; width: 70 }
                     XCSlider {
