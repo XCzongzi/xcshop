@@ -106,6 +106,7 @@ Item {
                     firedColor: Colors.changeA(Colors.fired, 0.38)
                     pressedColor: Colors.changeA(Colors.border, 0.58)
                     btnSelected: root.selected === index
+                    allowSelectedClick: true
                     onClicked: {
                         root.selected = index
                         root.opened = false

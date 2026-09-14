@@ -6,12 +6,29 @@ BaseIOPage {
     color: Colors.transparent
     workspace: true
     content_height: displayInput.height + typeInput.height + 44
+    property int valueEditorSelection: 0
+
+    function syncTypeValue(value) {
+        var normalizedValue = value === undefined || value === null ? "" : String(value)
+        root.eledata.type.value = normalizedValue
+        itemInput_field.setContent(normalizedValue)
+        scoreboardInput.text = normalizedValue
+        root.updateDataOut()
+    }
+
+    function commitCurrentValueEditor() {
+        var value = valueEditorSelection === 2
+                    ? scoreboardInput.text : itemInput_field.getContent()
+        syncTypeValue(value)
+    }
 
     function elementReading() {
         displayInput_textField.text = root.eledata.display
         typeInput_radioGroup.selected = root.eledata.type.selected
         checkBox.checked = root.eledata.type.filter
         itemInput_field.setContent(root.eledata.type.value)
+        scoreboardInput.text = root.eledata.type.value
+        valueEditorSelection = root.eledata.type.selected
 
         Qt.callLater(function(){
             typeInput.expand()
@@ -45,7 +62,10 @@ BaseIOPage {
         x: 20
         y: displayInput.y + displayInput.height + 12
         width: parent.width - 40
-        contentHeight: typeInput_propertyText.visible ? itemInput_field.y + itemInput_field.height + 18
+        contentHeight: typeInput_propertyText.visible
+                       ? (typeInput_radioGroup.selected === 2
+                          ? scoreboardInput.y + scoreboardInput.height + 18
+                          : itemInput_field.y + itemInput_field.height + 18)
                                              : checkBox.y + checkBox.height + 24
 
         title: "代价类型"
@@ -55,8 +75,10 @@ BaseIOPage {
             x: 16
             y: 48
             text: ""
-            options: ["经验等级", "物品数量", "计分板分数", "目标选择器"]
+            options: ["经验等级", "物品数量", "计分板分数", "/execute条件"]
             onClicked: {
+                root.commitCurrentValueEditor()
+                root.valueEditorSelection = selected
                 root.eledata.type.selected = selected
                 root.updateDataOut()
             }
@@ -78,22 +100,36 @@ BaseIOPage {
             visible: typeInput_radioGroup.selected !== 0
             x: 20
             y: typeInput_radioGroup.selected === 3? typeInput_radioGroup.y + typeInput_radioGroup.height + 12 : checkBox.y + checkBox.height + 12
-            xcText: typeInput_radioGroup.selected === 1 ? "物品标识" : typeInput_radioGroup.selected === 2 ? "计分板名称" : "目标选择器（仅筛选，不会进行扣除）"
+            xcText: typeInput_radioGroup.selected === 1 ? "物品标识" : typeInput_radioGroup.selected === 2 ? "计分板名称" : "条件子命令（仅筛选，不会进行扣除）"
             xcFontSize: 15
             onCenter: false
         }
         VariableTextField {
             id: itemInput_field
-            visible: typeInput_propertyText.visible
+            visible: typeInput_propertyText.visible && typeInput_radioGroup.selected !== 2
             x: 20
             y: typeInput_propertyText.y + typeInput_propertyText.height + 8
             width: parent.width - 40
             height: 128
             content: ""
+            placeholderText: typeInput_radioGroup.selected === 3
+                             ? "例如：填入\"if/unless items entity @s weapon.mainhand minecraft:diamond_sword\"来检测购买者是/否手持钻石剑"
+                             : ""
             syntaxHighlightMode: typeInput_radioGroup.selected === 1 ? Global.syntaxVersion : 0
             onAccepted: {
-                root.eledata.type.value = content
-                root.updateDataOut()
+                root.syncTypeValue(content)
+            }
+        }
+
+        XCTextField {
+            id: scoreboardInput
+            visible: typeInput_radioGroup.selected === 2
+            x: 20
+            y: typeInput_propertyText.y + typeInput_propertyText.height + 8
+            width: parent.width - 40
+            height: 32
+            onEditingFinished: {
+                root.syncTypeValue(text)
             }
         }
     }

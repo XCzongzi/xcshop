@@ -8,6 +8,9 @@ Rectangle{
 
     property string text:""
     property bool btnSelected: false
+    // Navigation tabs keep their selected item inert; option lists can opt in
+    // when selecting the current value should still close the menu.
+    property bool allowSelectedClick: false
     property int widthBorderSize:0
     property int heightBorderSize:0
     property int textSize:12
@@ -67,7 +70,7 @@ Rectangle{
 
     MouseArea {
         id: mouseArea
-        visible: !root.btnSelected && root.enabled
+        visible: root.enabled && (!root.btnSelected || root.allowSelectedClick)
         anchors.fill: parent
         propagateComposedEvents: true
         hoverEnabled: true

@@ -14,6 +14,7 @@ Rectangle {
     property bool nestedPreviewed: false
     property bool nestedOccupied: false
     property bool nestingDrawMode: false
+    property bool controlHovered: false
 
     readonly property bool isItemSlot: true
     readonly property bool hasSelection: selectedElementPath.length > 0
@@ -130,6 +131,23 @@ Rectangle {
         SignalBus.elementSelectionFocusChanged(false, {})
         selectionCancelled(selectionId)
         SignalBus.elementSelectionCancelled(selectionId)
+    }
+
+    function openConnectedElement() {
+        if (hasSelection)
+            SignalBus.elementOpenRequested(selectedElementPath)
+    }
+
+    Keys.enabled: slotMouse.containsMouse
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Control)
+            root.controlHovered = root.hasSelection && !root.nestingDrawMode
+        event.accepted = false
+    }
+    Keys.onReleased: function(event) {
+        if (event.key === Qt.Key_Control)
+            root.controlHovered = false
+        event.accepted = false
     }
 
     function setLit(value) {
@@ -263,9 +281,10 @@ Rectangle {
 
             Text {
                 text: root.selectedElementName
-                color: "white"
+                color: root.controlHovered ? Colors.border : "white"
                 font.family: "Microsoft YaHei"
                 font.pixelSize: 16
+                font.underline: root.controlHovered
             }
             Text {
                 text: " | " + root.selectedElementDisplayPath
@@ -281,10 +300,21 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
+        cursorShape: root.hasSelection && root.controlHovered && !root.nestingDrawMode
+                     ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onEntered: root.forceActiveFocus()
         onPressed: root.forceActiveFocus()
-        onClicked: {
+        onPositionChanged: function(mouse) {
+            root.controlHovered = (mouse.modifiers & Qt.ControlModifier) !== 0
+        }
+        onExited: root.controlHovered = false
+        onClicked: function(mouse) {
             if (root.nestingDrawMode) {
                 root.nestedSlotToggled()
+                return
+            }
+            if ((mouse.modifiers & Qt.ControlModifier) && root.hasSelection) {
+                root.openConnectedElement()
                 return
             }
             if (!root.lit) {

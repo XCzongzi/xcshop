@@ -12,6 +12,7 @@ Rectangle {
     property bool externalDragActive: false
     property bool dropHovered: false
     property string validationMessage: ""
+    property bool connectedElementHovered: false
 
     // ===== 派生展示状态 =====
     readonly property bool hasSelection: selectedElementPath.length > 0
@@ -118,6 +119,11 @@ Rectangle {
         SignalBus.elementSelectionFocusChanged(false, {})
         selectionCancelled(selectionId)
         SignalBus.elementSelectionCancelled(selectionId)
+    }
+
+    function openConnectedElement() {
+        if (hasSelection)
+            SignalBus.elementOpenRequested(selectedElementPath)
     }
     Connections{    //连接遮罩的交互
         target: SignalBus
@@ -264,6 +270,7 @@ Rectangle {
         }
 
         Column {
+            id: selectionSummary
             anchors.left: elementMark.right
             anchors.leftMargin: 14
             anchors.right: parent.right
@@ -272,14 +279,19 @@ Rectangle {
             spacing: 6
 
             XCText {
+                id: selectedName
                 width: parent.width
                 xcText: root.hasSelection ? root.selectedElementName
                                           : (root.waitingForSelection ? "请在元素中转区选择一个" + root.selectionTypeName
                                                                       : "尚未连接" + root.selectionTypeName)
                 xcFontSize: 14
                 onCenter: false
+                underlineFont: root.hasSelection && root.connectedElementHovered
+                textColor: root.hasSelection && root.connectedElementHovered
+                           ? Colors.border : Colors.text
             }
             XCText {
+                id: selectedPath
                 width: parent.width
                 xcText: root.hasSelection ? root.selectedElementDisplayPath
                                           : (root.validationMessage.length ? root.validationMessage
@@ -290,7 +302,23 @@ Rectangle {
                 boldFont: false
                 onCenter: false
                 elide: Text.ElideLeft
-                textColor: root.highlighted ? Colors.changeA(Colors.border, 0.86) : Colors.banned
+                underlineFont: root.hasSelection && root.connectedElementHovered
+                textColor: root.hasSelection && root.connectedElementHovered
+                           ? Colors.changeA(Colors.border, 0.86)
+                           : (root.highlighted ? Colors.changeA(Colors.border, 0.86) : Colors.banned)
+            }
+
+            HoverHandler {
+                id: selectedElementHover
+                enabled: root.hasSelection
+                cursorShape: Qt.PointingHandCursor
+                onHoveredChanged: root.connectedElementHovered = hovered
+            }
+
+            TapHandler {
+                enabled: root.hasSelection
+                acceptedButtons: Qt.LeftButton
+                onTapped: root.openConnectedElement()
             }
         }
 

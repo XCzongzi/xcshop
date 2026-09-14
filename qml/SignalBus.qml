@@ -26,6 +26,7 @@ QtObject{
 
     //元素管理器与元素中转区
     signal elementOpened(string elementType, string filePath, string elementName)
+    signal elementOpenRequested(string filePath)
     signal elementsAddToRelayRequested(var filePaths, string groupKey)
     signal elementFilesMoved(var moves)
     signal elementFilesDeleted(var filePaths)

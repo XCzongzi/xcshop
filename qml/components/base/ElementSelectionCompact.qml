@@ -12,6 +12,7 @@ Rectangle {
     property bool externalDragActive: false
     property bool dropHovered: false
     property string validationMessage: ""
+    property bool connectedElementHovered: false
 
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property bool highlighted: waitingForSelection || externalDragActive || dropHovered
@@ -127,6 +128,11 @@ Rectangle {
         SignalBus.elementSelectionFocusChanged(false, {})
         selectionCancelled(selectionId)
         SignalBus.elementSelectionCancelled(selectionId)
+    }
+
+    function openConnectedElement() {
+        if (hasSelection)
+            SignalBus.elementOpenRequested(selectedElementPath)
     }
 
     function updateFocusGeometry() {
@@ -248,7 +254,8 @@ Rectangle {
             xcText: root.selectedElementName
             xcFontSize: 12
             onCenter: false
-            textColor: Colors.text
+            underlineFont: root.connectedElementHovered
+            textColor: root.connectedElementHovered ? Colors.border : Colors.text
         }
 
         XCText {
@@ -265,6 +272,7 @@ Rectangle {
         }
 
         XCText {
+            id: selectedPath
             visible: root.hasSelection
             anchors.left: pathSeparator.right
             anchors.leftMargin: 7
@@ -275,7 +283,22 @@ Rectangle {
             boldFont: false
             onCenter: false
             elide: Text.ElideLeft
-            textColor: Colors.banned
+            underlineFont: root.connectedElementHovered
+            textColor: root.connectedElementHovered ? Colors.changeA(Colors.border, 0.86)
+                                                : Colors.banned
+        }
+
+        HoverHandler {
+            id: selectedElementHover
+            enabled: root.hasSelection
+            cursorShape: Qt.PointingHandCursor
+            onHoveredChanged: root.connectedElementHovered = hovered
+        }
+
+        TapHandler {
+            enabled: root.hasSelection
+            acceptedButtons: Qt.LeftButton
+            onTapped: root.openConnectedElement()
         }
     }
 

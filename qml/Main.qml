@@ -174,6 +174,10 @@ XCWindow {
         Connections {
             target: SignalBus
 
+            function onElementOpenRequested(filePath) {
+                root.openElementFromRelay(filePath)
+            }
+
             function onContextMenuRequested(target, x, y, items, contentComponent) {
                 globalContextMenu.menuItems = items || []
                 globalContextMenu.contentComponent = contentComponent || null
