@@ -77,7 +77,7 @@ Rectangle{
         }
         onDragMoved: function(delta) {
             root.barWidth = Math.max(150,
-                                     Math.min(Global.window_width - 100,
+                                     Math.min(Global.window_width / 2 - 32,
                                               pressWidth + delta))
         }
         onDragFinished: {
