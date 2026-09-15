@@ -19,6 +19,10 @@ QtObject{
     property string settingsPath: ""
     property var recentProjects: []
     property int elementRelayHeight: 160
+    // 工作区内可拖动的面板尺寸统一保存在 settings.json。
+    property int elementExplorerWidth: 150
+    property int uiInspectorWidth: 400
+    property var uiCanvasViews: ({})
 
     //项目信息
     property string project_location: ""
@@ -179,6 +183,13 @@ QtObject{
             if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, 6)
             if (saved.elementRelayHeight !== undefined)
                 elementRelayHeight = Math.max(126, Math.min(420, Number(saved.elementRelayHeight)))
+            if (saved.elementExplorerWidth !== undefined)
+                elementExplorerWidth = Math.max(150, Math.round(Number(saved.elementExplorerWidth)))
+            if (saved.uiInspectorWidth !== undefined)
+                uiInspectorWidth = Math.max(260, Math.round(Number(saved.uiInspectorWidth)))
+            if (saved.uiCanvasViews && typeof saved.uiCanvasViews === "object"
+                    && !Array.isArray(saved.uiCanvasViews))
+                uiCanvasViews = saved.uiCanvasViews
         } catch (error) {}
     }
 
@@ -192,6 +203,9 @@ QtObject{
         settings.backgroundBlur = backgroundBlur
         settings.recentProjects = recentProjects
         settings.elementRelayHeight = elementRelayHeight
+        settings.elementExplorerWidth = elementExplorerWidth
+        settings.uiInspectorWidth = uiInspectorWidth
+        settings.uiCanvasViews = uiCanvasViews
         xcfile.write(settingsPath, JSON.stringify(settings))
     }
 
@@ -267,6 +281,41 @@ QtObject{
 
     function saveElementRelayHeight(value){
         elementRelayHeight = Math.max(126, Math.min(420, Math.round(value)))
+        saveSettings()
+    }
+
+    function saveElementExplorerWidth(value){
+        elementExplorerWidth = Math.max(150, Math.round(value))
+        saveSettings()
+    }
+
+    function saveUiInspectorWidth(value){
+        uiInspectorWidth = Math.max(260, Math.round(value))
+        saveSettings()
+    }
+
+    function uiCanvasView(key){
+        if (!key.length || !uiCanvasViews
+                || !Object.prototype.hasOwnProperty.call(uiCanvasViews, key))
+            return null
+        var view = uiCanvasViews[key]
+        return view && typeof view === "object" && !Array.isArray(view) ? view : null
+    }
+
+    function saveUiCanvasView(key, scale, offsetX, offsetY){
+        if (!key.length || !isFinite(scale) || !isFinite(offsetX) || !isFinite(offsetY))
+            return
+        var views = ({})
+        for (var viewKey in uiCanvasViews) {
+            if (Object.prototype.hasOwnProperty.call(uiCanvasViews, viewKey))
+                views[viewKey] = uiCanvasViews[viewKey]
+        }
+        views[key] = {
+            "scale": scale,
+            "offsetX": offsetX,
+            "offsetY": offsetY
+        }
+        uiCanvasViews = views
         saveSettings()
     }
     function rememberProject(location, projectInfo){

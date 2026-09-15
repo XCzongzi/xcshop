@@ -80,7 +80,10 @@ Rectangle{
                                      Math.min(Global.window_width - 100,
                                               pressWidth + delta))
         }
-        onDragFinished: widthAnim.enabled = true
+        onDragFinished: {
+            widthAnim.enabled = true
+            Global.saveElementExplorerWidth(root.barWidth)
+        }
         onDragCanceled: widthAnim.enabled = true
     }
     

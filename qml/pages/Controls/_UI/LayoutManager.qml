@@ -8,13 +8,18 @@ Rectangle {
     property var uiPage: null
     property int draggedGroupIndex: -1
     property int dragTargetIndex: -1
+    readonly property int layoutRevision: uiPage ? uiPage.layoutRevision : 0
 
     readonly property bool nestedPreview: uiPage
                                           && uiPage.selectedNestedGroupId.length > 0
     readonly property var selectedGroup: {
-        var revision = uiPage ? uiPage.layoutRevision : 0
-        return nestedPreview ? uiPage.selectedNestedGroup() : null
+        return root.layoutRevision >= 0 && nestedPreview
+                ? uiPage.selectedNestedGroup() : null
     }
+    readonly property bool selectedGroupInputEnabled: root.layoutRevision >= 0
+                                                    && root.uiPage && root.selectedGroup
+                                                    && root.uiPage.isNestedGroupLayoutInputEnabled(
+                                                            root.selectedGroup.id)
 
     height: 140
     radius: 10
@@ -523,6 +528,8 @@ Rectangle {
                 y: 2
                 width: Math.max(0, parent.width - x - 16)
                 selectionId: "ui"
+                enabled: !root.selectedGroupInputEnabled
+                opacity: enabled ? 1 : 0.48
                 onElementSelected: function(filePath) {
                     if (root.uiPage && root.uiPage.selectedNestedGroupId.length)
                         root.uiPage.setNestedGroupElement(
@@ -532,6 +539,29 @@ Rectangle {
                     if (root.uiPage && root.uiPage.selectedNestedGroupId.length)
                         root.uiPage.setNestedGroupElement(
                                     root.uiPage.selectedNestedGroupId, "")
+                }
+            }
+
+            Rectangle {
+                visible: root.selectedGroupInputEnabled
+                x: nestedSelection.x
+                y: nestedSelection.y
+                width: nestedSelection.width
+                height: nestedSelection.height
+                radius: nestedSelection.radius
+                color: Colors.changeA(Colors.foreground, 0.88)
+                border.width: 1
+                border.color: Colors.changeA(Colors.text, 0.12)
+
+                XCText {
+                    anchors.centerIn: parent
+                    width: parent.width - 16
+                    xcText: "此嵌套组已启用布局输入器"
+                    xcFontSize: 11
+                    boldFont: false
+                    onCenter: true
+                    textColor: Colors.banned
+                    elide: Text.ElideRight
                 }
             }
 

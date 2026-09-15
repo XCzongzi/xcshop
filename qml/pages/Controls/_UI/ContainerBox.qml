@@ -10,6 +10,7 @@ Item {
     property int maximumScale: 30
     property int containerType: -1
     property var uiPage: null
+    property string viewKey: ""
     property bool viewWasManipulated: false
 
     function clamp(value, minimum, maximum) {
@@ -50,8 +51,41 @@ Item {
             centerView()
     }
 
+    function restoreView() {
+        var view = Global.uiCanvasView(viewKey)
+        if (!view || !isFinite(view.scale) || !isFinite(view.offsetX)
+                || !isFinite(view.offsetY)) {
+            centerView()
+            return
+        }
+
+        container.uiscale = clamp(view.scale, minimumScale, maximumScale)
+        Qt.callLater(function() {
+            container.x = (width - container.width) / 2 + view.offsetX
+            container.y = (height - container.height) / 2 + view.offsetY
+            viewWasManipulated = true
+            constrainView()
+        })
+    }
+
+    function saveView() {
+        if (!viewKey.length || !container.visible)
+            return
+        Global.saveUiCanvasView(viewKey, container.uiscale,
+                                container.x - (width - container.width) / 2,
+                                container.y - (height - container.height) / 2)
+    }
+
     onWidthChanged: updateViewAfterResize()
     onHeightChanged: updateViewAfterResize()
+    onContainerTypeChanged: {
+        viewWasManipulated = false
+        Qt.callLater(restoreView)
+    }
+    onViewKeyChanged: {
+        viewWasManipulated = false
+        Qt.callLater(restoreView)
+    }
 
     ContainerUI {
         id: container
@@ -65,7 +99,7 @@ Item {
         onWidthChanged: root.updateViewAfterResize()
         onHeightChanged: root.updateViewAfterResize()
 
-        Component.onCompleted: root.centerView()
+        Component.onCompleted: Qt.callLater(root.restoreView)
     }
 
     MouseArea {
@@ -121,6 +155,11 @@ Item {
                 root.uiPage.clearCurrentSlot()
         }
 
+        onReleased: {
+            if (pressMoved)
+                root.saveView()
+        }
+
         onWheel: function(wheel) {
             var delta = wheel.angleDelta.y
             if (delta === 0)
@@ -143,8 +182,15 @@ Item {
             container.y = wheel.y - contentY * nextScale
             root.viewWasManipulated = true
             root.constrainView()
+            viewSaveTimer.restart()
             wheel.accepted = true
         }
+    }
+
+    Timer {
+        id: viewSaveTimer
+        interval: 260
+        onTriggered: root.saveView()
     }
 
 }

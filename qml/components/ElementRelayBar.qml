@@ -62,6 +62,18 @@ Rectangle {
 
     ListModel { id: pageModel }
 
+    Timer {
+        id: relayHeightSaveTimer
+        interval: 280
+        onTriggered: Global.saveElementRelayHeight(root.panelHeight)
+    }
+
+    function restorePanelHeight() {
+        root.panelHeight = Math.max(root.minPanelHeight,
+                                    Math.min(root.maxPanelHeight,
+                                             Global.elementRelayHeight))
+    }
+
     // ===== 状态加载与持久化 =====
     function loadState() {
         relayState = RelayState.normalizeState(Global.elementRelayState(Global.project_location))
@@ -448,16 +460,31 @@ Rectangle {
 
     // ===== 生命周期与全局事件桥接 =====
     onPageSizeChanged: Qt.callLater(rebuildItems)
-    onMaxPanelHeightChanged: panelHeight = Math.min(panelHeight, maxPanelHeight)
+    onMaxPanelHeightChanged: {
+        if (resizing)
+            panelHeight = Math.min(panelHeight, maxPanelHeight)
+        else
+            restorePanelHeight()
+    }
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            if (!resizing)
+                restorePanelHeight()
             Qt.callLater(loadState)
+        }
     }
 
-    Component.onCompleted: Qt.callLater(loadState)
+    Component.onCompleted: {
+        Qt.callLater(loadState)
+        Qt.callLater(restorePanelHeight)
+    }
 
     Connections {
         target: Global
+        function onElementRelayHeightChanged() {
+            if (!root.resizing)
+                root.restorePanelHeight()
+        }
         function onProject_locationChanged() { root.loadState() }
     }
 
@@ -506,12 +533,18 @@ Rectangle {
             root.panelHeight = Math.max(root.minPanelHeight,
                                         Math.min(root.maxPanelHeight,
                                                  pressHeight - delta))
+            relayHeightSaveTimer.restart()
         }
         onDragFinished: {
             root.resizing = false
+            relayHeightSaveTimer.stop()
             Global.saveElementRelayHeight(root.panelHeight)
         }
-        onDragCanceled: root.resizing = false
+        onDragCanceled: {
+            root.resizing = false
+            relayHeightSaveTimer.stop()
+            root.restorePanelHeight()
+        }
     }
 
     //顶栏

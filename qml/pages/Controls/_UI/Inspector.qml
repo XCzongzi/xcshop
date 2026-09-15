@@ -4,12 +4,13 @@ import xcshop
 Rectangle {
     id: root
 
-    property int desiredWidth: 260
-    property int minimumWidth: 200
+    property int desiredWidth: 400
+    property int minimumWidth: 260
     property int maximumWidth: minimumWidth
     property var uiPage: null
 
     signal widthRequested(int width)
+    signal widthResizeFinished()
 
     width: Math.min(desiredWidth, maximumWidth)
     radius: 10
@@ -33,7 +34,7 @@ Rectangle {
         width: parent.width - 32
         height: parent.height - y - 16
         contentPadding: 0
-        options: ["全局属性", "当前栏位"]
+        options: ["全局属性", "当前栏位", "布局输入器"]
         GlobalProperties {
             id: globalProperties
             visible: propertyEditor.selected === 0
@@ -43,6 +44,12 @@ Rectangle {
         CurrentSlotProperties {
             id: currentSlotProperties
             visible: propertyEditor.selected === 1
+            uiPage: root.uiPage
+        }
+
+        LayoutInput {
+            id: layoutInput
+            visible: propertyEditor.selected === 2
             uiPage: root.uiPage
         }
     }
@@ -64,5 +71,6 @@ Rectangle {
                                     Math.min(root.maximumWidth,
                                              pressWidth - delta)))
         }
+        onDragFinished: root.widthResizeFinished()
     }
 }

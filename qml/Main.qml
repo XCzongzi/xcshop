@@ -125,7 +125,7 @@ XCWindow {
             parent: popupBlurSource
             z:97
             visible: root.workspaceChromeVisible
-            barWidth: 150
+            barWidth: Global.elementExplorerWidth
             onStartedChanged:{
                 Console.output("ElementExplorer started to be changed to " + elementExplorer.started)
                 // 打开或删除当前类型的文件都会改变 started。两种情况都

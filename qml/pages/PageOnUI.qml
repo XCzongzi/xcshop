@@ -124,6 +124,46 @@ BaseIOPage {
         }
     }
 
+    function defaultLayoutInput() {
+        return {
+            "enabled": false,
+            "result": { "scoreboard": "", "target": "" },
+            "connections": []
+        }
+    }
+
+    function normalizeLayoutInput(value) {
+        var source = value && typeof value === "object" && !Array.isArray(value)
+                ? value : ({})
+        var result = source.result && typeof source.result === "object"
+                && !Array.isArray(source.result) ? source.result : ({})
+        var sourceConnections = Array.isArray(source.connections)
+                ? source.connections : []
+        var connections = []
+        for (var index = 0; index < sourceConnections.length; ++index) {
+            var connection = sourceConnections[index]
+            if (!connection || typeof connection !== "object"
+                    || Array.isArray(connection))
+                connection = ({})
+            connections.push({
+                "element": typeof connection.element === "string"
+                           ? Global.projectRelativeElementPath(connection.element) : "",
+                "value": typeof connection.value === "string" ? connection.value
+                       : (typeof connection.value === "number"
+                          ? String(connection.value) : "1")
+            })
+        }
+        return {
+            "enabled": source.enabled === true,
+            "result": {
+                "scoreboard": typeof result.scoreboard === "string"
+                              ? result.scoreboard : "",
+                "target": typeof result.target === "string" ? result.target : ""
+            },
+            "connections": connections
+        }
+    }
+
     function createNestedGroupId(index) {
         return "nested-" + Date.now() + "-" + index + "-"
                 + Math.floor(Math.random() * 1000000)
@@ -178,6 +218,7 @@ BaseIOPage {
                 "element": typeof sourceGroup.element === "string"
                         ? Global.projectRelativeElementPath(sourceGroup.element) : "",
                 "filter": root.normalizeLayoutFilter(sourceGroup.filter),
+                "layoutInput": root.normalizeLayoutInput(sourceGroup.layoutInput),
                 "slots": slots
             })
         }
@@ -264,6 +305,7 @@ BaseIOPage {
             "enabled": true,
             "element": "",
             "filter": root.defaultLayoutFilter(),
+            "layoutInput": root.defaultLayoutInput(),
             "slots": []
         }
         groups.push(group)
@@ -348,6 +390,64 @@ BaseIOPage {
             "target": targetName,
             "score": scoreRange
         }
+        root.saveLayoutChange(false)
+    }
+
+    function nestedGroupLayoutInput(groupId) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return root.defaultLayoutInput()
+        return root.nestedGroups()[index].layoutInput
+    }
+
+    function isNestedGroupLayoutInputEnabled(groupId) {
+        return root.nestedGroupLayoutInput(groupId).enabled === true
+    }
+
+    function setNestedGroupLayoutInputEnabled(groupId, enabled) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups()[index].layoutInput.enabled = enabled === true
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupLayoutInputResult(groupId, scoreboardName, targetName) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        root.nestedGroups()[index].layoutInput.result = {
+            "scoreboard": scoreboardName,
+            "target": targetName
+        }
+        root.saveLayoutChange(false)
+    }
+
+    function addNestedGroupLayoutInputConnection(groupId) {
+        var input = root.nestedGroupLayoutInput(groupId)
+        if (!input || !Array.isArray(input.connections))
+            return
+        input.connections.push({ "element": "", "value": "1" })
+        root.saveLayoutChange(false)
+    }
+
+    function updateNestedGroupLayoutInputConnection(groupId, connectionIndex, filePath, value) {
+        var input = root.nestedGroupLayoutInput(groupId)
+        if (!input || !Array.isArray(input.connections)
+                || connectionIndex < 0 || connectionIndex >= input.connections.length)
+            return
+        input.connections[connectionIndex].element = Global.projectRelativeElementPath(filePath)
+        input.connections[connectionIndex].value = value === undefined || value === null
+                ? "" : String(value)
+        root.saveLayoutChange(false)
+    }
+
+    function removeNestedGroupLayoutInputConnection(groupId, connectionIndex) {
+        var input = root.nestedGroupLayoutInput(groupId)
+        if (!input || !Array.isArray(input.connections)
+                || connectionIndex < 0 || connectionIndex >= input.connections.length)
+            return
+        input.connections.splice(connectionIndex, 1)
         root.saveLayoutChange(false)
     }
 
@@ -604,8 +704,8 @@ BaseIOPage {
         root.pageInitialized = true
     }
 
-    property int inspectorWidth: 260
-    property int minimumInspectorWidth: 200
+    property int inspectorWidth: Global.uiInspectorWidth
+    property int minimumInspectorWidth: 260
     property int minimumWorkspaceWidth: 460
     property int pageMargin: 10
     property int panelSpacing: 10
@@ -650,6 +750,7 @@ BaseIOPage {
                 anchors.fill: parent
                 containerType: root.containerType
                 uiPage: root
+                viewKey: Global.normalizeElementPath(Global.get_filePath())
                 layer.enabled: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
@@ -674,6 +775,7 @@ BaseIOPage {
             onWidthRequested: function(width) {
                 root.inspectorWidth = width
             }
+            onWidthResizeFinished: Global.saveUiInspectorWidth(root.inspectorWidth)
         }
     }
 
