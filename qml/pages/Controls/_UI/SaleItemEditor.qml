@@ -25,6 +25,7 @@ Rectangle {
     signal itemChangeRequested(int index, string filePath)
     signal filterChangeRequested(int index, string scoreboardName,
                                  string targetName, string scoreRange)
+    signal macrosChangeRequested(int index, var macros)
 
     implicitHeight: headerHeight + (expanded ? editorColumn.height + 12 : 0)
     height: implicitHeight
@@ -49,6 +50,7 @@ Rectangle {
         var filter = data.filter && typeof data.filter === "object"
                 ? data.filter : ({})
         scoreboardFilter.setValues(filter.scoreboard, filter.target, filter.score)
+        macroEditor.setMacros(data.macros)
     }
 
     Rectangle {
@@ -202,6 +204,14 @@ Rectangle {
             onFilterEdited: function(scoreboardName, targetName, scoreRange) {
                 root.filterChangeRequested(root.itemIndex, scoreboardName,
                                            targetName, scoreRange)
+            }
+        }
+
+        MacroParameterEditor {
+            id: macroEditor
+            width: parent.width
+            onMacrosEdited: function(macros) {
+                root.macrosChangeRequested(root.itemIndex, macros)
             }
         }
     }

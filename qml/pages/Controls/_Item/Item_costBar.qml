@@ -70,6 +70,7 @@ Item {
         }
         XCTextField {
             id: costAmount
+            highlightMacros: true
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(32, contentWidth + leftPadding + rightPadding)
             horizontalAlignment: TextInput.AlignHCenter

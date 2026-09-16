@@ -222,6 +222,7 @@ Rectangle{
                     }
                     XCTextField{
                         id: field_numfilter
+                        highlightMacros: true
                         visible: comboBox_numfilter.selected == 2
                         x: comboBox_numfilter.width + 12
                         width: 64
@@ -244,6 +245,7 @@ Rectangle{
                     }
                     XCTextField{
                         id: field_slotfilter
+                        highlightMacros: true
                         x: slotfilter_tabel.width + 12
                         width: 32
                         horizontalAlignment: TextInput.AlignHCenter
@@ -300,6 +302,7 @@ Rectangle{
                     }
                     XCTextField{
                         id: field_command
+                        highlightMacros: true
                         width: parent.width - text_command.width - 16
                         text: root.modelData.execute.selections[0]
                         onEditingFinished:{
@@ -309,6 +312,7 @@ Rectangle{
                 }
                 VariableTextArea{
                     id: field_function
+                    highlightMacros: true
                     visible: execute_radioGroup.selected == 2
                     x: 8
                     width: parent.width - 16

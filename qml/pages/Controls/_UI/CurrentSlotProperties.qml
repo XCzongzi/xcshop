@@ -107,6 +107,9 @@ Item {
                                                          scoreboardName,
                                                          targetName, scoreRange)
                     }
+                    onMacrosChangeRequested: function(index, macros) {
+                        root.uiPage.updateSaleItemMacros(root.slotIndex, index, macros)
+                    }
 
                     function syncFromPage() {
                         var items = root.uiPage.slotItems(root.slotIndex)

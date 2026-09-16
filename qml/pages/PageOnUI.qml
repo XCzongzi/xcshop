@@ -55,7 +55,8 @@ BaseIOPage {
         return {
             "preview": preview === true,
             "element": "",
-            "filter": { "scoreboard": "", "target": "", "score": "" }
+            "filter": { "scoreboard": "", "target": "", "score": "" },
+            "macros": []
         }
     }
 
@@ -64,6 +65,17 @@ BaseIOPage {
                 ? value : ({})
         var filter = source.filter && typeof source.filter === "object"
                 && !Array.isArray(source.filter) ? source.filter : ({})
+        var sourceMacros = Array.isArray(source.macros) ? source.macros : []
+        var macros = []
+        for (var macroIndex = 0; macroIndex < sourceMacros.length; ++macroIndex) {
+            var macro = sourceMacros[macroIndex]
+            if (!macro || typeof macro !== "object" || Array.isArray(macro))
+                continue
+            macros.push({
+                "name": typeof macro.name === "string" ? macro.name : "",
+                "value": typeof macro.value === "string" ? macro.value : ""
+            })
+        }
         return {
             "preview": preview === true,
             "element": typeof source.element === "string" ? source.element : "",
@@ -71,7 +83,8 @@ BaseIOPage {
                 "scoreboard": typeof filter.scoreboard === "string" ? filter.scoreboard : "",
                 "target": typeof filter.target === "string" ? filter.target : "",
                 "score": typeof filter.score === "string" ? filter.score : ""
-            }
+            },
+            "macros": macros
         }
     }
 
@@ -573,6 +586,14 @@ BaseIOPage {
             "target": targetName,
             "score": scoreRange
         }
+        root.saveSlotChange(slotIndex)
+    }
+
+    function updateSaleItemMacros(slotIndex, itemIndex, macros) {
+        var items = root.slotItems(slotIndex)
+        if (itemIndex < 0 || itemIndex >= items.length)
+            return
+        items[itemIndex].macros = Array.isArray(macros) ? macros : []
         root.saveSlotChange(slotIndex)
     }
 

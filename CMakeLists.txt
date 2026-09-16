@@ -41,6 +41,7 @@ set_source_files_properties(appxcshop
 
 set_source_files_properties(
     js/syntax/ItemSyntaxHighlighter.js
+    js/syntax/MacroHighlighter.js
     js/syntax/ItemSyntaxParser.js
     js/syntax/mode-1.js
     js/syntax/mode-2.js
@@ -75,6 +76,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/TextButton.qml
         qml/components/base/XCText.qml
         qml/components/base/XCTextField.qml
+        qml/components/base/MacroTextOverlay.qml
         qml/components/base/XCCheckBox.qml
         qml/components/base/XCSlider.qml
         qml/components/base/BooleanSwitch.qml
@@ -130,6 +132,7 @@ qt_add_qml_module(appxcshop
         qml/pages/Controls/_UI/LayoutInput.qml
         qml/pages/Controls/_UI/LayoutInputConnection.qml
         qml/pages/Controls/_UI/LayoutManager.qml
+        qml/pages/Controls/_UI/MacroParameterEditor.qml
         qml/pages/Controls/_UI/SaleItemEditor.qml
         qml/pages/Controls/_UI/ScoreboardFilter.qml
         
@@ -154,6 +157,7 @@ qt_add_qml_module(appxcshop
 
         assets/js/request.js
         js/syntax/ItemSyntaxHighlighter.js
+        js/syntax/MacroHighlighter.js
         js/syntax/ItemSyntaxParser.js
         js/syntax/mode-1.js
         js/syntax/mode-2.js

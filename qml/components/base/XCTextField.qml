@@ -10,6 +10,7 @@ TextField{
 
     property bool isWrap: false // 默认为非自动换行
     wrapMode: isWrap? TextEdit.Wrap : TextEdit.NoWrap // 自动换行((No)Warp)
+    property bool highlightMacros: false
     verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
 
     color: Colors.text
@@ -46,5 +47,10 @@ TextField{
     
     font.family: "Consolas"
     font.pixelSize: 16
+
+    MacroTextOverlay {
+        target: root
+        highlightMacros: root.highlightMacros
+    }
 
 }

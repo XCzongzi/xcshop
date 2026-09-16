@@ -83,6 +83,7 @@ BaseIOPage {
                 root.eledata.item = content; root.updateDataOut()
             }
             syntaxHighlightMode: 1
+            highlightMacros: true
         }
         min_width: 400
         contentHeight: itemInput_field.y + itemInput_field.height + 18

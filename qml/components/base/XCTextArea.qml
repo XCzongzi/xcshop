@@ -9,6 +9,7 @@ TextArea{
     height: 32
 
     signal accepted()
+    property bool highlightMacros: false
 
     wrapMode: TextEdit.Wrap
 
@@ -45,6 +46,11 @@ TextArea{
     
     font.family: "微软雅黑"
     font.pixelSize: 16
+
+    MacroTextOverlay {
+        target: root
+        highlightMacros: root.highlightMacros
+    }
 
 
     Keys.onPressed:event=>{

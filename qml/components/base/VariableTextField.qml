@@ -15,6 +15,7 @@ Item {
         2: SyntaxMode2
     })
     property int syntaxHighlighterRevision: 0
+    property bool highlightMacros: false
     property string placeholderText
     property string content
     readonly property string inputContent: textField.text
@@ -113,7 +114,7 @@ Item {
 
     Rectangle {
         visible: root.syntaxHighlightMode !== 0 && textField.activeFocus
-        z: 2
+        z: 3
         x: textField.x + textField.leftPadding + textField.positionToRectangle(textField.cursorPosition).x
         y: textField.y + textField.topPadding + textField.positionToRectangle(textField.cursorPosition).y
         width: 1
@@ -133,6 +134,11 @@ Item {
             root.content = text
             root.accepted()
         }
+    }
+
+    MacroTextOverlay {
+        target: textField
+        highlightMacros: root.highlightMacros
     }
 
     Row {

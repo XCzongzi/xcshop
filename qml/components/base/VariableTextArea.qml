@@ -5,6 +5,7 @@ Item{
     id: root
 
     property string content
+    property bool highlightMacros: false
 
     signal accepted()
 
@@ -18,6 +19,7 @@ Item{
 
     XCTextArea{
         id: textArea
+        highlightMacros: root.highlightMacros
         width: parent.width
         height: parent.height - 35
         Behavior on height {
