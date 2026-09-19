@@ -132,6 +132,16 @@ BasePage {
             id: backgroundGradientSource
             anchors.fill: parent
             visible: false
+            property real flowPhase: 0
+
+            NumberAnimation on flowPhase {
+                from: 0
+                to: Math.PI * 2
+                duration: 18000 / Global.animationSpeed
+                loops: Animation.Infinite
+                easing.type: Easing.Linear
+                running: root.visible
+            }
 
             Rectangle {
                 anchors.fill: parent
@@ -141,8 +151,10 @@ BasePage {
 
             LinearGradient {
                 anchors.fill: parent
-                start: Qt.point(0, 0)
-                end: Qt.point(width, height)
+                start: Qt.point(width * (0.03 + 0.05 * Math.sin(backgroundGradientSource.flowPhase)),
+                                height * (0.04 + 0.04 * Math.cos(backgroundGradientSource.flowPhase * 2)))
+                end: Qt.point(width * (0.96 + 0.03 * Math.cos(backgroundGradientSource.flowPhase)),
+                              height * (0.94 + 0.05 * Math.sin(backgroundGradientSource.flowPhase * 2)))
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
@@ -173,11 +185,11 @@ BasePage {
 
             RadialGradient {
                 anchors.fill: parent
-                horizontalOffset: width * 0.24
-                verticalOffset: -height * 0.20
-                horizontalRadius: width * 0.66
-                verticalRadius: height * 0.82
-                angle: -12
+                horizontalOffset: width * (0.24 + 0.10 * Math.sin(backgroundGradientSource.flowPhase))
+                verticalOffset: height * (-0.20 + 0.08 * Math.cos(backgroundGradientSource.flowPhase * 2))
+                horizontalRadius: width * (0.66 + 0.05 * Math.cos(backgroundGradientSource.flowPhase))
+                verticalRadius: height * (0.82 + 0.05 * Math.sin(backgroundGradientSource.flowPhase))
+                angle: -12 + 10 * Math.sin(backgroundGradientSource.flowPhase * 2)
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
@@ -205,10 +217,12 @@ BasePage {
         GaussianBlur {
             anchors.fill: parent
             source: backgroundGradientSource
-            radius: 32
-            samples: 65
+            radius: 16
+            samples: 33
             transparentBorder: false
-            cached: true
+            // The source moves continuously, so caching would freeze the flow
+            // or force an unnecessary extra texture update on every frame.
+            cached: false
         }
 
         Item {
