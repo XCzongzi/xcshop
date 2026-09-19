@@ -249,13 +249,22 @@ BasePage {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
+                        color: Colors.changeA(
+                                   Qt.tint(Colors.foreground,
+                                           Colors.changeA(Colors.border, 0.18)),
+                                   Global.backgroundMode === "color" ? 0.48 : 0.62)
+                    }
+                    GradientStop {
+                        position: 0.46
                         color: Colors.changeA(Colors.foreground,
-                                              Global.backgroundMode === "color" ? 0.94 : 0.97)
+                                              Global.backgroundMode === "color" ? 0.34 : 0.48)
                     }
                     GradientStop {
                         position: 1.0
-                        color: Colors.changeA(Colors.foreground,
-                                              Global.backgroundMode === "color" ? 0.76 : 0.88)
+                        color: Colors.changeA(
+                                   Qt.tint(Colors.background_n,
+                                           Colors.changeA(Colors.border, 0.10)),
+                                   Global.backgroundMode === "color" ? 0.22 : 0.34)
                     }
                 }
             }
