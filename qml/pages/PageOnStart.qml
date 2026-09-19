@@ -349,41 +349,16 @@ BasePage {
                 }
             }
 
-            Rectangle {
+            XCText {
                 visible: Global.recentProjects.length === 0
-                anchors.left: recentHeading.left
-                anchors.right: recentHeading.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: 12
-                height: 96
-                radius: 12
-                color: Colors.changeA(Colors.background_n, 0.13)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.06)
-
-                Column {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6
-
-                    XCText {
-                        width: parent.width
-                        xcText: "还没有最近项目"
-                        onCenter: false
-                        xcFontSize: 14
-                    }
-                    XCText {
-                        width: parent.width
-                        xcText: "创建或打开项目后，它会显示在这里。"
-                        onCenter: false
-                        xcFontSize: 10
-                        boldFont: false
-                        textColor: Colors.banned
-                    }
-                }
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: recentHeading.bottom
+                anchors.topMargin: 48
+                onCenter: false
+                xcText: "暂无最近打开的项目"
+                xcFontSize: 14
+                boldFont: false
+                textColor: Colors.banned
             }
 
             ListView {
