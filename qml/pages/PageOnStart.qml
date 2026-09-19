@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import xcshop
 
 BasePage {
@@ -140,6 +139,13 @@ BasePage {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 color: Colors.transparent
+                layer.enabled: true
+                layer.effect: XCShadow {
+                    shadowColor: Colors.changeA(Colors.shadow, 0.38)
+                    shadowBlur: 0.32
+                    shadowHorizontalOffset: 5
+                    shadowVerticalOffset: 0
+                }
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
@@ -155,50 +161,64 @@ BasePage {
             }
 
             Item {
-                id: panelTransitionSource
-                x: parent.width
-                width: 48
-                height: parent.height
-                visible: false
+                id: utilityPanel
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 12 : 20)
+                anchors.leftMargin: root.compactLayout ? 16 : 24
+                anchors.rightMargin: root.compactLayout ? 24 : 32
+                height: 54
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    IconButton {
+                        height: 34
+                        text: "设置"
+                        icon: "qrc:/assets/gui/controls/settings.png"
+                        onClicked: root.pageEvent("Start.", { "object": "settings" })
+                    }
+                    IconButton {
+                        height: 34
+                        text: "关于"
+                        icon: "qrc:/assets/gui/controls/about.png"
+                        onClicked: root.pageEvent("Start.", { "object": "about" })
+                    }
+                }
 
                 Rectangle {
-                    width: 26
-                    height: parent.height
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: 1
                     color: Colors.transparent
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop {
                             position: 0.0
-                            color: Colors.changeA(Colors.foreground,
-                                                  Global.backgroundMode === "color" ? 0.76 : 0.88)
+                            color: Colors.changeA(Colors.border, 0.32)
                         }
                         GradientStop {
-                            position: 0.36
-                            color: Colors.changeA(Colors.foreground,
-                                                  Global.backgroundMode === "color" ? 0.42 : 0.52)
+                            position: 0.55
+                            color: Colors.changeA(Colors.border, 0.08)
                         }
                         GradientStop {
                             position: 1.0
-                            color: Colors.changeA(Colors.foreground, 0.0)
+                            color: Colors.changeA(Colors.border, 0.0)
                         }
                     }
                 }
             }
 
-            GaussianBlur {
-                anchors.fill: panelTransitionSource
-                source: panelTransitionSource
-                radius: 10
-                samples: 21
-                transparentBorder: false
-            }
-
             Item {
                 id: recentHeading
-                anchors.top: parent.top
+                anchors.top: utilityPanel.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 28 : 48)
+                anchors.topMargin: root.compactLayout ? 20 : 28
                 anchors.leftMargin: root.compactLayout ? 16 : 24
                 anchors.rightMargin: root.compactLayout ? 24 : 32
                 height: 31
@@ -282,69 +302,45 @@ BasePage {
 
             Item {
                 id: mainContent
-                anchors.left: parent.left
-                anchors.leftMargin: root.compactLayout ? 40 : 64
+                anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 24 : 44)
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: root.compactLayout ? 24 : 40
-                width: Math.min(600, parent.width - anchors.leftMargin - 32)
+                width: Math.min(460, Math.max(0, parent.width
+                                              - (root.compactLayout ? 64 : 96)))
 
-                Column {
-                    id: brandGroup
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    width: parent.width
-                    spacing: 2
-
-                    XCText {
-                        xcText: "Minecraft xcshop"
-                        onCenter: false
-                        xcFontSize: root.compactLayout ? 27 : 32
-                    }
-                    XCText {
-                        anchors.left: parent.left
-                        xcText: "UI商店生成器"
-                        onCenter: false
-                        xcFontSize: 12
-                        boldFont: false
-                        textColor: Colors.banned
-                    }
-                }
-
-                Column {
-                    id: projectGroup
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    spacing: 12
-
-                    XCText {
-                        xcText: "商店项目"
-                        onCenter: false
-                        xcFontSize: 18
-                    }
+                Item {
+                    id: startActions
+                    anchors.fill: parent
 
                     Row {
                         id: actionRow
-                        width: parent.width
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
                         height: 140 * (root.compactLayout ? 0.88 : 1.0)
-                        spacing: 14
+                        readonly property real minimumSpacing: 14
+                        readonly property real maximumSpacing: 40
+                        spacing: Math.min(maximumSpacing, minimumSpacing
+                                          + Math.max(0, mainPanel.width - 400) * 0.08)
+                        width: createProjectButton.width + openProjectButton.width + spacing
 
                         LargeIconButton {
+                            id: createProjectButton
                             title: "创建"
                             subtitle: "新的xcshop项目"
                             icon: "qrc:/assets/gui/controls/new_project.png"
-                            layout_width: actionRow.width
+                            layout_width: mainContent.width
                             layout_amount: 2
                             minimumScale: root.compactLayout ? 0.88 : 1.0
                             onClicked: root.pageEvent("Start.", { "object": "create" })
                         }
                         LargeIconButton {
+                            id: openProjectButton
                             title: "打开"
                             subtitle: "已有xcshop项目"
                             icon: "qrc:/assets/gui/controls/open_project.png"
-                            layout_width: actionRow.width
+                            layout_width: mainContent.width
                             layout_amount: 2
                             minimumScale: root.compactLayout ? 0.88 : 1.0
                             onClicked: projectFolderDialog.openXC("project",
@@ -352,49 +348,9 @@ BasePage {
                                                                   ? Global.recentProjects[0].path : APP_DIRPATH)
                         }
                     }
+
                 }
 
-                Rectangle {
-                    id: morePanel
-                    anchors.left: parent.left
-                    anchors.bottom: parent.bottom
-                    width: parent.width
-                    height: 54
-                    radius: 13
-                    color: Colors.changeA(Colors.foreground, 0.45)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.08)
-
-                    XCText {
-                        x: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        xcText: "更多"
-                        onCenter: false
-                        xcFontSize: 12
-                        textColor: Colors.banned
-                    }
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 62
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
-
-                        IconButton {
-                            height: 34
-                            text: "关于"
-                            icon: "qrc:/assets/gui/controls/about.png"
-                            onClicked: root.pageEvent("Start.", { "object": "about" })
-                        }
-                        IconButton {
-                            height: 34
-                            text: "设置"
-                            icon: "qrc:/assets/gui/controls/settings.png"
-                            onClicked: root.pageEvent("Start.", { "object": "settings" })
-                        }
-                    }
-                }
             }
         }
     }
