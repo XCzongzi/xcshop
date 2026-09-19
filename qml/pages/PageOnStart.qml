@@ -64,35 +64,39 @@ BasePage {
         property bool pressed: false
 
         width: parent ? parent.width : 0
-        height: 58
-        radius: 12
-        color: hovered ? Colors.changeA(Colors.pressed, 0.86) : Colors.changeA(Colors.background, 0.24)
+        height: 54
+        radius: 11
+        color: hovered ? Colors.changeA(Colors.pressed, 0.72)
+                       : Colors.changeA(Colors.background_n, 0.16)
         border.width: 1
-        border.color: hovered ? Colors.changeA(Colors.border, 0.42) : Colors.changeA(Colors.text, 0.07)
+        border.color: hovered ? Colors.changeA(Colors.border, 0.50)
+                              : Colors.changeA(Colors.text, 0.06)
 
         Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
         Behavior on border.color { ColorAnimation { duration: 120 / Global.animationSpeed } }
         Behavior on scale { NumberAnimation { duration: 90 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-        scale: pressed ? 0.98 : 1.0
+        scale: pressed ? 0.985 : 1.0
+
         XCText {
-            x: 16
-            y: 10
-            width: parent.width - x - 16
+            x: 14
+            y: 7
+            width: parent.width - x - 14
             xcText: recentEntry.model.name
             onCenter: false
-            xcFontSize: 13
+            xcFontSize: 12
         }
         XCText {
-            x: 16
-            y: 31
-            width: parent.width - x - 16
+            x: 14
+            y: 29
+            width: parent.width - x - 14
             xcText: recentEntry.model.version + "  ·  " + recentEntry.model.path
             onCenter: false
-            xcFontSize: 10
+            xcFontSize: 9
             boldFont: false
             textColor: Colors.banned
             elide: Text.ElideRight
         }
+
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -119,262 +123,277 @@ BasePage {
     Rectangle {
         id: shell
         anchors.fill: parent
-        color: Global.backgroundMode === "color" ? Colors.background : Colors.transparent
+        color: Global.backgroundMode === "color" ? Colors.background_n : Colors.transparent
         clip: true
 
-        Rectangle {
-            visible: Global.backgroundMode === "color"
-            width: Math.max(parent.width, parent.height) * 0.72
-            height: width
-            x: parent.width * 0.44
-            y: -height * 0.57
-            radius: width / 2
-            color: Colors.changeA(Colors.border, 0.075)
-            layer.enabled: true
-            layer.effect: GaussianBlur {
-                radius: 56
-                samples: 63
-                transparentBorder: true
+        Item {
+            id: recentPanel
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            width: Math.max(300, Math.min(440, parent.width * 0.38))
+
+            Rectangle {
+                id: recentPanelFill
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                color: Colors.transparent
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: Colors.changeA(Colors.foreground,
+                                              Global.backgroundMode === "color" ? 0.94 : 0.97)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: Colors.changeA(Colors.foreground,
+                                              Global.backgroundMode === "color" ? 0.76 : 0.88)
+                    }
+                }
             }
-        }
-        Rectangle {
-            visible: Global.backgroundMode === "color"
-            width: 420
-            height: 420
-            x: -210
-            y: parent.height - 230
-            radius: width / 2
-            color: Colors.changeA(Colors.border, 0.045)
-            layer.enabled: true
-            layer.effect: GaussianBlur {
-                radius: 48
-                samples: 63
-                transparentBorder: true
+
+            Item {
+                id: panelTransitionSource
+                x: parent.width
+                width: 48
+                height: parent.height
+                visible: false
+
+                Rectangle {
+                    width: 26
+                    height: parent.height
+                    color: Colors.transparent
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop {
+                            position: 0.0
+                            color: Colors.changeA(Colors.foreground,
+                                                  Global.backgroundMode === "color" ? 0.76 : 0.88)
+                        }
+                        GradientStop {
+                            position: 0.36
+                            color: Colors.changeA(Colors.foreground,
+                                                  Global.backgroundMode === "color" ? 0.42 : 0.52)
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: Colors.changeA(Colors.foreground, 0.0)
+                        }
+                    }
+                }
+            }
+
+            GaussianBlur {
+                anchors.fill: panelTransitionSource
+                source: panelTransitionSource
+                radius: 10
+                samples: 21
+                transparentBorder: false
+            }
+
+            Item {
+                id: recentHeading
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 28 : 48)
+                anchors.leftMargin: root.compactLayout ? 16 : 24
+                anchors.rightMargin: root.compactLayout ? 24 : 32
+                height: 31
+
+                Rectangle {
+                    x: 0
+                    y: 4
+                    width: 3
+                    height: 23
+                    radius: 2
+                    color: Colors.border
+                }
+
+                XCText {
+                    x: 14
+                    xcText: "最近项目"
+                    onCenter: false
+                    xcFontSize: 22
+                }
+            }
+
+            Rectangle {
+                visible: Global.recentProjects.length === 0
+                anchors.left: recentHeading.left
+                anchors.right: recentHeading.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: 12
+                height: 96
+                radius: 12
+                color: Colors.changeA(Colors.background_n, 0.13)
+                border.width: 1
+                border.color: Colors.changeA(Colors.text, 0.06)
+
+                Column {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 6
+
+                    XCText {
+                        width: parent.width
+                        xcText: "还没有最近项目"
+                        onCenter: false
+                        xcFontSize: 14
+                    }
+                    XCText {
+                        width: parent.width
+                        xcText: "创建或打开项目后，它会显示在这里。"
+                        onCenter: false
+                        xcFontSize: 10
+                        boldFont: false
+                        textColor: Colors.banned
+                    }
+                }
+            }
+
+            ListView {
+                id: recentList
+                visible: Global.recentProjects.length > 0
+                anchors.top: recentHeading.bottom
+                anchors.bottom: parent.bottom
+                anchors.left: recentHeading.left
+                anchors.right: recentHeading.right
+                anchors.topMargin: 18
+                anchors.bottomMargin: root.compactLayout ? 18 : 24
+                clip: true
+                spacing: 7
+                model: Global.recentProjects
+                delegate: RecentProjectRow { }
             }
         }
 
         Item {
-            id: pageContent
+            id: mainPanel
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(parent.width - 56, 1120)
+            anchors.left: recentPanel.right
+            anchors.right: parent.right
 
-            Row {
-                id: topBar
-                x: -pageContent.x
-                y: 12
-                width: parent.width
-                height: 64 + Constants.titleBarHeight
+            Item {
+                id: mainContent
+                anchors.left: parent.left
+                anchors.leftMargin: root.compactLayout ? 40 : 64
+                anchors.top: parent.top
+                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 24 : 44)
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: root.compactLayout ? 24 : 40
+                width: Math.min(600, parent.width - anchors.leftMargin - 32)
 
-                Row {
+                Column {
+                    id: brandGroup
+                    anchors.top: parent.top
                     anchors.left: parent.left
-                    anchors.leftMargin: 24
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 13
+                    width: parent.width
+                    spacing: 2
 
-                    Rectangle {
-                        width: 46
-                        height: 46
-                        radius: 14
-                        color: Colors.changeA(Colors.foreground, 0.80)
-                        border.width: 1
-                        border.color: Colors.changeA(Colors.border, 0.48)
-                        Image {
-                            anchors.centerIn: parent
-                            width: 31
-                            height: 31
-                            source: "qrc:/assets/gui/png/logo.png"
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
-                        }
+                    XCText {
+                        xcText: "Minecraft xcshop"
+                        onCenter: false
+                        xcFontSize: root.compactLayout ? 27 : 32
                     }
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-                        XCText { xcText: "Minecraft xcshop"; onCenter: false; xcFontSize: 22 }
-                        XCText {
-                            xcText: "UI商店生成器"
-                            onCenter: false
-                            xcFontSize: 11
-                            boldFont: false
-                            textColor: Colors.banned
-                        }
+                    XCText {
+                        anchors.left: parent.left
+                        xcText: "UI商店生成器"
+                        onCenter: false
+                        xcFontSize: 12
+                        boldFont: false
+                        textColor: Colors.banned
                     }
                 }
 
-            }
-
-            Item {
-                id: layoutArea
-                anchors.top: topBar.bottom
-                anchors.topMargin: root.compactLayout ? 20 : 36
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-
-                Row {
-                    id: layoutRow
-                    anchors.centerIn: parent
+                Column {
+                    id: projectGroup
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    height: parent.height
-                    spacing: 28
+                    spacing: 12
 
-                Item {
-                    id: welcomeColumn
-                    width: Math.min(600, Math.max(390, layoutRow.width * 0.53))
-                    height: parent.height
+                    XCText {
+                        xcText: "商店项目"
+                        onCenter: false
+                        xcFontSize: 18
+                    }
 
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        id: actionRow
                         width: parent.width
-                        spacing: 13
+                        height: 140 * (root.compactLayout ? 0.88 : 1.0)
+                        spacing: 14
 
-                        XCText { xcText: "商店项目"; onCenter: false; xcFontSize: 34 }
-
-                        Row {
-                            id: actionRow
-                            width: parent.width
-                            spacing: 14
-                            LargeIconButton {
-                                title: "创建"
-                                subtitle: "新的xcshop项目"
-                                icon: "qrc:/assets/gui/controls/new_project.png"
-                                layout_width: actionRow.width
-                                layout_amount: 2
-                                minimumScale: root.compactLayout ? 0.88 : 1.0
-                                onClicked: root.pageEvent("Start.", { "object": "create" })
-                            }
-                            LargeIconButton {
-                                title: "打开"
-                                subtitle: "已有xcshop项目"
-                                icon: "qrc:/assets/gui/controls/open_project.png"
-                                layout_width: actionRow.width
-                                layout_amount: 2
-                                minimumScale: root.compactLayout ? 0.88 : 1.0
-                                onClicked: projectFolderDialog.openXC("project",
-                                                                      Global.recentProjects.length
-                                                                      ? Global.recentProjects[0].path : APP_DIRPATH)
-                            }
+                        LargeIconButton {
+                            title: "创建"
+                            subtitle: "新的xcshop项目"
+                            icon: "qrc:/assets/gui/controls/new_project.png"
+                            layout_width: actionRow.width
+                            layout_amount: 2
+                            minimumScale: root.compactLayout ? 0.88 : 1.0
+                            onClicked: root.pageEvent("Start.", { "object": "create" })
                         }
-
-                        Rectangle {
-                            width: parent.width
-                            height: 54
-                            radius: 13
-                            color: Colors.changeA(Colors.foreground, 0.45)
-                            border.width: 1
-                            border.color: Colors.changeA(Colors.text, 0.08)
-                            XCText {
-                                x: 16
-                                anchors.verticalCenter: parent.verticalCenter
-                                xcText: "更多"
-                                onCenter: false
-                                xcFontSize: 12
-                                textColor: Colors.banned
-                            }
-                            Row {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 62
-                                anchors.right: parent.right
-                                anchors.rightMargin: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 8
-                                IconButton {
-                                    height: 34
-                                    text: "关于"
-                                    icon: "qrc:/assets/gui/controls/about.png"
-                                    onClicked: root.pageEvent("Start.", { "object": "about" })
-                                }
-                                IconButton {
-                                    height: 34
-                                    text: "设置"
-                                    icon: "qrc:/assets/gui/controls/settings.png"
-                                    onClicked: root.pageEvent("Start.", { "object": "settings" })
-                                }
-                            }
+                        LargeIconButton {
+                            title: "打开"
+                            subtitle: "已有xcshop项目"
+                            icon: "qrc:/assets/gui/controls/open_project.png"
+                            layout_width: actionRow.width
+                            layout_amount: 2
+                            minimumScale: root.compactLayout ? 0.88 : 1.0
+                            onClicked: projectFolderDialog.openXC("project",
+                                                                  Global.recentProjects.length
+                                                                  ? Global.recentProjects[0].path : APP_DIRPATH)
                         }
                     }
                 }
 
                 Rectangle {
-                    id: recentPanel
-                    width: Math.max(270, layoutRow.width - welcomeColumn.width - layoutRow.spacing)
-                    height: Math.min(root.compactLayout ? 330 : 440,
-                                     Math.max(root.compactLayout ? 250 : 300, parent.height - 16))
-                    anchors.verticalCenter: parent.verticalCenter
-                    radius: 20
-                    color: Colors.changeA(Colors.foreground, 0.70)
-                    // border.width: 1
-                    // border.color: Colors.changeA(Colors.text, 0.10)
+                    id: morePanel
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 54
+                    radius: 13
+                    color: Colors.changeA(Colors.foreground, 0.45)
+                    border.width: 1
+                    border.color: Colors.changeA(Colors.text, 0.08)
 
-                    layer.enabled: true
-                    // 卡片使用半透明前景色；默认阴影会从背后透出，在浅色
-                    // 主题中使整个面板发暗。保留轻微投影即可。
-                    layer.effect: XCShadow {
-                        shadowColor: Colors.changeA(Colors.shadow, 0.20)
+                    XCText {
+                        x: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        xcText: "更多"
+                        onCenter: false
+                        xcFontSize: 12
+                        textColor: Colors.banned
                     }
-
-                    Column {
+                    Row {
                         anchors.left: parent.left
+                        anchors.leftMargin: 62
                         anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 20
-                        spacing: 4
-                        XCText { xcText: "最近项目"; onCenter: false; xcFontSize: 19 }
-                    }
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.topMargin: 56
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        height: 1
-                        color: Colors.changeA(Colors.text, 0.09)
-                    }
-
-                    Item {
-                        visible: Global.recentProjects.length === 0
-                        anchors.centerIn: parent
-                        width: parent.width - 50
-                        height: 96
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: 50
-                            height: 50
-                            radius: 16
-                            color: Colors.changeA(Colors.border, 0.14)
-                            XCText { anchors.centerIn: parent; xcText: "+"; xcFontSize: 28; boldFont: false; textColor: Colors.border }
-                        }
-                        XCText {
-                            anchors.top: parent.top
-                            anchors.topMargin: 66
-                            width: parent.width
-                            xcText: "还没有最近项目"
-                            onCenter: true
-                            xcFontSize: 14
-                        }
-                    }
-
-                    ListView {
-                        id: recentList
-                        visible: Global.recentProjects.length > 0
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        anchors.topMargin: 72
-                        anchors.bottomMargin: 20
-                        clip: true
+                        anchors.rightMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
                         spacing: 8
-                        model: Global.recentProjects
-                        delegate: RecentProjectRow { }
+
+                        IconButton {
+                            height: 34
+                            text: "关于"
+                            icon: "qrc:/assets/gui/controls/about.png"
+                            onClicked: root.pageEvent("Start.", { "object": "about" })
+                        }
+                        IconButton {
+                            height: 34
+                            text: "设置"
+                            icon: "qrc:/assets/gui/controls/settings.png"
+                            onClicked: root.pageEvent("Start.", { "object": "settings" })
+                        }
                     }
-                }
                 }
             }
         }
