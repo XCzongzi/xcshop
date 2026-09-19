@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import xcshop
 
 BasePage {
@@ -122,8 +123,93 @@ BasePage {
     Rectangle {
         id: shell
         anchors.fill: parent
-        color: Global.backgroundMode === "color" ? Colors.background_n : Colors.transparent
+        color: Colors.transparent
         clip: true
+
+        // Compose real linear/radial gradients first, then soften the complete
+        // result with a Gaussian blur.
+        Item {
+            id: backgroundGradientSource
+            anchors.fill: parent
+            visible: false
+
+            Rectangle {
+                anchors.fill: parent
+                color: Global.backgroundMode === "color"
+                       ? Colors.background_n : Colors.transparent
+            }
+
+            LinearGradient {
+                anchors.fill: parent
+                start: Qt.point(0, 0)
+                end: Qt.point(width, height)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: Colors.changeA(Qt.darker(Colors.border, 1.35),
+                                              Global.backgroundMode === "color" ? 0.34 : 0.20)
+                    }
+                    GradientStop {
+                        position: 0.24
+                        color: Colors.changeA(Colors.border,
+                                              Global.backgroundMode === "color" ? 0.22 : 0.14)
+                    }
+                    GradientStop {
+                        position: 0.52
+                        color: Colors.changeA(Colors.background_n, 0.0)
+                    }
+                    GradientStop {
+                        position: 0.78
+                        color: Colors.changeA(Qt.lighter(Colors.foreground, 1.35),
+                                              Global.backgroundMode === "color" ? 0.28 : 0.16)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: Colors.changeA(Qt.lighter(Colors.border, 1.22),
+                                              Global.backgroundMode === "color" ? 0.18 : 0.10)
+                    }
+                }
+            }
+
+            RadialGradient {
+                anchors.fill: parent
+                horizontalOffset: width * 0.24
+                verticalOffset: -height * 0.20
+                horizontalRadius: width * 0.66
+                verticalRadius: height * 0.82
+                angle: -12
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: Colors.changeA(Qt.lighter(Colors.border, 1.45),
+                                              Global.backgroundMode === "color" ? 0.30 : 0.18)
+                    }
+                    GradientStop {
+                        position: 0.34
+                        color: Colors.changeA(Colors.border,
+                                              Global.backgroundMode === "color" ? 0.20 : 0.12)
+                    }
+                    GradientStop {
+                        position: 0.68
+                        color: Colors.changeA(Qt.lighter(Colors.foreground, 1.18),
+                                              Global.backgroundMode === "color" ? 0.08 : 0.05)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: Colors.transparent
+                    }
+                }
+            }
+        }
+
+        GaussianBlur {
+            anchors.fill: parent
+            source: backgroundGradientSource
+            radius: 32
+            samples: 65
+            transparentBorder: false
+            cached: true
+        }
 
         Item {
             id: recentPanel
