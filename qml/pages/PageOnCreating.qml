@@ -23,6 +23,8 @@ BasePage {
     property double controlsOpacity: 1
     property real visualContentOffset: height_output
     property bool projectCreationSucceeded: false
+    // Set by PageOnStart when this page is hosted in its right-side panel.
+    property var embeddedBackAction: null
 
     readonly property bool projectNameGood: projectNameValue.trim().length > 0
                                              && !/[\\\\/:*?"<>|]/.test(projectNameValue)
@@ -37,6 +39,41 @@ BasePage {
 
     Behavior on visualContentOffset {
         NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
+    }
+
+    component CreationCard: Rectangle {
+        radius: 12
+        color: Colors.transparent
+        border.width: 1
+        border.color: Colors.changeA(Colors.text, 0.09)
+        layer.enabled: true
+        layer.effect: XCShadow {
+            shadowColor: Colors.changeA(Colors.shadow, 0.30)
+            shadowBlur: 0.28
+            shadowHorizontalOffset: 3
+            shadowVerticalOffset: 2
+        }
+        gradient: Gradient {
+            GradientStop {
+                position: 0.0
+                color: Colors.changeA(
+                           Qt.tint(Colors.foreground,
+                                   Colors.changeA(Colors.border, 0.18)),
+                           Global.backgroundMode === "color" ? 0.56 : 0.62)
+            }
+            GradientStop {
+                position: 0.46
+                color: Colors.changeA(Colors.foreground,
+                                      Global.backgroundMode === "color" ? 0.42 : 0.50)
+            }
+            GradientStop {
+                position: 1.0
+                color: Colors.changeA(
+                           Qt.tint(Colors.background_n,
+                                   Colors.changeA(Colors.border, 0.10)),
+                           Global.backgroundMode === "color" ? 0.30 : 0.38)
+            }
+        }
     }
 
     Component.onCompleted: {
@@ -119,6 +156,14 @@ BasePage {
         })
     }
 
+    function goBack() {
+        if (embeddedBackAction) {
+            embeddedBackAction()
+            return
+        }
+        pageEvent("Creating.back", {})
+    }
+
     function createProject() {
         if (!canCreate)
             return
@@ -179,13 +224,6 @@ BasePage {
         }
     }
 
-    Rectangle {
-        anchors.fill: parent
-        anchors.rightMargin: 8
-        color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b,
-                       Global.backgroundMode === "color" ? 0.97 : 0.72)
-    }
-
     Item {
         id: creationContent
         width: parent.width
@@ -208,14 +246,10 @@ BasePage {
                 xcFontSize: 22
             }
 
-            Rectangle {
+            CreationCard {
                 id: baseCard
                 width: parent.width
                 height: baseForm.height + 40
-                radius: 12
-                color: Colors.changeA(Colors.foreground, 0.70)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.09)
 
                 Column {
                     id: baseForm
@@ -263,14 +297,10 @@ BasePage {
                 }
             }
 
-            Rectangle {
+            CreationCard {
                 id: pathCard
                 width: parent.width
                 height: pathForm.height + 40
-                radius: 12
-                color: Colors.changeA(Colors.foreground, 0.70)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.09)
 
                 Column {
                     id: pathForm
@@ -322,14 +352,10 @@ BasePage {
                 }
             }
 
-            Rectangle {
+            CreationCard {
                 id: templateCard
                 width: parent.width
                 height: 318
-                radius: 12
-                color: Colors.changeA(Colors.foreground, 0.70)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.09)
 
                 XCText { x: 20; y: 18; xcText: "生成模板"; onCenter: false; xcFontSize: 18 }
                 XCText {
@@ -471,13 +497,9 @@ BasePage {
                 }
             }
 
-            Rectangle {
+            CreationCard {
                 width: parent.width
                 height: 70
-                radius: 12
-                color: Colors.changeA(Colors.foreground, 0.78)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.09)
 
                 XCText {
                     anchors.left: parent.left
@@ -504,7 +526,7 @@ BasePage {
                         textSize: 13
                         widthBorderSize: 12
                         buttonColor: Colors.changeA(Colors.pressed, 0.82)
-                        onClicked: root.pageEvent("Creating.back", {})
+                        onClicked: root.goBack()
                     }
                     TextButton {
                         text: "创建项目"
@@ -537,6 +559,6 @@ BasePage {
         buttonColor: Colors.changeA(Colors.background, 0.70)
         firedColor: Colors.changeA(Colors.foreground, 0.92)
         opacity: root.controlsOpacity
-        onClicked: root.pageEvent("Creating.back", {})
+        onClicked: root.goBack()
     }
 }

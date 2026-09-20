@@ -8,6 +8,7 @@ BasePage {
     color: Colors.transparent
     fullScreen: true
     readonly property bool compactLayout: height < 560 || width < 900
+    property bool creatingProject: false
 
     XCFile { id: projectFile }
 
@@ -43,6 +44,14 @@ BasePage {
         Global.current_element = "Total"
         Global.rememberProject(projectPath, projectInfo)
         pageEvent("Start.", { "object": "projectOpened" })
+    }
+
+    function openCreation() {
+        creatingProject = true
+    }
+
+    function closeCreation() {
+        creatingProject = false
     }
 
     function showRecentProjectContextMenu(target, x, y, projectPath) {
@@ -393,6 +402,16 @@ BasePage {
                 anchors.bottomMargin: root.compactLayout ? 24 : 40
                 width: Math.min(460, Math.max(0, parent.width
                                               - (root.compactLayout ? 64 : 96)))
+                opacity: root.creatingProject ? 0 : 1
+                enabled: !root.creatingProject
+                visible: opacity > 0.01
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 160 / Global.animationSpeed
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 Item {
                     id: startActions
@@ -417,7 +436,7 @@ BasePage {
                             layout_width: mainContent.width
                             layout_amount: 2
                             minimumScale: root.compactLayout ? 0.88 : 1.0
-                            onClicked: root.pageEvent("Start.", { "object": "create" })
+                            onClicked: root.openCreation()
                         }
                         LargeIconButton {
                             id: openProjectButton
@@ -435,6 +454,41 @@ BasePage {
 
                 }
 
+            }
+
+            PageOnCreating {
+                id: creationPage
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.topMargin: Constants.titleBarHeight
+                z: 1
+                visible: root.creatingProject
+                // PageOnCreating is normally a top-level page.  Here it is
+                // created with the start page and simply hidden until needed.
+                fullScreen: false
+                mainWindow: root.mainWindow
+                embeddedBackAction: function() {
+                    root.closeCreation()
+                }
+            }
+
+            Connections {
+                target: creationPage
+
+                function onPageEvent(signalType, parameters) {
+                    switch (signalType) {
+                    case "Creating.back":
+                        root.closeCreation()
+                        break
+                    case "Popup.show":
+                    case "Popup.close":
+                    case "Creating.projectCreated":
+                        root.pageEvent(signalType, parameters)
+                        break
+                    }
+                }
             }
         }
     }

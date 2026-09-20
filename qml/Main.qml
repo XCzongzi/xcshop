@@ -272,8 +272,7 @@ XCWindow {
                     switch(signalType){
                         case "Start.":
                             switch(parameters.object){
-                                case "create": pageLoader.pageSwitch(Constants.pageOnCreating)
-                                break;case "projectOpened":
+                                case "projectOpened":
                                     typeBar.enable(false)
                                     root.typeSwitch("Total", true)
                                 break;case "settings":
