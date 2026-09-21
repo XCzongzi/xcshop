@@ -42,38 +42,12 @@ BasePage {
     }
 
     component CreationCard: Rectangle {
-        radius: 12
-        color: Colors.transparent
+        // Keep sections distinct without making them look raised above the page.
+        radius: 9
+        color: Colors.changeA(Colors.foreground,
+                              Global.backgroundMode === "color" ? 0.38 : 0.44)
         border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.09)
-        layer.enabled: true
-        layer.effect: XCShadow {
-            shadowColor: Colors.changeA(Colors.shadow, 0.30)
-            shadowBlur: 0.28
-            shadowHorizontalOffset: 3
-            shadowVerticalOffset: 2
-        }
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: Colors.changeA(
-                           Qt.tint(Colors.foreground,
-                                   Colors.changeA(Colors.border, 0.18)),
-                           Global.backgroundMode === "color" ? 0.56 : 0.62)
-            }
-            GradientStop {
-                position: 0.46
-                color: Colors.changeA(Colors.foreground,
-                                      Global.backgroundMode === "color" ? 0.42 : 0.50)
-            }
-            GradientStop {
-                position: 1.0
-                color: Colors.changeA(
-                           Qt.tint(Colors.background_n,
-                                   Colors.changeA(Colors.border, 0.10)),
-                           Global.backgroundMode === "color" ? 0.30 : 0.38)
-            }
-        }
+        border.color: Colors.changeA(Colors.text, 0.08)
     }
 
     Component.onCompleted: {
