@@ -105,7 +105,7 @@ Rectangle {
             btnSize: 64
             imgSize: 48
             btnRadius: 0
-            imageSource: "qrc:/assets/gui/typeBar/UI.png"
+            imageSource: "qrc:/assets/gui/typeBar/UI_" + Colors.gui_theme + ".png"
 
             btnSelected:(typeBar.currentType == z) ? true : false
             onClicked: {

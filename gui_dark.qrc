@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/gui/typeBar/UI_dark.png</file>
+    </qresource>
+</RCC>

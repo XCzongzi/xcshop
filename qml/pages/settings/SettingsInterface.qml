@@ -78,6 +78,8 @@ Item {
                 id: themeBar
                 width: parent.width
                 expanded: true
+                color: Colors.changeA(Colors.foreground,
+                                      Global.backgroundMode === "color" ? 0.34 : 0.48)
                 title: "主题与配色"
                 contentHeight: schemeGrid.y + schemeGrid.height + 16
                 Column {
@@ -200,6 +202,8 @@ Item {
                 id: backgroundBar
                 width: parent.width
                 expanded: true
+                color: Colors.changeA(Colors.foreground,
+                                      Global.backgroundMode === "color" ? 0.34 : 0.48)
                 title: "背景"
                 contentHeight: blurRow.visible ? blurRow.y + blurRow.height + 16
                                                                                            : backgroundType.y + backgroundType.height + 16
@@ -244,6 +248,8 @@ Item {
                 id: animationBar
                 width: parent.width
                 expanded: true
+                color: Colors.changeA(Colors.foreground,
+                                      Global.backgroundMode === "color" ? 0.34 : 0.48)
                 title: "动画"
                 contentHeight: animationSlider.y + animationSlider.height + 16
                 Row {

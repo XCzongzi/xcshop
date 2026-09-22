@@ -167,6 +167,8 @@ qt_add_qml_module(appxcshop
 
     RESOURCES
         gui.qrc
+        gui_dark.qrc
+        gui_light.qrc
         container.qrc
         js.qrc
         js/ElementRelayState.js

@@ -25,26 +25,51 @@ BasePage {
     Component { id: templatesPage; SettingsTemplates {} }
     Component { id: itemsPage; SettingsItems {} }
 
-    Rectangle {
+    Item {
         anchors.fill: parent
-        color: Colors.transparent
 
         Rectangle {
             id: sidebar
-            width: 216
+            width: 224
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            color: Colors.changeA(Colors.foreground, 0.54)
+            color: Colors.transparent
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: Colors.changeA(
+                               Qt.tint(Colors.foreground,
+                                       Colors.changeA(Colors.border, 0.18)),
+                               Global.backgroundMode === "color" ? 0.48 : 0.62)
+                }
+                GradientStop {
+                    position: 0.46
+                    color: Colors.changeA(Colors.foreground,
+                                          Global.backgroundMode === "color" ? 0.34 : 0.48)
+                }
+                GradientStop {
+                    position: 1.0
+                    color: Colors.changeA(
+                               Qt.tint(Colors.background_n,
+                                       Colors.changeA(Colors.border, 0.10)),
+                               Global.backgroundMode === "color" ? 0.22 : 0.34)
+                }
+            }
 
             Column {
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 6
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: 20
+                anchors.leftMargin: 20
+                anchors.rightMargin: 24
+                spacing: 8
                 TextButton {
-                    width: parent.width; height: 36; radius: 8
+                    width: parent.width; height: 34; radius: 7
                     text: "← 返回"; textSize: 13; widthBorderSize: 10
-                    buttonColor: Colors.changeA(Colors.pressed, 0.80)
-                    firedColor: Colors.changeA(Colors.border, 0.22)
+                    buttonColor: Colors.transparent
+                    firedColor: Colors.changeA(Colors.background_n, 0.24)
+                    pressedColor: Colors.changeA(Colors.pressed, 0.54)
                     onClicked: root.pageEvent("Settings.back", {})
                 }
                 Item { width: 1; height: 12 }
@@ -63,13 +88,36 @@ BasePage {
                 }
                 Item { width: 1; height: Math.max(1, parent.height - y) }
             }
+
+            Rectangle {
+                x: 0
+                y: 86
+                width: 3
+                height: 23
+                radius: 2
+                color: Colors.border
+            }
         }
 
-        Rectangle { anchors.left: sidebar.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 1; color: Colors.changeA(Colors.text, 0.12) }
         Rectangle {
+            anchors.left: sidebar.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 1
+            color: Colors.changeA(Colors.border, 0.18)
+        }
+        Item {
+            id: contentArea
             anchors.left: sidebar.right; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
-            anchors.margins: 16; radius: 12; color: Colors.changeA(Colors.foreground, 0.30); clip: true
-            Loader { anchors.fill: parent; anchors.margins: 20; sourceComponent: root.sections[root.currentSection].page }
+            clip: true
+            Loader {
+                anchors.fill: parent
+                anchors.leftMargin: 32
+                anchors.rightMargin: 32
+                anchors.topMargin: 24
+                anchors.bottomMargin: 24
+                sourceComponent: root.sections[root.currentSection].page
+            }
         }
     }
 }

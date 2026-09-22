@@ -433,6 +433,8 @@ Item {
             id: importBar
             width: parent.width
             expanded: true
+            color: Colors.changeA(Colors.foreground,
+                                  Global.backgroundMode === "color" ? 0.34 : 0.48)
             title: "从本地游戏中更新物品贴图"
             contentHeight: statusText.y + statusText.height + 16
 
@@ -487,6 +489,8 @@ Item {
             id: addMappingBar
             width: parent.width
             expanded: true
+            color: Colors.changeA(Colors.foreground,
+                                  Global.backgroundMode === "color" ? 0.34 : 0.48)
             title: "添加自定义物品"
             contentHeight: addFields.y + addFields.height + (root.formError.length ? 24 : 0) + 16
 
@@ -539,6 +543,8 @@ Item {
             id: mappingListBar
             width: parent.width
             expanded: true
+            color: Colors.changeA(Colors.foreground,
+                                  Global.backgroundMode === "color" ? 0.34 : 0.48)
             title: "当前的物品映射表"
             contentHeight: root.listContentHeight
 

@@ -6,9 +6,11 @@ TextButton {
     colorAnimationEnabled: false
     width: parent ? parent.width : implicitWidth
     height: 40
-    radius: 7
-    textSize: 15
+    radius: 8
+    textSize: 14
     widthBorderSize: 10
-    buttonColor: Colors.changeA(Colors.fired, 0)
-    pressedColor: Colors.changeA(Colors.border, 0.30)
+    boldFont: false
+    buttonColor: Colors.transparent
+    firedColor: Colors.changeA(Colors.background_n, 0.22)
+    pressedColor: Colors.changeA(Colors.pressed, 0.58)
 }
