@@ -26,6 +26,8 @@ QtObject{
 
     //元素管理器与元素中转区
     signal elementOpened(string elementType, string filePath, string elementName)
+    // 元素文件成功写入后通知依赖其固定属性的预览重新读取文件。
+    signal elementDataSaved(string elementType, string filePath)
     signal elementOpenRequested(string filePath)
     signal elementsAddToRelayRequested(var filePaths, string groupKey)
     signal elementFilesMoved(var moves)

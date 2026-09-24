@@ -18,15 +18,64 @@ Rectangle{
     signal deleteAnimFinishied(int currentIndex)
     signal updateData()
 
+    readonly property var triggerKinds: ["take_item", "drop_item"]
+    readonly property var filterKinds: ["none", "quantity", "slot"]
+    readonly property var quantityModes: ["all", "less_than_all", "custom"]
+    readonly property var executeKinds: ["grant_item", "command", "function"]
+
+    function enumIndex(values, value) {
+        var index = values.indexOf(value)
+        return index >= 0 ? index : 0
+    }
+
+    function normalizeLegacyData() {
+        var mode = root.modelData.mode || ({})
+        if (mode.kind === undefined) {
+            var oldFilter = mode.filter || ({})
+            var options = Array.isArray(oldFilter.options) ? oldFilter.options : []
+            var filter
+            if (Number(oldFilter.selected) === 1) {
+                var oldAmount = Number(options[0])
+                filter = {
+                    "kind": "quantity",
+                    "mode": oldAmount === -1 ? "all"
+                            : (oldAmount === -2 ? "less_than_all" : "custom")
+                }
+                if (filter.mode === "custom")
+                    filter.amount = String(options[0] === undefined ? "0" : options[0])
+            } else if (Number(oldFilter.selected) === 2) {
+                filter = { "kind": "slot", "slot": Number(options[1] || 0) }
+            } else {
+                filter = { "kind": "none" }
+            }
+            root.modelData.mode = Number(mode.selected) === 1
+                    ? { "kind": "drop_item" }
+                    : { "kind": "take_item", "filter": filter }
+        }
+
+        var execute = root.modelData.execute || ({})
+        if (execute.kind === undefined) {
+            var selections = Array.isArray(execute.selections) ? execute.selections : []
+            if (Number(execute.selected) === 1)
+                root.modelData.execute = { "kind": "command", "value": String(selections[0] || "") }
+            else if (Number(execute.selected) === 2)
+                root.modelData.execute = { "kind": "function", "value": String(selections[1] || "") }
+            else
+                root.modelData.execute = { "kind": "grant_item" }
+        }
+    }
+
     Component.onCompleted:{
         Qt.callLater(function(){
-            trigger_radioGroup.selected = root.modelData.mode.selected
-            comboBox_root.selected = root.modelData.mode.filter.selected
-            
-            var optionData = root.modelData.mode.filter.options[0]
-            comboBox_numfilter.selected = optionData == -1 ? 0 : optionData == -2 ? 1 : 2
-            //若读取到的optionData为-1，就是左键检测；-2即右键检测；除此之外就是自定义的内容
-            execute_radioGroup.selected = root.modelData.execute.selected
+            root.normalizeLegacyData()
+            trigger_radioGroup.selected = root.enumIndex(root.triggerKinds,
+                                                          root.modelData.mode.kind)
+            var filter = root.modelData.mode.filter || { "kind": "none" }
+            comboBox_root.selected = root.enumIndex(root.filterKinds, filter.kind)
+            comboBox_numfilter.selected = root.enumIndex(root.quantityModes, filter.mode)
+            execute_radioGroup.selected = root.enumIndex(root.executeKinds,
+                                                          root.modelData.execute.kind)
+            root.updateData()
         })
     }
 
@@ -179,7 +228,11 @@ Rectangle{
                 text: "触发方式"
                 options: ["取得商品","掷出商品"]
                 onClicked:{
-                    root.modelData.mode.selected = selected; root.updateData()
+                    root.modelData.mode = selected === 0
+                            ? { "kind": "take_item", "filter": { "kind": "none" } }
+                            : { "kind": "drop_item" }
+                    comboBox_root.selected = 0
+                    root.updateData()
                 }
             }
             ComboBox{
@@ -190,7 +243,14 @@ Rectangle{
                 y: trigger_radioGroup.y + trigger_radioGroup.height + 10
                 options: ["无筛选","数量筛选","栏位筛选"]
                 onClicked:{
-                    root.modelData.mode.filter.selected = selected; root.updateData()
+                    if (selected === 1)
+                        root.modelData.mode.filter = { "kind": "quantity", "mode": "all" }
+                    else if (selected === 2)
+                        root.modelData.mode.filter = { "kind": "slot", "slot": 0 }
+                    else
+                        root.modelData.mode.filter = { "kind": "none" }
+                    comboBox_numfilter.selected = 0
+                    root.updateData()
                 }
             }
             Rectangle{
@@ -210,14 +270,13 @@ Rectangle{
                         x: 8
                         options: ["全部(左键检测)","少于全部(右键检测)","自定义"]
                         onClicked:{
-                            if(selected == 0){//存储的：-1:全部；-2:右键；0+:自定义
-                                root.modelData.mode.filter.options[0] = -1; root.updateData()
-                            }else if(selected == 1){
-                                root.modelData.mode.filter.options[0] = -2; root.updateData()
-                            }else{
-                                field_numfilter.text = "0"
+                            root.modelData.mode.filter = {
+                                "kind": "quantity",
+                                "mode": root.quantityModes[selected]
                             }
-                            
+                            if (selected === 2)
+                                root.modelData.mode.filter.amount = field_numfilter.text || "0"
+                            root.updateData()
                         }
                     }
                     XCTextField{
@@ -227,9 +286,11 @@ Rectangle{
                         x: comboBox_numfilter.width + 12
                         width: 64
                         horizontalAlignment: TextInput.AlignHCenter
-                        text: comboBox_numfilter.selected == 2 ? root.modelData.mode.filter.options[0] : "0"
+                        text: comboBox_numfilter.selected == 2
+                              ? (root.modelData.mode.filter.amount || "0") : "0"
                         onEditingFinished:{
-                            root.modelData.mode.filter.options[0] = +text; root.updateData()
+                            root.modelData.mode.filter.amount = text
+                            root.updateData()
                         }
                     }
                 }
@@ -249,9 +310,11 @@ Rectangle{
                         x: slotfilter_tabel.width + 12
                         width: 32
                         horizontalAlignment: TextInput.AlignHCenter
-                        text: root.modelData.mode.filter.options[1]
+                        text: root.modelData.mode.filter.slot === undefined
+                              ? "0" : root.modelData.mode.filter.slot
                         onEditingFinished:{
-                            root.modelData.mode.filter.options[1] = +text; root.updateData()
+                            root.modelData.mode.filter.slot = +text
+                            root.updateData()
                         }
                     }
                 }
@@ -279,7 +342,10 @@ Rectangle{
                 text: "执行操作"
                 options: ["获得物品","执行指令","执行函数"]
                 onClicked:{
-                    root.modelData.execute.selected = selected; root.updateData()
+                    root.modelData.execute = selected === 0
+                            ? { "kind": "grant_item" }
+                            : { "kind": root.executeKinds[selected], "value": "" }
+                    root.updateData()
                 }
             }
             BranchBar{
@@ -304,9 +370,9 @@ Rectangle{
                         id: field_command
                         highlightMacros: true
                         width: parent.width - text_command.width - 16
-                        text: root.modelData.execute.selections[0]
+                        text: root.modelData.execute.value || ""
                         onEditingFinished:{
-                            root.modelData.execute.selections[0] = text; root.updateData()
+                            root.modelData.execute.value = text; root.updateData()
                         }
                     }
                 }
@@ -317,9 +383,9 @@ Rectangle{
                     x: 8
                     width: parent.width - 16
                     height: 128
-                    content: root.modelData.execute.selections[1]
+                    content: root.modelData.execute.value || ""
                     onAccepted:{
-                        root.modelData.execute.selections[1] = content; root.updateData()
+                        root.modelData.execute.value = content; root.updateData()
                     }
                 }
             }

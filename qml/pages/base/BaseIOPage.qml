@@ -42,7 +42,7 @@ BasePage{
 
         var serialized
         try {
-            serialized = JSON.stringify(eledata)
+            serialized = JSON.stringify(storageData())
         } catch (error) {
             dataError = "无法序列化元素数据：" + error
             console.warn(dataError)
@@ -61,10 +61,12 @@ BasePage{
             return false
         }
 
+        SignalBus.elementDataSaved(Global.current_element, Global.get_filePath())
         dataError = ""
         return true
 
     }
+    function storageData(){ return eledata }
     function elementReading(){}
     
 }

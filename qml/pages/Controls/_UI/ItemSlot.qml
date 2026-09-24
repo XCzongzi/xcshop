@@ -20,6 +20,7 @@ Rectangle {
     readonly property bool hasSelection: selectedElementPath.length > 0
     readonly property string defaultIconSource: "qrc:/assets/gui/element/Item.png"
     readonly property string iconSource: storedItemIconSource()
+    property int iconRevision: 0
     readonly property string selectedElementName: {
         var element = Global.parseElementPath(selectedElementPath)
         if (element)
@@ -68,6 +69,8 @@ Rectangle {
     }
 
     function storedItemIconSource() {
+        // Item 文件保存后即使引用路径未变，也要重新读取固定的 item 属性。
+        var revision = iconRevision
         if (!hasSelection)
             return ""
 
@@ -189,6 +192,13 @@ Rectangle {
 
     Connections {
         target: SignalBus
+
+        function onElementDataSaved(savedType, savedPath) {
+            if (savedType === "Item"
+                    && Global.normalizeElementPath(savedPath)
+                       === Global.normalizeElementPath(root.selectedElementPath))
+                root.iconRevision++
+        }
 
         function onElementSelectionDeselect() {
             root.cancelElementSelection()

@@ -85,6 +85,7 @@ Item {
                     width: editorColumn.width
                     itemIndex: index
                     itemCount: saleItemModel.count
+                    preview: root.uiPage.previewItemIndex(root.slotIndex) === index
 
                     onMoveUpRequested: function(index) {
                         root.uiPage.moveSaleItem(root.slotIndex, index, index - 1)

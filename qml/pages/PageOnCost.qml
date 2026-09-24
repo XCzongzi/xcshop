@@ -8,6 +8,15 @@ BaseIOPage {
     content_height: displayInput.height + typeInput.height + 44
     property int valueEditorSelection: 0
 
+    readonly property var costKinds: [
+        "experience_level", "item_count", "scoreboard", "execute_condition"
+    ]
+
+    function costKindIndex(kind) {
+        var index = root.costKinds.indexOf(kind)
+        return index >= 0 ? index : 0
+    }
+
     function syncTypeValue(value) {
         var normalizedValue = value === undefined || value === null ? "" : String(value)
         root.eledata.type.value = normalizedValue
@@ -23,12 +32,26 @@ BaseIOPage {
     }
 
     function elementReading() {
+        if (typeof root.eledata.display !== "string")
+            root.eledata.display = ""
+        if (!root.eledata.type || typeof root.eledata.type !== "object")
+            root.eledata.type = { "kind": "experience_level", "value": "", "filter": false }
+        if (root.eledata.type.kind === undefined) {
+            var legacyIndex = Number(root.eledata.type.selected)
+            root.eledata.type.kind = root.costKinds[legacyIndex] || "experience_level"
+            delete root.eledata.type.selected
+            root.updateDataOut()
+        }
+        if (typeof root.eledata.type.value !== "string")
+            root.eledata.type.value = ""
+        root.eledata.type.filter = root.eledata.type.filter === true
         displayInput_textField.text = root.eledata.display
-        typeInput_radioGroup.selected = root.eledata.type.selected
+        typeInput_radioGroup.selected = root.costKindIndex(root.eledata.type.kind)
         checkBox.checked = root.eledata.type.filter
         itemInput_field.setContent(root.eledata.type.value)
         scoreboardInput.text = root.eledata.type.value
-        valueEditorSelection = root.eledata.type.selected
+        valueEditorSelection = typeInput_radioGroup.selected
+        root.updateDataOut()
 
         Qt.callLater(function(){
             typeInput.expand()
@@ -79,7 +102,7 @@ BaseIOPage {
             onClicked: {
                 root.commitCurrentValueEditor()
                 root.valueEditorSelection = selected
-                root.eledata.type.selected = selected
+                root.eledata.type.kind = root.costKinds[selected]
                 root.updateDataOut()
             }
         }

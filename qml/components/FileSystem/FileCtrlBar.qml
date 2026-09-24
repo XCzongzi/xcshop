@@ -12,22 +12,32 @@ Item{
     signal elementPathsDropped(var paths)
 
     function defaultElementContent(){
-        if (Global.current_element === "UI")
-            return JSON.stringify({})
+        if (Global.current_element === "UI") {
+            return JSON.stringify({
+                "container": "",
+                "containerType": "",
+                "customName": "",
+                "openCommand": "",
+                "placeholderItem": { "enabled": false, "element": "" },
+                "slots": [],
+                "nestedGroups": []
+            })
+        }
         if (Global.current_element === "Item") {
             return JSON.stringify({
                 "item": "",
-                "display": { "selected": 0, "element": "" },
+                "display": { "mode": "original", "element": "" },
+                "cost": [],
                 "trigger": []
             })
         }
         if (Global.current_element === "Display") {
-            return JSON.stringify({"frame":{"head":"","end":"","separator":""},"member":{"order":0,"head":"","middle":"","end":"","cost":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false},"value":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false}},"hint":{"success":["",""],"fail":["",""]}})
+            return JSON.stringify({"frame":{"head":"","end":"","separator":""},"member":{"order":"cost_then_value","head":"","middle":"","end":"","cost":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false},"value":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false}},"hint":{"success":{"text":"","sound":""},"fail":{"text":"","sound":""}}})
         }
         if (Global.current_element === "Cost") {
             return JSON.stringify({
                 "display": "",
-                "type": { "selected": 0, "value": "", "filter": false }
+                "type": { "kind": "experience_level", "value": "", "filter": false }
             })
         }
         return ""

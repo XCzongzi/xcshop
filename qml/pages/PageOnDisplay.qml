@@ -11,7 +11,27 @@ BaseIOPage {
     // binding that reads them.
     property int previewRevision: 0
 
+    readonly property var memberOrders: ["cost_then_value", "value_then_cost"]
+
     function elementReading(){
+        if (typeof eledata.member.order === "number") {
+            eledata.member.order = root.memberOrders[eledata.member.order]
+                                   || "cost_then_value"
+            root.updateDataOut()
+        }
+        if (Array.isArray(eledata.hint.success)) {
+            eledata.hint.success = {
+                "text": String(eledata.hint.success[0] || ""),
+                "sound": String(eledata.hint.success[1] || "")
+            }
+        }
+        if (Array.isArray(eledata.hint.fail)) {
+            eledata.hint.fail = {
+                "text": String(eledata.hint.fail[0] || ""),
+                "sound": String(eledata.hint.fail[1] || "")
+            }
+        }
+        root.updateDataOut()
         frameBar.textContents = [
             eledata.frame.head,
             eledata.frame.end,
@@ -19,7 +39,8 @@ BaseIOPage {
         ]
         frameBar_contentInput.setContent(frameBar.textContents[frameBar_multiPropertyEdit.selected])
 
-        memberBar_radioGroup.selected = eledata.member.order
+        var orderIndex = root.memberOrders.indexOf(eledata.member.order)
+        memberBar_radioGroup.selected = orderIndex >= 0 ? orderIndex : 0
         memberBar.textContents = [
             eledata.member.head,
             eledata.member.middle,
@@ -29,12 +50,12 @@ BaseIOPage {
         memberBar_contentInput.setContent(memberBar.textContents[0])
 
         noticeTextBar.textContents = [
-            eledata.hint.success[0],
-            eledata.hint.fail[0]
+            eledata.hint.success.text,
+            eledata.hint.fail.text
         ]
         noticeTextBar.soundPaths = [
-            eledata.hint.success[1],
-            eledata.hint.fail[1]
+            eledata.hint.success.sound,
+            eledata.hint.fail.sound
         ]
         noticeTextInput.setContent(noticeTextBar.textContents[noticeMultiPropertyEdit.selected])
         noticeSoundInput.text = noticeTextBar.soundPaths[noticeMultiPropertyEdit.selected]
@@ -212,7 +233,7 @@ BaseIOPage {
             options: ["元素 + 值", "值 + 元素"]
             onClicked: {
                 memberBar_multiPropertyEdit.selected = 0
-                root.eledata.member.order = selected
+                root.eledata.member.order = root.memberOrders[selected]
                 root.previewRevision++
                 root.updateDataOut()
             }
@@ -369,7 +390,7 @@ BaseIOPage {
                     onContentChanged: {
                         var selected = noticeMultiPropertyEdit.selected
                         noticeTextBar.textContents[selected] = content
-                        root.eledata.hint[selected === 0 ? "success" : "fail"][0] = content
+                        root.eledata.hint[selected === 0 ? "success" : "fail"].text = content
                         root.updateDataOut()
                     }
                     onAccepted: {
@@ -391,7 +412,7 @@ BaseIOPage {
                     onEditingFinished: {
                         var selected = noticeMultiPropertyEdit.selected
                         noticeTextBar.soundPaths[selected] = text
-                        root.eledata.hint[selected === 0 ? "success" : "fail"][1] = text
+                        root.eledata.hint[selected === 0 ? "success" : "fail"].sound = text
                         root.updateDataOut()
                     }
                 }

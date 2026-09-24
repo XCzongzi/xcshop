@@ -43,8 +43,7 @@ Rectangle {
     function syncData(data) {
         if (!data)
             return
-        preview = data.preview === true
-        previewCheckBox.checked = preview
+        previewCheckBox.checked = root.preview
         itemPath = typeof data.element === "string" ? data.element : ""
         itemSelection.setElement(itemPath, false)
         var filter = data.filter && typeof data.filter === "object"
@@ -52,6 +51,8 @@ Rectangle {
         scoreboardFilter.setValues(filter.scoreboard, filter.target, filter.score)
         macroEditor.setMacros(data.macros)
     }
+
+    onPreviewChanged: previewCheckBox.checked = root.preview
 
     Rectangle {
         id: header
@@ -144,7 +145,7 @@ Rectangle {
             text: "×"
             textSize: 17
             boldFont: false
-            enabled: root.itemCount > 1
+            enabled: root.itemCount > 0
             buttonColor: Colors.changeA(Colors.text, 0.04)
             firedColor: Colors.changeA(Colors.error, 0.22)
             pressedColor: Colors.changeA(Colors.error, 0.34)

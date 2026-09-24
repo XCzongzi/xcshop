@@ -7,6 +7,8 @@ BaseIOPage {
     color: "transparent"
     workspace: true
 
+    readonly property var displayModes: ["original", "additional"]
+
     //元素读取
     function elementReading(){
         //此函数用于在页面创建时，将从项目文件中读取到的数据更新至控件中
@@ -14,7 +16,20 @@ BaseIOPage {
 
         //单选框&多属性编辑栏的属性更新必须使用函数，而不能使用属性绑定
     
-        displayInput_selection.selected = root.eledata.display.selected
+        if (typeof root.eledata.item !== "string")
+            root.eledata.item = ""
+        if (!root.eledata.display || typeof root.eledata.display !== "object")
+            root.eledata.display = { "mode": "original", "element": "" }
+        if (root.eledata.display.mode === undefined) {
+            root.eledata.display.mode = Number(root.eledata.display.selected) === 1
+                    ? "additional" : "original"
+            delete root.eledata.display.selected
+            root.updateDataOut()
+        }
+        if (typeof root.eledata.display.element !== "string")
+            root.eledata.display.element = ""
+        var displayModeIndex = root.displayModes.indexOf(root.eledata.display.mode)
+        displayInput_selection.selected = displayModeIndex >= 0 ? displayModeIndex : 0
         displayInput_input.setElement(root.eledata.display.element, false)
 
         //Repeater中动态加载的组件的数据也需要使用函数来更新
@@ -23,6 +38,9 @@ BaseIOPage {
 
         if (!Array.isArray(root.eledata.cost))
             root.eledata.cost = []
+        if (!Array.isArray(root.eledata.trigger))
+            root.eledata.trigger = []
+        root.updateDataOut()
 
         for(var i = 0; i < root.eledata.cost.length; i++ ){
             costListModel.append(root.eledata.cost[i])
@@ -201,7 +219,12 @@ BaseIOPage {
             options: ["仅原物品","额外添加展示元素"]
             anchors.horizontalCenter: parent.horizontalCenter
             onClicked:{
-                root.eledata.display.selected = selected; root.updateDataOut()
+                root.eledata.display.mode = root.displayModes[selected]
+                if (selected === 0) {
+                    root.eledata.display.element = ""
+                    displayInput_input.clearElement(false)
+                }
+                root.updateDataOut()
             }
         }
         ElementSelection{
@@ -215,7 +238,7 @@ BaseIOPage {
                 root.updateDataOut()
             }
             onSelectionCleared: {
-                root.eledata.display.element = "path"
+                root.eledata.display.element = ""
                 root.updateDataOut()
             }
         }
@@ -310,7 +333,7 @@ BaseIOPage {
                 onClicked:{
                     triggerBar_add_y_animation.enable()
                     root.eledata.trigger.push(
-                        {"mode":{"selected":0,"filter":{"selected":0,"options":[-1,0]}},"execute":{"selected":0,"selections":["",""]}}
+                        {"mode":{"kind":"take_item","filter":{"kind":"none"}},"execute":{"kind":"grant_item"}}
                         ); root.updateDataOut()
                     listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
                 }

@@ -17,6 +17,7 @@ BaseIOPage {
     property bool pageInitialized: false
     property int currentSlotIndex: -1
     property int previewRevision: 0
+    property var previewOffers: ({})
     property int layoutRevision: 0
     property string selectedNestedGroupId: ""
     property bool nestingDrawMode: false
@@ -43,6 +44,10 @@ BaseIOPage {
         return containerType >= 0 && containerType < interfaceLabels.length
                 ? interfaceLabels[containerType] : "未选择"
     }
+    readonly property var layoutKinds: [
+        "generic_9x3", "generic_9x6", "generic_3x3",
+        "hopper_5", "brewing_stand_5", "furnace_3"
+    ]
 
     ContainerCatalog {
         id: containerCatalog
@@ -51,16 +56,15 @@ BaseIOPage {
     signal slotItemsChanged(int slotIndex)
     signal layoutDataChanged()
 
-    function defaultSaleItem(preview) {
+    function defaultSaleItem() {
         return {
-            "preview": preview === true,
             "element": "",
             "filter": { "scoreboard": "", "target": "", "score": "" },
             "macros": []
         }
     }
 
-    function normalizeSaleItem(value, preview) {
+    function normalizeSaleItem(value) {
         var source = value && typeof value === "object" && !Array.isArray(value)
                 ? value : ({})
         var filter = source.filter && typeof source.filter === "object"
@@ -77,7 +81,6 @@ BaseIOPage {
             })
         }
         return {
-            "preview": preview === true,
             "element": typeof source.element === "string" ? source.element : "",
             "filter": {
                 "scoreboard": typeof filter.scoreboard === "string" ? filter.scoreboard : "",
@@ -88,39 +91,103 @@ BaseIOPage {
         }
     }
 
+    function saleItemHasData(item) {
+        if (!item)
+            return false
+        if (typeof item.element === "string" && item.element.length)
+            return true
+        var filter = item.filter || ({})
+        if (String(filter.scoreboard || "").length
+                || String(filter.target || "").length
+                || String(filter.score || "").length)
+            return true
+        return Array.isArray(item.macros) && item.macros.length > 0
+    }
+
+    function storageData() {
+        var stored = JSON.parse(JSON.stringify(root.eledata))
+        var slots = []
+        var sourceSlots = Array.isArray(stored.slots) ? stored.slots : []
+        for (var slotIndex = 0; slotIndex < sourceSlots.length; ++slotIndex) {
+            var sourceSlot = sourceSlots[slotIndex]
+            if (!sourceSlot || !Array.isArray(sourceSlot.items))
+                continue
+            var items = []
+            for (var itemIndex = 0; itemIndex < sourceSlot.items.length; ++itemIndex) {
+                if (root.saleItemHasData(sourceSlot.items[itemIndex]))
+                    items.push(sourceSlot.items[itemIndex])
+            }
+            if (items.length)
+                slots.push({ "index": Number(sourceSlot.index), "items": items })
+        }
+        slots.sort(function(first, second) { return first.index - second.index })
+        stored.slots = slots
+        return stored
+    }
+
     function ensureSlotData() {
         if (!Array.isArray(root.eledata.slots))
             root.eledata.slots = []
 
-        for (var slotIndex = 0; slotIndex < root.currentSlotCount; ++slotIndex) {
-            var storedSlot = root.eledata.slots[slotIndex]
+        var normalizedSlots = []
+        var previews = ({})
+        for (var sourceIndex = 0; sourceIndex < root.eledata.slots.length; ++sourceIndex) {
+            var storedSlot = root.eledata.slots[sourceIndex]
             if (Array.isArray(storedSlot))
                 storedSlot = { "items": storedSlot }
             if (!storedSlot || typeof storedSlot !== "object")
-                storedSlot = { "items": [] }
+                continue
 
+            var slotIndex = storedSlot.index === undefined
+                    ? sourceIndex : Number(storedSlot.index)
+            if (!Number.isInteger(slotIndex) || slotIndex < 0
+                    || slotIndex >= root.currentSlotCount)
+                continue
             var sourceItems = Array.isArray(storedSlot.items) ? storedSlot.items : []
-            if (!sourceItems.length)
-                sourceItems = [root.defaultSaleItem(true)]
-
-            var previewIndex = -1
-            for (var itemIndex = 0; itemIndex < sourceItems.length; ++itemIndex) {
-                if (previewIndex < 0 && sourceItems[itemIndex]
-                        && sourceItems[itemIndex].preview === true)
-                    previewIndex = itemIndex
-            }
-            if (previewIndex < 0)
-                previewIndex = 0
-
             var normalizedItems = []
-            for (var normalizeIndex = 0; normalizeIndex < sourceItems.length; ++normalizeIndex)
-                normalizedItems.push(root.normalizeSaleItem(sourceItems[normalizeIndex],
-                                                             normalizeIndex === previewIndex))
-            root.eledata.slots[slotIndex] = { "items": normalizedItems }
+            var previewIndex = 0
+            for (var itemIndex = 0; itemIndex < sourceItems.length; ++itemIndex) {
+                var normalized = root.normalizeSaleItem(sourceItems[itemIndex])
+                if (!root.saleItemHasData(normalized))
+                    continue
+                if (sourceItems[itemIndex] && sourceItems[itemIndex].preview === true)
+                    previewIndex = normalizedItems.length
+                normalizedItems.push(normalized)
+            }
+            if (normalizedItems.length) {
+                normalizedSlots.push({ "index": slotIndex, "items": normalizedItems })
+                previews[String(slotIndex)] = Math.min(previewIndex,
+                                                       normalizedItems.length - 1)
+            }
         }
+        normalizedSlots.sort(function(first, second) { return first.index - second.index })
+        root.eledata.slots = normalizedSlots
+        root.previewOffers = previews
 
         if (root.currentSlotIndex >= root.currentSlotCount)
             root.currentSlotIndex = -1
+    }
+
+    function slotRecordIndex(slotIndex) {
+        if (!Array.isArray(root.eledata.slots))
+            return -1
+        for (var index = 0; index < root.eledata.slots.length; ++index) {
+            if (Number(root.eledata.slots[index].index) === slotIndex)
+                return index
+        }
+        return -1
+    }
+
+    function slotRecord(slotIndex, create) {
+        var index = root.slotRecordIndex(slotIndex)
+        if (index >= 0)
+            return root.eledata.slots[index]
+        if (create !== true)
+            return null
+        var record = { "index": slotIndex, "items": [] }
+        root.eledata.slots.push(record)
+        root.eledata.slots.sort(function(first, second) { return first.index - second.index })
+        return record
     }
 
     function defaultLayoutFilter() {
@@ -508,20 +575,17 @@ BaseIOPage {
     }
 
     function slotItems(slotIndex) {
-        if (!Array.isArray(root.eledata.slots)
-                || slotIndex < 0 || slotIndex >= root.eledata.slots.length)
-            return []
-        var slot = root.eledata.slots[slotIndex]
+        var slot = root.slotRecord(slotIndex, false)
         return slot && Array.isArray(slot.items) ? slot.items : []
     }
 
     function previewItemIndex(slotIndex) {
         var items = root.slotItems(slotIndex)
-        for (var index = 0; index < items.length; ++index) {
-            if (items[index].preview === true)
-                return index
-        }
-        return items.length ? 0 : -1
+        if (!items.length)
+            return -1
+        var stored = Number(root.previewOffers[String(slotIndex)])
+        return Number.isInteger(stored) && stored >= 0 && stored < items.length
+                ? stored : 0
     }
 
     function previewItemForSlot(slotIndex) {
@@ -561,10 +625,8 @@ BaseIOPage {
     }
 
     function addSaleItem(slotIndex) {
-        var items = root.slotItems(slotIndex)
-        if (!items.length)
-            return
-        items.push(root.defaultSaleItem(false))
+        var slot = root.slotRecord(slotIndex, true)
+        slot.items.push(root.defaultSaleItem())
         root.saveSlotChange(slotIndex)
     }
 
@@ -604,15 +666,16 @@ BaseIOPage {
 
         // A slot always has one preview item. The checked control therefore
         // behaves like a visually familiar checkbox with radio semantics.
-        if (!checked && items[itemIndex].preview === true) {
+        if (!checked && root.previewItemIndex(slotIndex) === itemIndex) {
             root.notifySlotChanged(slotIndex)
             return
         }
         if (!checked)
             return
-        for (var index = 0; index < items.length; ++index)
-            items[index].preview = index === itemIndex
-        root.saveSlotChange(slotIndex)
+        var previews = Object.assign({}, root.previewOffers)
+        previews[String(slotIndex)] = itemIndex
+        root.previewOffers = previews
+        root.notifySlotChanged(slotIndex)
     }
 
     function moveSaleItem(slotIndex, fromIndex, toIndex) {
@@ -620,27 +683,49 @@ BaseIOPage {
         if (fromIndex < 0 || fromIndex >= items.length
                 || toIndex < 0 || toIndex >= items.length || fromIndex === toIndex)
             return
+        var previewIndex = root.previewItemIndex(slotIndex)
         var moved = items.splice(fromIndex, 1)[0]
         items.splice(toIndex, 0, moved)
+        var previews = Object.assign({}, root.previewOffers)
+        if (previewIndex === fromIndex)
+            previews[String(slotIndex)] = toIndex
+        else if (fromIndex < previewIndex && toIndex >= previewIndex)
+            previews[String(slotIndex)] = previewIndex - 1
+        else if (fromIndex > previewIndex && toIndex <= previewIndex)
+            previews[String(slotIndex)] = previewIndex + 1
+        root.previewOffers = previews
         root.saveSlotChange(slotIndex)
     }
 
     function removeSaleItem(slotIndex, itemIndex) {
         var items = root.slotItems(slotIndex)
-        if (items.length <= 1 || itemIndex < 0 || itemIndex >= items.length)
+        if (itemIndex < 0 || itemIndex >= items.length)
             return
-        var removedPreview = items[itemIndex].preview === true
+        var previewIndex = root.previewItemIndex(slotIndex)
         items.splice(itemIndex, 1)
-        if (removedPreview)
-            items[Math.min(itemIndex, items.length - 1)].preview = true
+        var previews = Object.assign({}, root.previewOffers)
+        if (!items.length) {
+            var recordIndex = root.slotRecordIndex(slotIndex)
+            if (recordIndex >= 0)
+                root.eledata.slots.splice(recordIndex, 1)
+            delete previews[String(slotIndex)]
+        } else if (previewIndex === itemIndex) {
+            previews[String(slotIndex)] = Math.min(itemIndex, items.length - 1)
+        } else if (itemIndex < previewIndex) {
+            previews[String(slotIndex)] = previewIndex - 1
+        }
+        root.previewOffers = previews
         root.saveSlotChange(slotIndex)
     }
 
     function setSlotPreviewElement(slotIndex, filePath) {
         var items = root.slotItems(slotIndex)
         var itemIndex = root.previewItemIndex(slotIndex)
-        if (!items.length || itemIndex < 0)
-            return
+        if (!items.length || itemIndex < 0) {
+            root.addSaleItem(slotIndex)
+            items = root.slotItems(slotIndex)
+            itemIndex = 0
+        }
         root.updateSaleItemElement(slotIndex, itemIndex, filePath)
     }
 
@@ -650,7 +735,7 @@ BaseIOPage {
             return false
 
         root.eledata.container = containerId
-        root.eledata.containerType = interfaceId
+        root.eledata.containerType = root.layoutKinds[interfaceId]
         if (!root.updateDataOut())
             return false
 
@@ -705,8 +790,32 @@ BaseIOPage {
                 ? root.eledata.customName : ""
         root.openCommand = typeof root.eledata.openCommand === "string"
                 ? root.eledata.openCommand : ""
+        root.eledata.container = root.containerId
+        root.eledata.customName = root.customName
+        root.eledata.openCommand = root.openCommand
+        if (root.eledata.containerType === undefined
+                || root.eledata.containerType === null)
+            root.eledata.containerType = ""
+        if (!root.eledata.placeholderItem
+                || typeof root.eledata.placeholderItem !== "object")
+            root.eledata.placeholderItem = { "enabled": false, "element": "" }
+        if (!Array.isArray(root.eledata.slots))
+            root.eledata.slots = []
+        if (!Array.isArray(root.eledata.nestedGroups))
+            root.eledata.nestedGroups = []
 
-        var storedInterfaceId = Number(root.eledata.containerType)
+        var storedInterfaceId = root.layoutKinds.indexOf(root.eledata.containerType)
+        if (storedInterfaceId < 0 && root.eledata.containerType !== undefined
+                && root.eledata.containerType !== null
+                && String(root.eledata.containerType).trim().length > 0) {
+            var legacyInterfaceId = Number(root.eledata.containerType)
+            if (Number.isInteger(legacyInterfaceId)
+                    && legacyInterfaceId >= 0
+                    && legacyInterfaceId < root.layoutKinds.length) {
+                storedInterfaceId = legacyInterfaceId
+                root.eledata.containerType = root.layoutKinds[legacyInterfaceId]
+            }
+        }
         if (Number.isInteger(storedInterfaceId)
                 && storedInterfaceId >= 0
                 && storedInterfaceId < Constants.containerCount.length) {
@@ -722,6 +831,7 @@ BaseIOPage {
 
         if (root.containerOptions.length)
             containerTypeSelection.selectedContainerId = root.containerOptions[0].id
+        root.updateDataOut()
         root.pageInitialized = true
     }
 

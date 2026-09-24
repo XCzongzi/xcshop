@@ -17,6 +17,7 @@ Item {
     readonly property bool showStoredItemTexture: elementType === "Item"
     readonly property string defaultIconSource: "qrc:/assets/gui/element/" + elementType + ".png"
     readonly property string iconSource: storedItemIconSource()
+    property int iconRevision: 0
 
     property var recordData: ({
         "path": path,
@@ -34,6 +35,8 @@ Item {
     }
 
     function storedItemIconSource() {
+        // 文件路径保持不变时，保存通知通过 revision 使绑定重新求值。
+        var revision = iconRevision
         if (!showStoredItemTexture)
             return defaultIconSource
 
@@ -49,6 +52,17 @@ Item {
             return defaultIconSource
 
         return "file:///" + texturePath.replace(/\\/g, "/")
+    }
+
+    Connections {
+        target: SignalBus
+
+        function onElementDataSaved(savedType, savedPath) {
+            if (savedType === "Item"
+                    && Global.normalizeElementPath(savedPath)
+                       === Global.normalizeElementPath(root.path))
+                root.iconRevision++
+        }
     }
 
 
