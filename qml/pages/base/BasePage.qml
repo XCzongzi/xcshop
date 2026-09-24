@@ -20,7 +20,7 @@ Rectangle{
     function executeFromMain(type,parameters){}
     function setScrollOffset(offset){ scrollBar.setContentOffset(offset) }
 
-    x: fullScreen? -65 : 0
+    x: fullScreen? -Constants.typeBarWidth : 0
     color: "black"
     clip: true
     bottomLeftRadius: Constants.window_radius

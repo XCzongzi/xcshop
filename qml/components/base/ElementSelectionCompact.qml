@@ -22,7 +22,7 @@ Rectangle {
         case "item": return "qrc:/assets/gui/element/Item.png"
         case "cost": return "qrc:/assets/gui/element/Cost.png"
         case "display": return "qrc:/assets/gui/element/Display.png"
-        default: return "qrc:/assets/gui/element/File.png"
+        default: return "qrc:/assets/gui/element/File_" + Colors.gui_theme + ".png"
         }
     }
     readonly property string selectionTypeName: {

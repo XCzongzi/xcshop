@@ -41,7 +41,7 @@ BasePage {
         }
 
         Global.project_location = projectPath
-        Global.current_element = "Total"
+        Global.current_element = "Global"
         Global.rememberProject(projectPath, projectInfo)
         pageEvent("Start.", { "object": "projectOpened" })
     }

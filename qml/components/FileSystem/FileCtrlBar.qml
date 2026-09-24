@@ -66,7 +66,7 @@ Item{
         y: 5
         btnSize: 24
         btnRadius: 3
-        imageSource: "qrc:/assets/gui/element/Bar/newMenu.png"
+        imageSource: "qrc:/assets/gui/element/Bar/newMenu_" + Colors.gui_theme + ".png"
         onClicked:{
             root.createFloder = true
             createBar.visible = true
@@ -77,7 +77,7 @@ Item{
         y: 5
         btnSize: 24
         btnRadius: 3
-        imageSource: "qrc:/assets/gui/element/Bar/newFile.png"
+        imageSource: "qrc:/assets/gui/element/Bar/newFile_" + Colors.gui_theme + ".png"
         onClicked:{
             root.createFloder = false
             createBar.visible = true

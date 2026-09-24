@@ -31,12 +31,12 @@ QtObject{
 
 
 
-    property string current_element: "Total"
+    property string current_element: "Global"
     property int current_enum: 0     //enum:element_number，用于以数字形式存储元素类型
     onCurrent_elementChanged:{
         function set_enum(){
             switch(current_element){
-            case   "Total":return 0
+            case   "Global":return 0
             case      "UI":return 1
             case    "Item":return 2
             case    "Cost":return 3

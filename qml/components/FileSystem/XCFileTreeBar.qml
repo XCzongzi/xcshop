@@ -608,7 +608,7 @@ Item {
                 width: directoryList.width
                 height: 26
                 text: model.fileBaseName
-                icon: "File"
+                icon: "File_" + Colors.gui_theme
                 acceptsElementDrop: true
                 operationSelected: root.selectedDirectoryPath === directoryPath
                 operationMode: root.operationMode

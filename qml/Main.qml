@@ -71,14 +71,14 @@ XCWindow {
             Global.current_element = typeName   //after的作用是取消动画
             // 中转区可以直接调用 typeSwitch；同步类型栏的视觉选中态，不能只依赖按钮点击。
             switch(typeName){
-                case "Total": typeBar.currentType = 0; break
+                case "Global": typeBar.currentType = 0; break
                 case "UI": typeBar.currentType = 1; break
                 case "Item": typeBar.currentType = 2; break
                 case "Cost": typeBar.currentType = 3; break
                 case "Display": typeBar.currentType = 4; break
             }
             if(!after)elementExplorer.floderReset()
-            if(typeName === "Total"){
+            if(typeName === "Global"){
                 elementExplorer.barHide()
                 pageLoader.pageSwitch(Constants.pageOnTotal)
             }else{
@@ -212,7 +212,7 @@ XCWindow {
             id:pageLoader
             parent: popupBlurSource
             
-            x: Math.max(root.pageX,65)
+            x: Math.max(root.pageX, Constants.typeBarWidth)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
             height: Math.max(0, root.height - y - elementRelayBar.height)
             width: root.workspaceChromeVisible ? root.width - x : root.width - x + 65
@@ -274,7 +274,7 @@ XCWindow {
                             switch(parameters.object){
                                 case "projectOpened":
                                     typeBar.enable(false)
-                                    root.typeSwitch("Total", true)
+                                    root.typeSwitch("Global", true)
                                 break;case "settings":
                                     root.settingsFromWorkspace = false
                                     pageLoader.pageSwitch(Constants.pageOnSettings)

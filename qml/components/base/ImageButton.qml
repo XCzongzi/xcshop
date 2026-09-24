@@ -13,9 +13,9 @@ Rectangle {
     property int btnRadius: 3
     property bool btnSelected: false
     property bool freeze: false
-    property bool hovered: false
     property bool pressed: false
     property int imgSize_: imgSize
+    readonly property bool hovered : hoverHandler.hovered
 
     signal clicked()
 
@@ -50,17 +50,18 @@ Rectangle {
         NumberAnimation { duration: 50 / Global.animationSpeed; easing.type: Easing.InOutQuad }
     }
 
+    HoverHandler{
+        id: hoverHandler
+    }
     MouseArea {
         visible: !root.btnSelected && !root.freeze && root.enabled
         anchors.fill: parent
         hoverEnabled: true
         onClicked: root.clicked()
         onEntered: {
-            root.hovered = true
             root.imgSize_ = root.imgSize + 6
         }
         onExited: {
-            root.hovered = false
             root.pressed = false
             root.imgSize_ = root.imgSize
         }

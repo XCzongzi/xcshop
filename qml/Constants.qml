@@ -7,6 +7,7 @@ QtObject{
     readonly property int margins: 32
     readonly property int window_radius: 8
     readonly property int titleBarHeight: 36
+    readonly property int typeBarWidth: 48
 
     // url
     readonly property string url_templates: "https://xczongzi.github.io/AppOnlineData-xcshop/templates.json"

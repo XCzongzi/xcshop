@@ -1,10 +1,11 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
 
 Rectangle {
     id: typeBar
     height: parent.height
-    width: 65
+    width: Constants.typeBarWidth
     color: Colors.foreground
     opacity: 0
     enabled: isEnabled
@@ -53,12 +54,12 @@ Rectangle {
     Rectangle{
         id: currentTypeRect
         z: 10
-        width:5
-        height: 64
+        width:3
+        height: Constants.typeBarWidth - 1
         x: 2
-        y: (typeBar.currentType == 0)? 1 : 3 + typeBar.currentType*64
+        y: (typeBar.currentType == 0)? 1 : 3 + typeBar.currentType * Constants.typeBarWidth
         color: Colors.border
-        //radius: 5
+        radius: 2
         Behavior on y{
             NumberAnimation{
                 duration: 120 / Global.animationSpeed
@@ -67,116 +68,92 @@ Rectangle {
         }
     }
 
-
-    ImageButton{
-        id: typeButtonTotal
+    component TypeButtonComponent: ImageButton{
+        id: typeButton
+        property string typeValue
         freeze: typeBar.freeze
-        z: 0
-        y: 1
-        btnSize: 64
-        imgSize: 48
-        btnRadius: 0
-        imageSource: "qrc:/assets/gui/typeBar/Total.png"
+        btnSize: Constants.typeBarWidth
+        imgSize: Constants.typeBarWidth * 3/4
+        btnRadius: 4
+        imageSource: "qrc:/assets/gui/typeBar/" + typeValue + "_" + Colors.gui_theme + ".png"
         btnSelected:(typeBar.currentType == z) ? true : false
         onClicked: {
+            if (typeValue == "更多") return
             typeBar.currentType = z
             setColor()
-            typeBar.typeBtnClicked("Total")
+            typeBar.typeBtnClicked(typeValue)
         }
+        Rectangle{
+            id: typeLore
+            visible: typeButton.hovered
+            height: 20
+            width: loreText.width + 16
+            anchors.verticalCenter: parent.verticalCenter
+            x: parent.width + 4
+            radius: 4
+            color: Colors.background_n
+            border.width: 1
+            border.color: Colors.border
+            XCText{
+                id: loreText
+                x: 8
+                y: 2
+                text: typeButton.typeValue
+                font.pixelSize: 12
+                color: Colors.text
+            }
+        }
+    }
+
+    TypeButtonComponent{
+        id: typeButtonTotal
+        z: 0
+        y: 1
+        typeValue: "Global"
     }
     Rectangle{
         width: parent.width
-        y: 65
+        y: Constants.typeBarWidth
         height: 2
-        color: "#FFFFFF"
+        color: Colors.gui_theme == "dark" ? "black" : "white"
     }
 
     Column{
         id: typeColumn
         width: parent.width
-        height: parent.height - 66
-        y: 67
+        height: parent.height - Constants.typeBarWidth
+        y: Constants.typeBarWidth + 2
 
-        ImageButton{
+        TypeButtonComponent{
             id: typeButtonUI
-            freeze: typeBar.freeze
             z: 1
-            y: 0
-            btnSize: 64
-            imgSize: 48
-            btnRadius: 0
-            imageSource: "qrc:/assets/gui/typeBar/UI_" + Colors.gui_theme + ".png"
-
-            btnSelected:(typeBar.currentType == z) ? true : false
-            onClicked: {
-                typeBar.currentType = z
-                setColor()
-                typeBar.typeBtnClicked("UI")
-            }
+            typeValue: "UI"
         }
-        ImageButton{
+        TypeButtonComponent{
             id: typeButtonItem
-            freeze: typeBar.freeze
             z: 2
-            y: 64
-            btnSize: 64
-            imgSize: 48
-            btnRadius: 0
-            imageSource: "qrc:/assets/gui/typeBar/Item.png"
-
-            btnSelected:(typeBar.currentType == z) ? true : false
-            onClicked: {
-                typeBar.currentType = z
-                setColor()
-                typeBar.typeBtnClicked("Item")
-            }
+            typeValue: "Item"
         }
-        ImageButton{
+        TypeButtonComponent{
             id: typeButtonCost
-            freeze: typeBar.freeze
             z: 3
-            y: 128
-            btnSize: 64
-            imgSize: 48
-            btnRadius: 0
-            imageSource: "qrc:/assets/gui/typeBar/Cost.png"
-
-            btnSelected:(typeBar.currentType == z) ? true : false
-            onClicked: {
-                typeBar.currentType = z
-                setColor()
-                typeBar.typeBtnClicked("Cost")
-            }
+            typeValue: "Cost"
         }
-        ImageButton{
+        TypeButtonComponent{
             id: typeButtonDisplay
-            freeze: typeBar.freeze
             z: 4
-            y: 192
-            btnSize: 64
-            imgSize: 48
-            btnRadius: 0
-            imageSource: "qrc:/assets/gui/typeBar/Display.png"
-
-            btnSelected:(typeBar.currentType == z) ? true : false
-            onClicked: {
-                typeBar.currentType = z
-                setColor()
-                typeBar.typeBtnClicked("Display")
-            }
+            typeValue: "Display"
         }
 
     }
 
-    ImageButton{
+    TypeButtonComponent{
         id: typeButtonExtra
-        freeze: typeBar.freeze
+        freeze: false
         z: 12
         y: parent.height - height
-        btnSize: 64
-        imgSize: 48
-        btnRadius: 32
-        imageSource: "qrc:/assets/gui/typeBar/Display.png"
+        imageSource: "qrc:/assets/gui/typeBar/Extra_" + Colors.gui_theme + ".png"
+        typeValue: "更多"
 
         onClicked:{
             typeBar.extraMenuOpened = !typeBar.extraMenuOpened

@@ -12,7 +12,7 @@ Rectangle{
     readonly property bool started: Global.get_fileName().length > 0
     width: isShowing ? barWidth : 0
     height: parent.height
-    x:65
+    x: Constants.typeBarWidth
     color: Colors.foreground
     clip: true
     enabled: isShowing
@@ -49,7 +49,7 @@ Rectangle{
         onTriggered:{
             xcFileTree.currentFolder = root.pendingFolder
             root.pendingFolder = ""
-            if(Global.current_element != "Total")treeAnim.start()
+            if(Global.current_element != "Global")treeAnim.start()
         }
         
     }

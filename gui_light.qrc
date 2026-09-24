@@ -1,5 +1,13 @@
 <RCC>
     <qresource prefix="/">
+        <file>assets/gui/typeBar/Global_light.png</file>
         <file>assets/gui/typeBar/UI_light.png</file>
+        <file>assets/gui/typeBar/Item_light.png</file>
+        <file>assets/gui/typeBar/Cost_light.png</file>
+        <file>assets/gui/typeBar/Display_light.png</file>
+        <file>assets/gui/typeBar/Extra_light.png</file>
+        <file>assets/gui/element/Bar/newFile_light.png</file>
+        <file>assets/gui/element/Bar/newMenu_light.png</file>
+        <file>assets/gui/element/File_light.png</file>
     </qresource>
 </RCC>
