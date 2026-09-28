@@ -18,6 +18,7 @@ BaseIOPage {
     
         if (typeof root.eledata.item !== "string")
             root.eledata.item = ""
+        root.eledata.itemSyntaxError = itemInput_field.isSyntaxError(root.eledata.item)
         if (!root.eledata.display || typeof root.eledata.display !== "object")
             root.eledata.display = { "mode": "original", "element": "" }
         if (root.eledata.display.mode === undefined) {
@@ -98,7 +99,9 @@ BaseIOPage {
             height: 256
             content: root.eledata.item
             onAccepted:{
-                root.eledata.item = content; root.updateDataOut()
+                root.eledata.item = content
+                root.eledata.itemSyntaxError = syntaxError
+                root.updateDataOut()
             }
             syntaxHighlightMode: 1
             highlightMacros: true

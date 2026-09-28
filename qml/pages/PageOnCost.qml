@@ -17,9 +17,15 @@ BaseIOPage {
         return index >= 0 ? index : 0
     }
 
+    function updateItemSyntaxError(value) {
+        root.eledata.itemSyntaxError = root.eledata.type.kind === "item_count"
+                && itemInput_field.isSyntaxError(value)
+    }
+
     function syncTypeValue(value) {
         var normalizedValue = value === undefined || value === null ? "" : String(value)
         root.eledata.type.value = normalizedValue
+        root.updateItemSyntaxError(normalizedValue)
         itemInput_field.setContent(normalizedValue)
         scoreboardInput.text = normalizedValue
         root.updateDataOut()
@@ -45,6 +51,7 @@ BaseIOPage {
         if (typeof root.eledata.type.value !== "string")
             root.eledata.type.value = ""
         root.eledata.type.filter = root.eledata.type.filter === true
+        root.updateItemSyntaxError(root.eledata.type.value)
         displayInput_textField.text = root.eledata.display
         typeInput_radioGroup.selected = root.costKindIndex(root.eledata.type.kind)
         checkBox.checked = root.eledata.type.filter
@@ -103,6 +110,7 @@ BaseIOPage {
                 root.commitCurrentValueEditor()
                 root.valueEditorSelection = selected
                 root.eledata.type.kind = root.costKinds[selected]
+                root.updateItemSyntaxError(root.eledata.type.value)
                 root.updateDataOut()
             }
         }

@@ -14,7 +14,6 @@ Item{
     function defaultElementContent(){
         if (Global.current_element === "UI") {
             return JSON.stringify({
-                "container": "",
                 "containerType": "",
                 "customName": "",
                 "openCommand": "",
@@ -26,6 +25,7 @@ Item{
         if (Global.current_element === "Item") {
             return JSON.stringify({
                 "item": "",
+                "itemSyntaxError": false,
                 "display": { "mode": "original", "element": "" },
                 "cost": [],
                 "trigger": []
@@ -37,6 +37,7 @@ Item{
         if (Global.current_element === "Cost") {
             return JSON.stringify({
                 "display": "",
+                "itemSyntaxError": false,
                 "type": { "kind": "experience_level", "value": "", "filter": false }
             })
         }

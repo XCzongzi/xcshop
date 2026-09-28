@@ -33,7 +33,7 @@ Item {
                 x: 10
                 y: 9
                 width: parent.width - x * 2
-                xcText: "当前容器：" + (root.uiPage
+                xcText: "当前界面：" + (root.uiPage
                                         ? root.uiPage.currentContainerTypeLabel : "未选择")
                 onCenter: false
                 xcFontSize: 13
@@ -47,7 +47,7 @@ Item {
                 y: containerTypeLabel.y + containerTypeLabel.height + 5
                 height: 30
                 radius: 6
-                text: "修改容器类型"
+                text: "修改界面类型"
                 textSize: 12
                 widthBorderSize: 9
                 enabled: root.uiPage && root.uiPage.dataLoaded

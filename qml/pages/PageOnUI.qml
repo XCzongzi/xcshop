@@ -8,9 +8,8 @@ BaseIOPage {
     color: Colors.transparent
     workspace: true
 
-    // This is the resource/interface number (0-5), not the selected block ID.
+    // This is the resource/interface number (0-5).
     property int containerType: -1
-    property string containerId: ""
     property string customName: ""
     property string openCommand: ""
     property bool changingContainerType: false
@@ -21,13 +20,6 @@ BaseIOPage {
     property int layoutRevision: 0
     property string selectedNestedGroupId: ""
     property bool nestingDrawMode: false
-    // These two properties are the selection-page interfaces: callers may set
-    // them when creating PageOnUI to hide entity containers or large chests.
-    property bool showEntityContainers: true
-    property bool showLargeChests: true
-    readonly property var blockContainerOptions: containerCatalog.blockContainers(showLargeChests)
-    readonly property var entityContainerOptions: containerCatalog.entityContainers(showEntityContainers)
-    readonly property var containerOptions: blockContainerOptions.concat(entityContainerOptions)
     readonly property bool containerConfigured: containerType >= 0
     readonly property bool editorReady: dataLoaded && containerConfigured
                                       && !changingContainerType
@@ -35,23 +27,21 @@ BaseIOPage {
                                             && containerType < Constants.containerCount.length
                                             ? Constants.containerCount[containerType] : 0
     readonly property string currentContainerTypeLabel: {
-        var label = containerCatalog.labelForContainer(containerId)
-        if (label.length)
-            return label
-        var interfaceLabels = ["普通容器（27 格）", "大型箱子（54 格）",
-                               "发射器／投掷器（9 格）", "漏斗（5 格）",
-                               "酿造台（5 格）", "熔炉类（3 格）"]
-        return containerType >= 0 && containerType < interfaceLabels.length
-                ? interfaceLabels[containerType] : "未选择"
+        return containerType >= 0 && containerType < containerTypeOptions.length
+                ? containerTypeOptions[containerType].label : "未选择"
     }
     readonly property var layoutKinds: [
         "generic_9x3", "generic_9x6", "generic_3x3",
         "hopper_5", "brewing_stand_5", "furnace_3"
     ]
-
-    ContainerCatalog {
-        id: containerCatalog
-    }
+    readonly property var containerTypeOptions: [
+        { "type": "generic_9x3", "label": "普通容器界面（27 格）" },
+        { "type": "generic_9x6", "label": "大型容器界面（54 格）" },
+        { "type": "generic_3x3", "label": "3 × 3 容器界面（9 格）" },
+        { "type": "hopper_5", "label": "漏斗界面（5 格）" },
+        { "type": "brewing_stand_5", "label": "酿造台界面（5 格）" },
+        { "type": "furnace_3", "label": "熔炉界面（3 格）" }
+    ]
 
     signal slotItemsChanged(int slotIndex)
     signal layoutDataChanged()
@@ -106,6 +96,8 @@ BaseIOPage {
 
     function storageData() {
         var stored = JSON.parse(JSON.stringify(root.eledata))
+        // Concrete Minecraft containers are no longer part of UI element data.
+        delete stored.container
         var slots = []
         var sourceSlots = Array.isArray(stored.slots) ? stored.slots : []
         for (var slotIndex = 0; slotIndex < sourceSlots.length; ++slotIndex) {
@@ -729,17 +721,16 @@ BaseIOPage {
         root.updateSaleItemElement(slotIndex, itemIndex, filePath)
     }
 
-    function setContainerType(containerId) {
-        var interfaceId = containerCatalog.interfaceForContainer(containerId)
+    function setContainerType(containerTypeName) {
+        var interfaceId = root.layoutKinds.indexOf(containerTypeName)
         if (interfaceId < 0)
             return false
 
-        root.eledata.container = containerId
-        root.eledata.containerType = root.layoutKinds[interfaceId]
+        root.eledata.containerType = containerTypeName
+        delete root.eledata.container
         if (!root.updateDataOut())
             return false
 
-        root.containerId = containerId
         root.containerType = interfaceId
         root.changingContainerType = false
         root.ensureSlotData()
@@ -753,10 +744,10 @@ BaseIOPage {
     function beginContainerTypeChange() {
         if (!root.dataLoaded)
             return
-        if (root.containerId.length)
-            containerTypeSelection.selectedContainerId = root.containerId
-        else if (root.containerOptions.length)
-            containerTypeSelection.selectedContainerId = root.containerOptions[0].id
+        if (root.containerType >= 0)
+            containerTypeSelection.selectedContainerType = root.layoutKinds[root.containerType]
+        else if (root.containerTypeOptions.length)
+            containerTypeSelection.selectedContainerType = root.containerTypeOptions[0].type
         root.changingContainerType = true
     }
 
@@ -784,13 +775,12 @@ BaseIOPage {
 
     function elementReading() {
         root.pageInitialized = false
-        root.containerId = typeof root.eledata.container === "string"
-                ? root.eledata.container : ""
+        root.containerType = -1
+        root.changingContainerType = false
         root.customName = typeof root.eledata.customName === "string"
                 ? root.eledata.customName : ""
         root.openCommand = typeof root.eledata.openCommand === "string"
                 ? root.eledata.openCommand : ""
-        root.eledata.container = root.containerId
         root.eledata.customName = root.customName
         root.eledata.openCommand = root.openCommand
         if (root.eledata.containerType === undefined
@@ -805,17 +795,7 @@ BaseIOPage {
             root.eledata.nestedGroups = []
 
         var storedInterfaceId = root.layoutKinds.indexOf(root.eledata.containerType)
-        if (storedInterfaceId < 0 && root.eledata.containerType !== undefined
-                && root.eledata.containerType !== null
-                && String(root.eledata.containerType).trim().length > 0) {
-            var legacyInterfaceId = Number(root.eledata.containerType)
-            if (Number.isInteger(legacyInterfaceId)
-                    && legacyInterfaceId >= 0
-                    && legacyInterfaceId < root.layoutKinds.length) {
-                storedInterfaceId = legacyInterfaceId
-                root.eledata.containerType = root.layoutKinds[legacyInterfaceId]
-            }
-        }
+        delete root.eledata.container
         if (Number.isInteger(storedInterfaceId)
                 && storedInterfaceId >= 0
                 && storedInterfaceId < Constants.containerCount.length) {
@@ -829,8 +809,9 @@ BaseIOPage {
             return
         }
 
-        if (root.containerOptions.length)
-            containerTypeSelection.selectedContainerId = root.containerOptions[0].id
+        if (root.containerTypeOptions.length)
+            containerTypeSelection.selectedContainerType = root.containerTypeOptions[0].type
+        root.eledata.containerType = ""
         root.updateDataOut()
         root.pageInitialized = true
     }
@@ -916,17 +897,15 @@ BaseIOPage {
         visible: root.pageInitialized && opacity > 0.01
         enabled: visible
         opacity: !root.pageInitialized ? 0 : (root.editorReady ? 0 : 1)
-        blockContainerOptions: root.blockContainerOptions
-        entityContainerOptions: root.entityContainerOptions
-        showEntityContainers: root.showEntityContainers
+        containerTypeOptions: root.containerTypeOptions
         showCancelButton: root.changingContainerType
 
         Behavior on opacity {
             NumberAnimation { duration: 220 / Global.animationSpeed; easing.type: Easing.OutCubic }
         }
 
-        onConfirmed: function(containerId) {
-            root.setContainerType(containerId)
+        onConfirmed: function(containerTypeName) {
+            root.setContainerType(containerTypeName)
         }
         onCanceled: root.cancelContainerTypeChange()
     }

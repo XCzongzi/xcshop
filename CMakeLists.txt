@@ -27,7 +27,6 @@ qt_add_executable(appxcshop
     src/XCFile.cpp
     src/MinecraftAssetImporter.cpp
     src/ElementIO.cpp
-    src/ContainerCatalog.cpp
 )
 
 
@@ -177,12 +176,10 @@ qt_add_qml_module(appxcshop
         src/MinecraftAssetImporter.cpp
         src/main.cpp
         src/ElementIO.cpp
-        src/ContainerCatalog.cpp
 
         header/XCFile.h
         header/MinecraftAssetImporter.h
         header/ElementIO.h
-        header/ContainerCatalog.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

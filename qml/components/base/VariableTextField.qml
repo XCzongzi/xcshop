@@ -19,6 +19,7 @@ Item {
     property string placeholderText
     property string content
     readonly property string inputContent: textField.text
+    readonly property bool syntaxError: isSyntaxError(textField.text)
 
     // 语法覆盖层独立适配浅/深背景：浅色使用更深的墨色，深色使用高亮但不过曝的粉彩。
     readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126
@@ -74,6 +75,14 @@ Item {
         syntaxHighlighterRevision
         syntaxPaletteRevision
         return ItemSyntaxHighlighter.highlight(source, syntaxHighlightMode,
+                                                syntaxPalette(), syntaxHighlighters,
+                                                ItemSyntaxParser)
+    }
+
+    function isSyntaxError(source) {
+        syntaxHighlighterRevision
+        syntaxPaletteRevision
+        return ItemSyntaxHighlighter.isInvalid(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
                                                 ItemSyntaxParser)
     }

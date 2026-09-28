@@ -6,13 +6,11 @@ Item {
     id: root
     anchors.fill: parent
 
-    property var blockContainerOptions: []
-    property var entityContainerOptions: []
-    property bool showEntityContainers: true
+    property var containerTypeOptions: []
     property bool showCancelButton: false
-    property string selectedContainerId: ""
+    property string selectedContainerType: ""
 
-    signal confirmed(string containerId)
+    signal confirmed(string containerTypeName)
     signal canceled()
 
     Rectangle {
@@ -27,12 +25,12 @@ Item {
         id: selectionPanel
         anchors.centerIn: parent
         width: Math.min(720, parent.width - 48)
-        height: Math.min(620, parent.height - 48)
+        height: Math.min(420, parent.height - 48)
 
         XCText {
             id: selectionTitle
             width: parent.width
-            xcText: "选择容器类型"
+            xcText: "选择容器界面类型"
             onCenter: false
             xcFontSize: 24
         }
@@ -56,17 +54,17 @@ Item {
 
             TextButton {
                 id: confirmButton
-                enabled: root.selectedContainerId.length > 0
+                enabled: root.selectedContainerType.length > 0
                 height: 38
                 radius: 8
-                text: "选择该容器"
+                text: "选择该界面"
                 textSize: 14
                 widthBorderSize: 16
                 buttonColor: Colors.changeA(Colors.border, 0.72)
                 firedColor: Colors.changeA(Colors.border, 0.88)
                 pressedColor: Colors.border
                 textColor: "#1b1b1b"
-                onClicked: root.confirmed(root.selectedContainerId)
+                onClicked: root.confirmed(root.selectedContainerType)
             }
         }
 
@@ -98,85 +96,37 @@ Item {
                 height: implicitHeight
                 spacing: 12
 
-                XCText {
-                    width: parent.width
-                    xcText: "方块容器"
-                    onCenter: false
-                    xcFontSize: 16
-                }
-
                 Grid {
-                    id: blockOptionsGrid
+                    id: containerTypeOptionsGrid
                     width: parent.width
                     columns: root.width >= 760 ? 2 : 1
                     columnSpacing: 8
                     rowSpacing: 6
-                    readonly property int rowCount: Math.ceil(root.blockContainerOptions.length / columns)
-                    height: root.blockContainerOptions.length
+                    readonly property int rowCount: Math.ceil(root.containerTypeOptions.length / columns)
+                    height: root.containerTypeOptions.length
                             ? rowCount * 34 + (rowCount - 1) * rowSpacing : 0
 
                     Repeater {
-                        model: root.blockContainerOptions
+                        model: root.containerTypeOptions
 
                         delegate: TextButton {
                             required property var model
                             readonly property var option: model.modelData
-                            width: (blockOptionsGrid.width
-                                    - blockOptionsGrid.columnSpacing * (blockOptionsGrid.columns - 1))
-                                   / blockOptionsGrid.columns
+                            width: (containerTypeOptionsGrid.width
+                                    - containerTypeOptionsGrid.columnSpacing
+                                      * (containerTypeOptionsGrid.columns - 1))
+                                   / containerTypeOptionsGrid.columns
                             height: 34
                             radius: 7
                             text: option.label
                             textSize: 13
                             boldFont: false
                             widthBorderSize: 8
-                            btnSelected: root.selectedContainerId === option.id
+                            btnSelected: root.selectedContainerType === option.type
                             buttonColor: Colors.changeA(Colors.foreground, 0.44)
                             firedColor: Colors.changeA(Colors.fired, 0.58)
                             pressedColor: Colors.changeA(Colors.border, 0.68)
-                            onClicked: root.selectedContainerId = option.id
-                        }
-                    }
-                }
-
-                XCText {
-                    visible: root.showEntityContainers && root.entityContainerOptions.length > 0
-                    width: parent.width
-                    xcText: "实体容器"
-                    onCenter: false
-                    xcFontSize: 16
-                }
-
-                Grid {
-                    id: entityOptionsGrid
-                    visible: root.showEntityContainers && root.entityContainerOptions.length > 0
-                    width: parent.width
-                    columns: root.width >= 760 ? 2 : 1
-                    columnSpacing: 8
-                    rowSpacing: 6
-                    readonly property int rowCount: Math.ceil(root.entityContainerOptions.length / columns)
-                    height: visible ? rowCount * 34 + (rowCount - 1) * rowSpacing : 0
-
-                    Repeater {
-                        model: root.entityContainerOptions
-
-                        delegate: TextButton {
-                            required property var model
-                            readonly property var option: model.modelData
-                            width: (entityOptionsGrid.width
-                                    - entityOptionsGrid.columnSpacing * (entityOptionsGrid.columns - 1))
-                                   / entityOptionsGrid.columns
-                            height: 34
-                            radius: 7
-                            text: option.label
-                            textSize: 13
-                            boldFont: false
-                            widthBorderSize: 8
-                            btnSelected: root.selectedContainerId === option.id
-                            buttonColor: Colors.changeA(Colors.foreground, 0.44)
-                            firedColor: Colors.changeA(Colors.fired, 0.58)
-                            pressedColor: Colors.changeA(Colors.border, 0.68)
-                            onClicked: root.selectedContainerId = option.id
+                            onClicked: root.selectedContainerType = option.type
                         }
                     }
                 }
