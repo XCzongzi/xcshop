@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QUrl>
@@ -28,6 +29,23 @@ bool XCFile::write(const QString& filePath,const QString& content){
         return true;
     }
     return false;
+}
+
+bool XCFile::writeAtomic(const QString& filePath, const QString& content){
+    const QString path = localPath(filePath);
+    if (!QDir().mkpath(QFileInfo(path).absolutePath()))
+        return false;
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+    QTextStream out(&file);
+    out << content;
+    out.flush();
+    if (out.status() != QTextStream::Ok) {
+        file.cancelWriting();
+        return false;
+    }
+    return file.commit();
 }
 
 QString XCFile::read(const QString& filePath){

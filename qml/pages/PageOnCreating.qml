@@ -153,7 +153,7 @@ BasePage {
             "template": currentTemplate
         }
         if (xcFile.folder(location)
-                && xcFile.write(location + "/xcshop.json", JSON.stringify(projectInfo))
+                && xcFile.writeAtomic(location + "/xcshop.json", JSON.stringify(projectInfo, null, 2))
                 && xcFile.folder(location + "/UI")
                 && xcFile.folder(location + "/Item")
                 && xcFile.folder(location + "/Cost")

@@ -39,6 +39,8 @@ Rectangle {
                                                || Global.current_element === "Item"
                                                || Global.current_element === "Cost"
                                                || Global.current_element === "Display"
+    readonly property bool globalSelectionVisible: Global.current_element === "Global"
+                                                   && selectionMode
     readonly property int columnCount: Math.max(1, Math.floor((itemGrid.width + 8) / 190))
     readonly property int rowCount: Math.max(1, Math.floor((itemGrid.height + 4) / 54))
     readonly property int pageSize: Math.max(1, columnCount * rowCount)
@@ -48,7 +50,8 @@ Rectangle {
     signal invalidElement(string filePath)
     signal elementActivated(string filePath)
 
-    visible: workspaceActive && supportedWorkspace && Global.project_location.length > 0
+    visible: workspaceActive && (supportedWorkspace || globalSelectionVisible)
+             && Global.project_location.length > 0
     height: visible ? Math.max(minPanelHeight, Math.min(maxPanelHeight, panelHeight)) : 0
     color: Colors.changeA(Colors.foreground, 0.98)
     border.width: 1

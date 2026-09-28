@@ -342,6 +342,14 @@ XCWindow {
                     pageLoader.sourceComponent = undefined
                     pageLoader.pageSwitch(tempcom)
                 break
+                default:
+                    // 构建器可通过 SignalBus.sendToMain("Build.*", data)
+                    // 将状态、日志和诊断统一回传给 Global 页面。
+                    if (signalType.indexOf("Build.") === 0 && pageLoader.item) {
+                        var handler = pageLoader.item["executeFromMain"]
+                        if (typeof handler === "function")
+                            handler.call(pageLoader.item, signalType, parameters)
+                    }
             }
         }
     }

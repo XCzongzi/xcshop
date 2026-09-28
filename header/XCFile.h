@@ -11,6 +11,7 @@ class XCFile : public QObject {
 public:
     XCFile();
     Q_INVOKABLE bool write(const QString& filePath,const QString& content);
+    Q_INVOKABLE bool writeAtomic(const QString& filePath,const QString& content);
     Q_INVOKABLE QString read(const QString& filePath);
     Q_INVOKABLE bool exists(const QString& filePath);
     Q_INVOKABLE bool isDirectory(const QString& path);

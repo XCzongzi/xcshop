@@ -32,6 +32,7 @@ QtObject{
     // 弹窗组件由 Main.qml 的 popup Loader 统一创建和释放。
     readonly property Component popupNotice: Qt.createComponent("components/popup/PopupNotice.qml")
     readonly property Component popupTextInput: Qt.createComponent("components/popup/PopupTextInput.qml")
+    readonly property Component popupProjectSettings: Qt.createComponent("components/popup/PopupProjectSettings.qml")
     readonly property Component popupMappingHistory: Qt.createComponent("components/popup/PopupMappingHistory.qml")
     readonly property Component popupJsonTextEditor: Qt.createComponent("components/popup/PopupJsonTextEditor.qml")
     
@@ -67,6 +68,28 @@ QtObject{
         [//5号，熔炉
             [56,17],[56,53],[116,35]
         ]
+    ]
+
+    // 可作为商店入口的 Minecraft 容器。containerId 与项目格式草案保持一致，
+    // layoutId 表示它在编辑器中复用的槽位布局。
+    readonly property var shopContainerOptions: [
+        { "value": "barrel", "label": "木桶（27 格）", "layoutId": "generic_9x3" },
+        { "value": "chest", "label": "箱子（27 格）", "layoutId": "generic_9x3" },
+        { "value": "trapped_chest", "label": "陷阱箱（27 格）", "layoutId": "generic_9x3" },
+        { "value": "ender_chest", "label": "末影箱（27 格）", "layoutId": "generic_9x3" },
+        { "value": "shulker_box", "label": "潜影盒（27 格）", "layoutId": "generic_9x3" },
+        { "value": "dispenser", "label": "发射器（9 格）", "layoutId": "generic_3x3" },
+        { "value": "dropper", "label": "投掷器（9 格）", "layoutId": "generic_3x3" },
+        { "value": "hopper", "label": "漏斗（5 格）", "layoutId": "hopper_5" },
+        { "value": "brewing_stand", "label": "酿造台（5 格）", "layoutId": "brewing_stand_5" },
+        { "value": "furnace", "label": "熔炉（3 格）", "layoutId": "furnace_3" },
+        { "value": "blast_furnace", "label": "高炉（3 格）", "layoutId": "furnace_3" },
+        { "value": "smoker", "label": "烟熏炉（3 格）", "layoutId": "furnace_3" },
+        { "value": "large_chest", "label": "大型箱子（54 格）", "layoutId": "generic_9x6" },
+        { "value": "large_trapped_chest", "label": "大型陷阱箱（54 格）", "layoutId": "generic_9x6" },
+        { "value": "chest_minecart", "label": "运输矿车（27 格）", "layoutId": "generic_9x3" },
+        { "value": "chest_boat", "label": "运输船（27 格）", "layoutId": "generic_9x3" },
+        { "value": "hopper_minecart", "label": "漏斗矿车（5 格）", "layoutId": "hopper_5" }
     ]
     
 }

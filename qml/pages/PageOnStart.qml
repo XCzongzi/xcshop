@@ -41,6 +41,7 @@ BasePage {
         }
 
         Global.project_location = projectPath
+        Global.version = projectInfo.version ? String(projectInfo.version) : ""
         Global.current_element = "Global"
         Global.rememberProject(projectPath, projectInfo)
         pageEvent("Start.", { "object": "projectOpened" })
