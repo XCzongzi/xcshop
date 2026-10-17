@@ -132,6 +132,8 @@ BasePage {
         var shops = clone(nextShops)
         if (!data || !shops)
             return false
+        if (data.dataVersion === undefined)
+            data.dataVersion = 0
         data.shops = shops
         var saved = projectFile.writeAtomic(Global.project_location + "/xcshop.json",
                                             JSON.stringify(data, null, 2))
@@ -190,10 +192,29 @@ BasePage {
             if (Object.prototype.hasOwnProperty.call(changes, key))
                 next[index][key] = changes[key]
         }
-        if (saveManifest(projectData, next)) {
-            shopBar.feedbackMessage = "注册信息已更新"
-            shopBar.feedbackIsError = false
+        saveManifest(projectData, next)
+    }
+
+    function editShop(index) {
+        if (index < 0 || index >= registeredShops.length)
+            return
+        var existingNames = []
+        for (var i = 0; i < registeredShops.length; ++i) {
+            if (i !== index)
+                existingNames.push(String(registeredShops[i].registrationName || ""))
         }
+        pageEvent("Popup.show", {
+            "component": Constants.popupShopSettings,
+            "properties": {
+                "shop": clone(registeredShops[index]),
+                "containerOptions": clone(Constants.shopContainerOptions),
+                "existingRegistrationNames": existingNames
+            },
+            "callback": function(changes) {
+                if (changes)
+                    root.updateShop(index, changes)
+            }
+        })
     }
 
     function requestDeleteShop(index) {
@@ -428,7 +449,7 @@ BasePage {
             shops: root.registeredShops
             containerOptions: Constants.shopContainerOptions
             onAddRequested: function(shop) { root.addShop(shop) }
-            onUpdateRequested: function(index, changes) { root.updateShop(index, changes) }
+            onEditRequested: function(index) { root.editShop(index) }
             onDeleteRequested: function(index) { root.requestDeleteShop(index) }
             onLocateRequested: function(filePath) {
                 var parsed = Global.parseElementPath(filePath)

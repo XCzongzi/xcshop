@@ -9,6 +9,7 @@
 /.qt/
 
 # IDE and local tooling
+/.tmp/
 /.vs/
 /.idea/
 /.vscode/*
@@ -26,3 +27,4 @@
 
 # Project ideas / design notes (local only)
 /项目构思/
+/重要文件/

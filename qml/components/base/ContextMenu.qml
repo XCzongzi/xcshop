@@ -27,11 +27,11 @@ Item {
     property real submenuY: 0
     property int activeSubmenuIndex: -1
 
-    readonly property var activeSubmenu: activeSubmenuIndex >= 0
+    readonly property var activeSubmenu: activeSubmenuIndex >= 0 && activeSubmenuIndex < menuItems.length
                                        ? menuItems[activeSubmenuIndex] : null
-    readonly property bool submenuOpened: activeSubmenu
+    readonly property bool submenuOpened: !!(activeSubmenu
                                         && activeSubmenu.children
-                                        && activeSubmenu.children.length > 0
+                                        && activeSubmenu.children.length > 0)
     readonly property var customContentItem: contentLoader.item
     readonly property real customContentWidth: customContentItem
                                                ? Math.max(contentLoader.implicitWidth,
@@ -44,12 +44,36 @@ Item {
     signal openedAt(real x, real y)
     signal closed()
 
+    component MenuViewport: Flickable {
+        id: viewport
+        clip: true
+        contentWidth: width
+        boundsBehavior: Flickable.StopAtBounds
+
+        function clampContentY() {
+            contentY = Math.max(0, Math.min(contentY, Math.max(0, contentHeight - height)))
+        }
+        onHeightChanged: clampContentY()
+        onContentHeightChanged: clampContentY()
+
+        WheelHandler {
+            onWheel: function(event) {
+                var delta = event.pixelDelta.y || event.angleDelta.y
+                viewport.contentY = Math.max(0, Math.min(viewport.contentY - delta,
+                                                        Math.max(0, viewport.contentHeight - viewport.height)))
+                event.accepted = true
+            }
+        }
+    }
+
     function openAt(x, y) {
         closeTimer.stop()
         closing = false
         menuX = x
         menuY = y
         activeSubmenuIndex = -1
+        menuViewport.contentY = 0
+        submenuViewport.contentY = 0
         opened = true
         forceActiveFocus()
         repositionTimer.restart()
@@ -91,6 +115,8 @@ Item {
             return
         }
 
+        if (activeSubmenuIndex !== index)
+            submenuViewport.contentY = 0
         activeSubmenuIndex = index
         var point = row.mapToItem(root, 0, 0)
         submenuY = point.y - verticalPadding
@@ -190,12 +216,14 @@ Item {
         transformOrigin: Item.TopLeft
         width: Math.max(root.minimumWidth, root.customContentWidth + root.horizontalPadding * 2,
                         menuColumn.implicitWidth + root.horizontalPadding * 2)
-        height: Math.max(root.customContentHeight + root.verticalPadding * 2,
-                         menuColumn.implicitHeight + root.verticalPadding * 2)
+        height: Math.min(Math.max(root.customContentHeight, menuColumn.implicitHeight)
+                         + root.verticalPadding * 2, Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
         color: Colors.changeA(Colors.foreground, 0.98)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)
+        onWidthChanged: if (root.opened) repositionTimer.restart()
+        onHeightChanged: if (root.opened) repositionTimer.restart()
 
         Behavior on opacity {
             NumberAnimation { duration: 130 / Global.animationSpeed; easing.type: Easing.OutCubic }
@@ -219,134 +247,143 @@ Item {
             sourceComponent: root.contentComponent
         }
 
-        Column {
-            id: menuColumn
+        MenuViewport {
+            id: menuViewport
+            objectName: "menuViewport"
             x: root.horizontalPadding
             y: root.verticalPadding
-            width: Math.max(0, menuSurface.width - root.horizontalPadding * 2)
+            width: Math.max(0, parent.width - root.horizontalPadding * 2)
+            height: Math.max(0, parent.height - root.verticalPadding * 2)
+            contentHeight: menuColumn.implicitHeight
             visible: root.contentComponent === null
-            spacing: 1
+            onContentYChanged: if (root.opened) root.activeSubmenuIndex = -1
 
-            Repeater {
-                model: root.menuItems
+            Column {
+                id: menuColumn
+                width: parent.width
+                spacing: 1
 
-                delegate: Item {
-                    id: menuRow
-                    required property int index
-                    required property var modelData
-                    readonly property var entry: modelData
-                    readonly property bool hasChildren: entry.children && entry.children.length > 0
-                    property bool hovered: false
-                    property bool pressed: false
+                Repeater {
+                    model: root.menuItems
 
-                    width: menuColumn.width
-                    height: entry.separator ? 7 : root.itemHeight
-                    implicitWidth: entry.separator ? 0 : menuLabel.implicitWidth
-                                   + (itemIcon.visible ? 44 : 22)
+                    delegate: Item {
+                        id: menuRow
+                        required property int index
+                        required property var modelData
+                        readonly property var entry: modelData
+                        readonly property bool hasChildren: !!(entry.children && entry.children.length > 0)
+                        property bool hovered: false
+                        property bool pressed: false
 
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 10
-                        x: 5
-                        height: 1
-                        visible: menuRow.entry.separator === true
-                        color: Colors.changeA(Colors.text, 0.12)
-                    }
+                        width: menuColumn.width
+                        height: entry.separator ? 7 : root.itemHeight
+                        implicitWidth: entry.separator ? 0 : menuLabel.implicitWidth
+                                       + (itemIcon.visible ? 44 : 22)
 
-                    Item {
-                        x: 3
-                        z: 0
-                        width: parent.width - x * 2
-                        height: parent.height
-                        visible: !menuRow.entry.separator
-                        scale: menuRow.pressed ? 0.985 : 1
-                        Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-
-                        ButtonStateOverlay {
-                            hoverColor: Colors.changeA(Colors.fired, 0.44)
-                            pressedColor: Colors.changeA(Colors.pressed, 0.78)
-                            hovered: menuRow.hovered
-                            pressed: menuRow.pressed
-                            stateEnabled: menuRow.entry.enabled !== false
-                            duration: 130
-                            cornerRadius: 6
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - 10
+                            x: 5
+                            height: 1
+                            visible: menuRow.entry.separator === true
+                            color: Colors.changeA(Colors.text, 0.12)
                         }
-                    }
 
-                    Rectangle {
-                        x: 3
-                        anchors.verticalCenter: parent.verticalCenter
-                        z: 1
-                        width: 2
-                        height: Math.max(0, menuRow.pressed ? parent.height - 8
-                                                            : parent.height - 14)
-                        radius: width / 2
-                        visible: !menuRow.entry.separator
-                        color: Colors.border
-                        opacity: menuRow.pressed ? 1 : (menuRow.hovered ? 0.78 : 0)
+                        Item {
+                            x: 3
+                            z: 0
+                            width: parent.width - x * 2
+                            height: parent.height
+                            visible: !menuRow.entry.separator
+                            scale: menuRow.pressed ? 0.985 : 1
+                            Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
 
-                        Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                        Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                    }
-
-                    Image {
-                        id: itemIcon
-                        x: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        height: 16
-                        visible: !menuRow.entry.separator && menuRow.entry.icon !== undefined
-                        source: visible ? menuRow.entry.icon : ""
-                        opacity: menuRow.entry.enabled === false ? 0.42 : 0.85
-                        mipmap: true
-                    }
-
-                    XCText {
-                        id: menuLabel
-                        x: itemIcon.visible ? itemIcon.x + itemIcon.width + 8 : 11
-                        width: parent.width - x - (menuRow.hasChildren ? 28 : 11)
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !menuRow.entry.separator
-                        xcText: menuRow.entry.text || ""
-                        xcFontSize: 13
-                        onCenter: false
-                        boldFont: false
-                        textColor: menuRow.entry.enabled === false
-                                   ? Colors.changeA(Colors.banned, 0.62) : Colors.text
-                    }
-
-                    XCText {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 11
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !menuRow.entry.separator && menuRow.hasChildren
-                        xcText: ">"
-                        xcFontSize: 14
-                        boldFont: false
-                        textColor: Colors.changeA(Colors.text, 0.74)
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: !menuRow.entry.separator && menuRow.entry.enabled !== false
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: {
-                            menuRow.hovered = true
-                            if (menuRow.hasChildren)
-                                root.openSubmenu(menuRow.index, menuRow)
-                            else
-                                root.activeSubmenuIndex = -1
+                            ButtonStateOverlay {
+                                hoverColor: Colors.changeA(Colors.fired, 0.44)
+                                pressedColor: Colors.changeA(Colors.pressed, 0.78)
+                                hovered: menuRow.hovered
+                                pressed: menuRow.pressed
+                                stateEnabled: menuRow.entry.enabled !== false
+                                duration: 130
+                                cornerRadius: 6
+                            }
                         }
-                        onExited: {
-                            menuRow.hovered = false
-                            menuRow.pressed = false
+
+                        Rectangle {
+                            x: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            z: 1
+                            width: 2
+                            height: Math.max(0, menuRow.pressed ? parent.height - 8
+                                                                : parent.height - 14)
+                            radius: width / 2
+                            visible: !menuRow.entry.separator
+                            color: Colors.border
+                            opacity: menuRow.pressed ? 1 : (menuRow.hovered ? 0.78 : 0)
+
+                            Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
                         }
-                        onPressed: menuRow.pressed = true
-                        onReleased: menuRow.pressed = false
-                        onClicked: {
-                            if (!menuRow.hasChildren)
-                                root.invoke(menuRow.entry, menuRow.index, -1)
+
+                        Image {
+                            id: itemIcon
+                            x: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16
+                            height: 16
+                            visible: !menuRow.entry.separator && menuRow.entry.icon !== undefined
+                            source: visible ? menuRow.entry.icon : ""
+                            opacity: menuRow.entry.enabled === false ? 0.42 : 0.85
+                            mipmap: true
+                        }
+
+                        XCText {
+                            id: menuLabel
+                            x: itemIcon.visible ? itemIcon.x + itemIcon.width + 8 : 11
+                            width: parent.width - x - (menuRow.hasChildren ? 28 : 11)
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !menuRow.entry.separator
+                            xcText: menuRow.entry.text || ""
+                            xcFontSize: 13
+                            onCenter: false
+                            boldFont: false
+                            textColor: menuRow.entry.enabled === false
+                                       ? Colors.changeA(Colors.banned, 0.62) : Colors.text
+                        }
+
+                        XCText {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 11
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !menuRow.entry.separator && menuRow.hasChildren
+                            xcText: ">"
+                            xcFontSize: 14
+                            boldFont: false
+                            textColor: Colors.changeA(Colors.text, 0.74)
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: !menuRow.entry.separator && menuRow.entry.enabled !== false
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: {
+                                menuRow.hovered = true
+                                if (menuRow.hasChildren)
+                                    root.openSubmenu(menuRow.index, menuRow)
+                                else
+                                    root.activeSubmenuIndex = -1
+                            }
+                            onExited: {
+                                menuRow.hovered = false
+                                menuRow.pressed = false
+                            }
+                            onPressed: menuRow.pressed = true
+                            onReleased: menuRow.pressed = false
+                            onClicked: {
+                                if (!menuRow.hasChildren)
+                                    root.invoke(menuRow.entry, menuRow.index, -1)
+                            }
                         }
                     }
                 }
@@ -363,11 +400,14 @@ Item {
         scale: visible ? 1 : 0.97
         transformOrigin: Item.TopLeft
         width: Math.max(root.minimumWidth, submenuColumn.implicitWidth + root.horizontalPadding * 2)
-        height: submenuColumn.implicitHeight + root.verticalPadding * 2
+        height: Math.min(submenuColumn.implicitHeight + root.verticalPadding * 2,
+                         Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
         color: Colors.changeA(Colors.foreground, 0.98)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)
+        onWidthChanged: if (root.opened) repositionTimer.restart()
+        onHeightChanged: if (root.opened) repositionTimer.restart()
 
         Behavior on opacity {
             NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic }
@@ -383,101 +423,109 @@ Item {
             shadowBlur: 0.7
         }
 
-        Column {
-            id: submenuColumn
+        MenuViewport {
+            id: submenuViewport
+            objectName: "submenuViewport"
             x: root.horizontalPadding
             y: root.verticalPadding
-            width: Math.max(0, submenuSurface.width - root.horizontalPadding * 2)
-            spacing: 1
+            width: Math.max(0, parent.width - root.horizontalPadding * 2)
+            height: Math.max(0, parent.height - root.verticalPadding * 2)
+            contentHeight: submenuColumn.implicitHeight
 
-            Repeater {
-                model: root.submenuOpened ? root.activeSubmenu.children : []
+            Column {
+                id: submenuColumn
+                width: parent.width
+                spacing: 1
 
-                delegate: Item {
-                    id: submenuRow
-                    required property int index
-                    required property var modelData
-                    readonly property var entry: modelData
-                    property bool hovered: false
-                    property bool pressed: false
+                Repeater {
+                    model: root.submenuOpened ? root.activeSubmenu.children : []
 
-                    width: submenuColumn.width
-                    height: entry.separator ? 7 : root.itemHeight
-                    implicitWidth: entry.separator ? 0 : submenuLabel.implicitWidth + 22
+                    delegate: Item {
+                        id: submenuRow
+                        required property int index
+                        required property var modelData
+                        readonly property var entry: modelData
+                        property bool hovered: false
+                        property bool pressed: false
 
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 10
-                        x: 5
-                        height: 1
-                        visible: submenuRow.entry.separator === true
-                        color: Colors.changeA(Colors.text, 0.12)
-                    }
+                        width: submenuColumn.width
+                        height: entry.separator ? 7 : root.itemHeight
+                        implicitWidth: entry.separator ? 0 : submenuLabel.implicitWidth + 22
 
-                    Item {
-                        x: 3
-                        z: 0
-                        width: parent.width - x * 2
-                        height: parent.height
-                        visible: !submenuRow.entry.separator
-                        scale: submenuRow.pressed ? 0.985 : 1
-                        Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-
-                        ButtonStateOverlay {
-                            hoverColor: Colors.changeA(Colors.fired, 0.44)
-                            pressedColor: Colors.changeA(Colors.pressed, 0.78)
-                            hovered: submenuRow.hovered
-                            pressed: submenuRow.pressed
-                            stateEnabled: submenuRow.entry.enabled !== false
-                            duration: 130
-                            cornerRadius: 6
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - 10
+                            x: 5
+                            height: 1
+                            visible: submenuRow.entry.separator === true
+                            color: Colors.changeA(Colors.text, 0.12)
                         }
-                    }
 
-                    Rectangle {
-                        x: 3
-                        anchors.verticalCenter: parent.verticalCenter
-                        z: 1
-                        width: 2
-                        height: Math.max(0, submenuRow.pressed ? parent.height - 8
-                                                               : parent.height - 14)
-                        radius: width / 2
-                        visible: !submenuRow.entry.separator
-                        color: Colors.border
-                        opacity: submenuRow.pressed ? 1 : (submenuRow.hovered ? 0.78 : 0)
+                        Item {
+                            x: 3
+                            z: 0
+                            width: parent.width - x * 2
+                            height: parent.height
+                            visible: !submenuRow.entry.separator
+                            scale: submenuRow.pressed ? 0.985 : 1
+                            Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
 
-                        Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                        Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                    }
-
-                    XCText {
-                        id: submenuLabel
-                        x: 11
-                        width: parent.width - x - 11
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !submenuRow.entry.separator
-                        xcText: submenuRow.entry.text || ""
-                        xcFontSize: 13
-                        onCenter: false
-                        boldFont: false
-                        textColor: submenuRow.entry.enabled === false
-                                   ? Colors.changeA(Colors.banned, 0.62) : Colors.text
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: !submenuRow.entry.separator && submenuRow.entry.enabled !== false
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: submenuRow.hovered = true
-                        onExited: {
-                            submenuRow.hovered = false
-                            submenuRow.pressed = false
+                            ButtonStateOverlay {
+                                hoverColor: Colors.changeA(Colors.fired, 0.44)
+                                pressedColor: Colors.changeA(Colors.pressed, 0.78)
+                                hovered: submenuRow.hovered
+                                pressed: submenuRow.pressed
+                                stateEnabled: submenuRow.entry.enabled !== false
+                                duration: 130
+                                cornerRadius: 6
+                            }
                         }
-                        onPressed: submenuRow.pressed = true
-                        onReleased: submenuRow.pressed = false
-                        onClicked: root.invoke(submenuRow.entry, submenuRow.index,
-                                               root.activeSubmenuIndex)
+
+                        Rectangle {
+                            x: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            z: 1
+                            width: 2
+                            height: Math.max(0, submenuRow.pressed ? parent.height - 8
+                                                                   : parent.height - 14)
+                            radius: width / 2
+                            visible: !submenuRow.entry.separator
+                            color: Colors.border
+                            opacity: submenuRow.pressed ? 1 : (submenuRow.hovered ? 0.78 : 0)
+
+                            Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                        }
+
+                        XCText {
+                            id: submenuLabel
+                            x: 11
+                            width: parent.width - x - 11
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !submenuRow.entry.separator
+                            xcText: submenuRow.entry.text || ""
+                            xcFontSize: 13
+                            onCenter: false
+                            boldFont: false
+                            textColor: submenuRow.entry.enabled === false
+                                       ? Colors.changeA(Colors.banned, 0.62) : Colors.text
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: !submenuRow.entry.separator && submenuRow.entry.enabled !== false
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: submenuRow.hovered = true
+                            onExited: {
+                                submenuRow.hovered = false
+                                submenuRow.pressed = false
+                            }
+                            onPressed: submenuRow.pressed = true
+                            onReleased: submenuRow.pressed = false
+                            onClicked: root.invoke(submenuRow.entry, submenuRow.index,
+                                                   root.activeSubmenuIndex)
+                        }
                     }
                 }
             }

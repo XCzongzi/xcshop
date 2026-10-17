@@ -5,135 +5,106 @@ import xcshop
 
 Item {
     id: root
-
     property var options: []
     property string currentValue: ""
     property string placeholderText: "请选择"
     property bool compact: false
-
-    signal valueActivated(string value)
-
-    width: 220
-    height: 34
-
-    function indexForValue(value) {
+    property bool menuOpened: false
+    readonly property var menuOptions: {
+        var entries = []
+        var shulkers = null
         for (var i = 0; i < options.length; ++i) {
-            if (String(options[i].value) === String(value))
-                return i
+            var option = options[i]
+            if (option.group === "shulker") {
+                if (!shulkers) {
+                    shulkers = { "text": "潜影盒（27 格）", "children": [] }
+                    entries.push(shulkers)
+                }
+                shulkers.children.push(menuEntry(option))
+            } else {
+                entries.push(menuEntry(option))
+            }
         }
-        return -1
+        return entries
+    }
+    readonly property string currentLabel: {
+        for (var i = 0; i < options.length; ++i)
+            if (String(options[i].value) === currentValue)
+                return String(options[i].label)
+        return placeholderText
+    }
+    signal valueActivated(string value)
+    width: 220
+    height: 36
+
+    function menuEntry(option) {
+        return {
+            "text": String(option.label),
+            "value": String(option.value),
+            "action": function() {
+                root.currentValue = String(option.value)
+                root.valueActivated(root.currentValue)
+            }
+        }
     }
 
-    function syncCurrentIndex() {
-        choice.currentIndex = indexForValue(currentValue)
+    function openMenu() {
+        if (!enabled || !options.length)
+            return
+        if (menuOpened) {
+            SignalBus.contextMenuCloseRequested()
+            return
+        }
+        menuOpened = true
+        SignalBus.contextMenuRequested(root, 0, height + 6, menuOptions, null)
     }
 
-    onCurrentValueChanged: syncCurrentIndex()
-    onOptionsChanged: syncCurrentIndex()
-    Component.onCompleted: syncCurrentIndex()
+    Component.onDestruction: if (menuOpened) SignalBus.contextMenuCloseRequested()
+    onVisibleChanged: if (!visible && menuOpened) SignalBus.contextMenuCloseRequested()
+    onEnabledChanged: if (!enabled && menuOpened) SignalBus.contextMenuCloseRequested()
 
-    Controls.ComboBox {
+    Connections {
+        target: SignalBus
+        function onContextMenuClosed() { root.menuOpened = false }
+        function onContextMenuRequested(target, x, y, items, contentComponent) {
+            if (target !== root)
+                root.menuOpened = false
+        }
+    }
+
+    Controls.Button {
         id: choice
         anchors.fill: parent
-        model: root.options
-        textRole: "label"
-        valueRole: "value"
-        leftPadding: 10
+        leftPadding: 11
         rightPadding: 30
-
+        onClicked: root.openMenu()
         contentItem: XCText {
-            width: choice.availableWidth
-            xcText: choice.currentIndex >= 0 && choice.currentIndex < root.options.length
-                    ? root.options[choice.currentIndex].label : root.placeholderText
+            xcText: root.currentLabel
             onCenter: false
-            onVCenter: true
-            xcFontSize: root.compact ? 11 : 13
-            boldFont: false
-            textColor: choice.enabled ? Colors.text : Colors.banned
-            elide: Text.ElideRight
-        }
-
-        indicator: XCText {
-            anchors.right: parent.right
-            anchors.rightMargin: 10
-            anchors.verticalCenter: parent.verticalCenter
-            xcText: choice.popup.visible ? "⌃" : "⌄"
+            verticalAlignment: Text.AlignVCenter
             xcFontSize: 13
             boldFont: false
-            textColor: Colors.banned
+            textColor: choice.enabled ? Colors.text : Colors.banned
         }
-
         background: Rectangle {
-            radius: 7
-            color: choice.down || choice.popup.visible
-                   ? Colors.changeA(Colors.background, 0.76)
-                   : Colors.changeA(Colors.background, 0.38)
+            radius: 8
+            color: choice.down ? Colors.changeA(Colors.pressed, 0.96)
+                              : (choice.hovered ? Colors.changeA(Colors.foreground, 0.94)
+                                                : Colors.changeA(Colors.background, 0.56))
             border.width: 1
-            border.color: choice.popup.visible || choice.hovered
-                          ? Colors.changeA(Colors.border, 0.66)
-                          : Colors.changeA(Colors.text, 0.10)
-
+            border.color: root.menuOpened || choice.hovered ? Colors.changeA(Colors.border, 0.60)
+                                                            : Colors.changeA(Colors.text, 0.10)
             Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
             Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
         }
-
-        delegate: Controls.ItemDelegate {
-            id: optionDelegate
-            required property int index
-            required property var model
-            width: choice.popup.width - 8
-            height: 32
-            padding: 0
-            highlighted: choice.highlightedIndex === index
-
-            contentItem: XCText {
-                x: 8
-                width: parent.width - 16
-                xcText: optionDelegate.model.label
-                onCenter: false
-                onVCenter: true
-                xcFontSize: 12
-                boldFont: false
-                textColor: choice.currentIndex === optionDelegate.index ? Colors.border : Colors.text
-                elide: Text.ElideRight
-            }
-
-            background: Rectangle {
-                radius: 5
-                color: optionDelegate.highlighted
-                       ? Colors.changeA(Colors.fired, 0.42)
-                       : Colors.transparent
-            }
-        }
-
-        popup: Controls.Popup {
-            y: choice.height + 5
-            width: choice.width
-            implicitHeight: Math.min(contentItem.implicitHeight + 8, 260)
-            padding: 4
-
-            contentItem: ListView {
-                clip: true
-                implicitHeight: contentHeight
-                model: choice.popup.visible ? choice.delegateModel : null
-                currentIndex: choice.highlightedIndex
-                Controls.ScrollIndicator.vertical: Controls.ScrollIndicator {}
-            }
-
-            background: Rectangle {
-                radius: 9
-                color: Qt.rgba(Colors.background_n.r, Colors.background_n.g,
-                               Colors.background_n.b, 0.98)
-                border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.13)
-            }
-        }
-
-        onActivated: function(index) {
-            if (index < 0 || index >= root.options.length)
-                return
-            root.currentValue = String(root.options[index].value)
-            root.valueActivated(root.currentValue)
+        XCText {
+            anchors.right: parent.right
+            anchors.rightMargin: 11
+            anchors.verticalCenter: parent.verticalCenter
+            xcText: root.menuOpened ? "⌃" : "⌄"
+            xcFontSize: 14
+            boldFont: false
+            textColor: Colors.banned
         }
     }
 }

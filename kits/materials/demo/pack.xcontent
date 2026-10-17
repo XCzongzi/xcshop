@@ -1,0 +1,7 @@
+pack.mcmeta
+{
+  "pack": {
+    "pack_format": 26,
+    "description": "xcshop demo：商店函数生成示例"
+  }
+}

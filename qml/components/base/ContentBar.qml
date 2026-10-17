@@ -51,18 +51,22 @@ FocusScope{
             id: itemInput_propertyText
             y: 18
             x: 16
+            width: parent.width - 32
             xcText: root.title
             xcFontSize: 18
             onCenter: false
+            elide: Text.ElideRight
         }
         XCText{
             x: 16
             y: 46
+            width: parent.width - 32
             xcText: root.subtitle
             xcFontSize: 12
             onCenter: false
             boldFont: false
             textColor: Colors.banned
+            elide: Text.ElideMiddle
         }
         
 

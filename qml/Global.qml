@@ -27,7 +27,25 @@ QtObject{
     //项目信息
     property string project_location: ""
     property string version: ""
-    property int syntaxVersion: 1
+    readonly property int syntaxVersion: itemSyntaxVersion(version)
+
+    function itemSyntaxVersion(gameVersion){
+        var match = String(gameVersion).trim().match(/^(\d+)\.(\d+)(?:\.(\d+))?(?:$|-)/)
+        // 未选择或无法识别版本时，保留默认的堆叠组件模式。
+        if (!match)
+            return 2
+
+        // 按数字分段比较，兼容 26.1 起的年份版本号及省略补丁号的版本。
+        var parts = [Number(match[1]), Number(match[2]), Number(match[3] || 0)]
+        var componentsVersion = [1, 20, 5]
+        for (var i = 0; i < componentsVersion.length; ++i) {
+            if (parts[i] < componentsVersion[i])
+                return 1 // NBT
+            if (parts[i] > componentsVersion[i])
+                return 2 // 堆叠组件
+        }
+        return 2
+    }
 
 
 

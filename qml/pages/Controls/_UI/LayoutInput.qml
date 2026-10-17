@@ -41,6 +41,7 @@ Item {
         if (!input)
             return
         enableInput.checked = input.enabled === true
+        layoutInputId.text = input.id || ""
         resultScoreboard.text = input.result.scoreboard || ""
         resultTarget.text = input.result.target || ""
     }
@@ -55,6 +56,14 @@ Item {
             return
         root.uiPage.setNestedGroupLayoutInputResult(
                     root.groupId, resultScoreboard.text.trim(), resultTarget.text.trim())
+    }
+
+    function commitId() {
+        if (!root.uiPage || !root.groupId.length)
+            return
+        var normalizedId = layoutInputId.text.trim()
+        layoutInputId.text = normalizedId
+        root.uiPage.setNestedGroupLayoutInputId(root.groupId, normalizedId)
     }
 
     Flickable {
@@ -80,6 +89,25 @@ Item {
                     if (root.uiPage && root.groupId.length)
                         root.uiPage.setNestedGroupLayoutInputEnabled(root.groupId, checked)
                 }
+            }
+
+            XCText {
+                visible: root.inputEnabled
+                width: parent.width
+                xcText: "布局输入器 ID"
+                xcFontSize: 13
+                boldFont: false
+                onCenter: false
+                textColor: Colors.changeA(Colors.text, 0.82)
+            }
+
+            XCTextField {
+                id: layoutInputId
+                visible: root.inputEnabled
+                width: parent.width
+                height: 34
+                placeholderText: "可在游戏中以此id调用该输入器"
+                onEditingFinished: root.commitId()
             }
 
             Rectangle {

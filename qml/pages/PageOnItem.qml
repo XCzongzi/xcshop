@@ -103,7 +103,7 @@ BaseIOPage {
                 root.eledata.itemSyntaxError = syntaxError
                 root.updateDataOut()
             }
-            syntaxHighlightMode: 1
+            syntaxHighlightMode: Global.syntaxVersion
             highlightMacros: true
         }
         min_width: 400

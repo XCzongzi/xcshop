@@ -89,6 +89,7 @@ qt_add_qml_module(appxcshop
         qml/components/popup/PopupNotice.qml
         qml/components/popup/PopupTextInput.qml
         qml/components/popup/PopupProjectSettings.qml
+        qml/components/popup/PopupShopSettings.qml
         qml/components/popup/PopupMappingHistory.qml
         qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml

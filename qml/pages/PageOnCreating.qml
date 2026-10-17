@@ -150,6 +150,7 @@ BasePage {
             "namespace": namespaceValue.trim(),
             "generatePath": generatePathValue.trim(),
             "version": currentVersion,
+            "dataVersion": 0,
             "template": currentTemplate
         }
         if (xcFile.folder(location)

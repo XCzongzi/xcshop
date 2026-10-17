@@ -198,6 +198,7 @@ BaseIOPage {
 
     function defaultLayoutInput() {
         return {
+            "id": "",
             "enabled": false,
             "result": { "scoreboard": "", "target": "" },
             "connections": []
@@ -226,6 +227,7 @@ BaseIOPage {
             })
         }
         return {
+            "id": typeof source.id === "string" ? source.id.trim() : "",
             "enabled": source.enabled === true,
             "result": {
                 "scoreboard": typeof result.scoreboard === "string"
@@ -481,6 +483,18 @@ BaseIOPage {
         if (index < 0)
             return
         root.nestedGroups()[index].layoutInput.enabled = enabled === true
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupLayoutInputId(groupId, inputId) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        var nextId = inputId === undefined || inputId === null
+                ? "" : String(inputId).trim()
+        if (root.nestedGroups()[index].layoutInput.id === nextId)
+            return
+        root.nestedGroups()[index].layoutInput.id = nextId
         root.saveLayoutChange(false)
     }
 

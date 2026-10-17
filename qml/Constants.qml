@@ -33,6 +33,7 @@ QtObject{
     readonly property Component popupNotice: Qt.createComponent("components/popup/PopupNotice.qml")
     readonly property Component popupTextInput: Qt.createComponent("components/popup/PopupTextInput.qml")
     readonly property Component popupProjectSettings: Qt.createComponent("components/popup/PopupProjectSettings.qml")
+    readonly property Component popupShopSettings: Qt.createComponent("components/popup/PopupShopSettings.qml")
     readonly property Component popupMappingHistory: Qt.createComponent("components/popup/PopupMappingHistory.qml")
     readonly property Component popupJsonTextEditor: Qt.createComponent("components/popup/PopupJsonTextEditor.qml")
     
@@ -72,12 +73,33 @@ QtObject{
 
     // 可作为商店入口的 Minecraft 容器。containerId 与项目格式草案保持一致，
     // layoutId 表示它在编辑器中复用的槽位布局。
+    readonly property var shulkerBoxOptions: [
+        { "value": "shulker_box", "label": "原色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "white_shulker_box", "label": "白色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "orange_shulker_box", "label": "橙色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "magenta_shulker_box", "label": "品红色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "light_blue_shulker_box", "label": "淡蓝色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "yellow_shulker_box", "label": "黄色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "lime_shulker_box", "label": "黄绿色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "pink_shulker_box", "label": "粉红色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "gray_shulker_box", "label": "灰色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "light_gray_shulker_box", "label": "淡灰色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "cyan_shulker_box", "label": "青色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "purple_shulker_box", "label": "紫色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "blue_shulker_box", "label": "蓝色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "brown_shulker_box", "label": "棕色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "green_shulker_box", "label": "绿色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "red_shulker_box", "label": "红色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" },
+        { "value": "black_shulker_box", "label": "黑色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" }
+    ]
+
+    // Keep validation and persistence flat; the picker groups shulkers into a submenu.
     readonly property var shopContainerOptions: [
         { "value": "barrel", "label": "木桶（27 格）", "layoutId": "generic_9x3" },
         { "value": "chest", "label": "箱子（27 格）", "layoutId": "generic_9x3" },
         { "value": "trapped_chest", "label": "陷阱箱（27 格）", "layoutId": "generic_9x3" },
         { "value": "ender_chest", "label": "末影箱（27 格）", "layoutId": "generic_9x3" },
-        { "value": "shulker_box", "label": "潜影盒（27 格）", "layoutId": "generic_9x3" },
+    ].concat(shulkerBoxOptions, [
         { "value": "dispenser", "label": "发射器（9 格）", "layoutId": "generic_3x3" },
         { "value": "dropper", "label": "投掷器（9 格）", "layoutId": "generic_3x3" },
         { "value": "hopper", "label": "漏斗（5 格）", "layoutId": "hopper_5" },
@@ -90,6 +112,6 @@ QtObject{
         { "value": "chest_minecart", "label": "运输矿车（27 格）", "layoutId": "generic_9x3" },
         { "value": "chest_boat", "label": "运输船（27 格）", "layoutId": "generic_9x3" },
         { "value": "hopper_minecart", "label": "漏斗矿车（5 格）", "layoutId": "hopper_5" }
-    ]
+    ])
     
 }

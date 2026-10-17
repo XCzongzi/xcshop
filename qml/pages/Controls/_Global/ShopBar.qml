@@ -12,7 +12,7 @@ ContentBar {
     property string newElementPath: ""
 
     signal addRequested(var shop)
-    signal updateRequested(int index, var changes)
+    signal editRequested(int index)
     signal deleteRequested(int index)
     signal locateRequested(string filePath)
 
@@ -21,12 +21,20 @@ ContentBar {
     contentHeight: 400
     expanded: true
 
-    function registrationNameExists(name, ignoredIndex) {
+    function registrationNameExists(name) {
         for (var i = 0; i < shops.length; ++i) {
-            if (i !== ignoredIndex && String(shops[i].registrationName) === name)
+            if (String(shops[i].registrationName) === name)
                 return true
         }
         return false
+    }
+
+    function containerLabel(value) {
+        for (var i = 0; i < containerOptions.length; ++i) {
+            if (String(containerOptions[i].value) === String(value))
+                return String(containerOptions[i].label)
+        }
+        return value ? String(value) : "未设置"
     }
 
     function submitNewShop() {
@@ -41,7 +49,7 @@ ContentBar {
             feedbackIsError = true
             return
         }
-        if (registrationNameExists(registrationName, -1)) {
+        if (registrationNameExists(registrationName)) {
             feedbackMessage = "注册名已存在"
             feedbackIsError = true
             return
@@ -65,29 +73,6 @@ ContentBar {
         newContainer.currentValue = containerOptions.length ? containerOptions[0].value : ""
     }
 
-    function browseUiElement() {
-        uiFileDialog.currentFolder = "file:" + Global.project_location + "/UI"
-        uiFileDialog.openXC(false, "shop-ui")
-    }
-
-    function submitNameEdit(index, field) {
-        var name = field.text.trim()
-        if (!/^[a-z0-9_.-]+$/.test(name)) {
-            field.text = shops[index].registrationName
-            feedbackMessage = "注册名格式不正确"
-            feedbackIsError = true
-            return
-        }
-        if (registrationNameExists(name, index)) {
-            field.text = shops[index].registrationName
-            feedbackMessage = "注册名已存在"
-            feedbackIsError = true
-            return
-        }
-        if (name !== shops[index].registrationName)
-            updateRequested(index, { "registrationName": name })
-    }
-
     Item {
         x: 16
         y: 62
@@ -98,30 +83,16 @@ ContentBar {
             id: registeredTitle
             xcText: "已注册的商店"
             onCenter: false
-            xcFontSize: 14
-        }
-
-        Row {
-            id: tableHeader
-            y: 21
-            width: parent.width
-            height: 18
-            spacing: 10
-
-            readonly property real usableWidth: width - spacing * 3 - 56
-            XCText { width: tableHeader.usableWidth * 0.38; xcText: "UI 元素"; onCenter: false; xcFontSize: 11; boldFont: false; textColor: Colors.banned }
-            XCText { width: tableHeader.usableWidth * 0.27; xcText: "注册名"; onCenter: false; xcFontSize: 11; boldFont: false; textColor: Colors.banned }
-            XCText { width: tableHeader.usableWidth * 0.35; xcText: "容器类型"; onCenter: false; xcFontSize: 11; boldFont: false; textColor: Colors.banned }
-            Item { width: 56; height: 1 }
+            xcFontSize: 13
         }
 
         ListView {
             id: shopList
-            y: tableHeader.y + tableHeader.height
+            y: 25
             width: parent.width
-            height: Math.max(0, newShopArea.y - y - 7)
+            height: Math.max(0, newShopArea.y - y - 9)
             clip: true
-            spacing: 2
+            spacing: 4
             model: root.shops
 
             delegate: Rectangle {
@@ -129,84 +100,128 @@ ContentBar {
                 required property int index
                 required property var model
                 readonly property var shop: model.modelData
-                readonly property real usableWidth: width - rowContent.spacing * 3 - deleteButton.width
 
                 width: shopList.width
-                height: 46
+                height: 54
                 radius: 7
-                color: index % 2
-                       ? Colors.changeA(Colors.background, 0.22)
-                       : Colors.changeA(Colors.foreground, 0.22)
+                color: rowHover.hovered
+                       ? Colors.changeA(Colors.fired, 0.26)
+                       : (index % 2 ? Colors.changeA(Colors.background, 0.22)
+                                    : Colors.changeA(Colors.foreground, 0.22))
+
+                Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
+
+                XCText {
+                    id: shopName
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.top: parent.top
+                    anchors.topMargin: 7
+                    anchors.right: containerText.left
+                    anchors.rightMargin: 8
+                    xcText: shopRow.shop.registrationName || "未命名商店"
+                    onCenter: false
+                    xcFontSize: 12
+                    elide: Text.ElideRight
+                }
+
+                XCText {
+                    id: containerText
+                    anchors.baseline: shopName.baseline
+                    anchors.right: actions.left
+                    anchors.rightMargin: 12
+                    width: Math.min(implicitWidth, Math.max(72, shopRow.width * 0.27))
+                    xcText: root.containerLabel(shopRow.shop.containerType)
+                    onCenter: false
+                    horizontalAlignment: Text.AlignRight
+                    xcFontSize: 10
+                    boldFont: false
+                    textColor: Colors.banned
+                    elide: Text.ElideRight
+                }
+
+                Item {
+                    id: uiLink
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.right: actions.left
+                    anchors.rightMargin: 12
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 6
+                    height: 16
+
+                    Image {
+                        id: uiIcon
+                        width: 15
+                        height: 15
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "qrc:/assets/gui/element/UI.png"
+                        fillMode: Image.PreserveAspectFit
+                        smooth: false
+                        mipmap: false
+                    }
+
+                    XCText {
+                        anchors.left: uiIcon.right
+                        anchors.leftMargin: 6
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        xcText: shopRow.shop.element || "未连接 UI 元素"
+                        onCenter: false
+                        xcFontSize: 10
+                        boldFont: false
+                        underlineFont: uiHover.hovered
+                        textColor: uiHover.hovered ? Colors.border : Colors.banned
+                        elide: Text.ElideMiddle
+                    }
+
+                    HoverHandler {
+                        id: uiHover
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    TapHandler {
+                        onTapped: root.locateRequested(shopRow.shop.element)
+                    }
+                }
 
                 Row {
-                    id: rowContent
-                    anchors.fill: parent
-                    spacing: 10
+                    id: actions
+                    anchors.right: parent.right
+                    anchors.rightMargin: 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 5
 
-                    Item {
-                        width: shopRow.usableWidth * 0.38
-                        height: parent.height
-
-                        XCText {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            xcText: shopRow.shop.element
-                            onCenter: false
-                            xcFontSize: 12
-                            boldFont: false
-                            underlineFont: uiHover.hovered
-                            textColor: uiHover.hovered ? Colors.border : Colors.text
-                            elide: Text.ElideMiddle
-                        }
-                        HoverHandler { id: uiHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler {
-                            onTapped: root.locateRequested(shopRow.shop.element)
-                        }
-                    }
-
-                    XCTextField {
-                        width: shopRow.usableWidth * 0.27
-                        height: 32
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: shopRow.shop.registrationName
-                        font.pixelSize: 12
-                        onEditingFinished: root.submitNameEdit(shopRow.index, this)
-                    }
-
-                    GlobalChoiceBox {
-                        width: shopRow.usableWidth * 0.35
-                        height: 32
-                        anchors.verticalCenter: parent.verticalCenter
-                        compact: true
-                        options: root.containerOptions
-                        currentValue: shopRow.shop.containerType
-                        onValueActivated: function(value) {
-                            root.updateRequested(shopRow.index, { "containerType": value })
-                        }
+                    TextButton {
+                        width: 43
+                        height: 28
+                        radius: 6
+                        text: "编辑"
+                        textSize: 10
+                        buttonColor: Colors.changeA(Colors.pressed, 0.72)
+                        onClicked: root.editRequested(shopRow.index)
                     }
 
                     TextButton {
-                        id: deleteButton
-                        width: 56
-                        height: 30
-                        anchors.verticalCenter: parent.verticalCenter
+                        width: 43
+                        height: 28
                         radius: 6
                         text: "删除"
-                        textSize: 11
+                        textSize: 10
                         buttonColor: Colors.changeA(Colors.error, 0.14)
                         firedColor: Colors.changeA(Colors.error, 0.25)
                         pressedColor: Colors.changeA(Colors.error, 0.36)
                         onClicked: root.deleteRequested(shopRow.index)
                     }
                 }
+
+                HoverHandler { id: rowHover }
             }
 
             XCText {
                 visible: root.shops.length === 0
                 anchors.centerIn: parent
                 xcText: "暂无已注册商店"
-                xcFontSize: 12
+                xcFontSize: 11
                 boldFont: false
                 textColor: Colors.banned
             }
@@ -216,13 +231,26 @@ ContentBar {
             id: newShopArea
             anchors.bottom: parent.bottom
             width: parent.width
-            height: 72
+            height: 112
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Colors.changeA(Colors.text, 0.09)
+            }
+
+            XCText {
+                y: 8
+                xcText: "注册新商店"
+                onCenter: false
+                xcFontSize: 12
+            }
 
             ElementSelectionCompact {
                 id: newUi
-                x: 0
-                width: parent.width - browseUiButton.width - 7
-                height: 32
+                y: 29
+                width: parent.width
+                height: 34
                 selectionId: "UI"
                 onElementSelected: function(filePath) {
                     root.newElementPath = filePath
@@ -231,29 +259,16 @@ ContentBar {
                 onSelectionCleared: root.newElementPath = ""
             }
 
-            TextButton {
-                id: browseUiButton
-                anchors.right: parent.right
-                y: newUi.y + 2
-                width: 54
-                height: 28
-                radius: 7
-                text: "浏览"
-                textSize: 10
-                buttonColor: Colors.changeA(Colors.pressed, 0.72)
-                onClicked: root.browseUiElement()
-            }
-
             Row {
                 id: createFields
-                y: 36
+                y: 68
                 width: parent.width
-                height: 28
+                height: 30
                 spacing: 6
 
                 XCTextField {
                     id: newName
-                    width: Math.max(92, parent.width * 0.30)
+                    width: Math.max(88, parent.width * 0.30)
                     height: parent.height
                     placeholderText: "注册名"
                     font.pixelSize: 11
@@ -263,16 +278,17 @@ ContentBar {
 
                 GlobalChoiceBox {
                     id: newContainer
-                    width: Math.max(118, parent.width - newName.width - addButton.width - parent.spacing * 2)
+                    width: Math.max(112, parent.width - newName.width - addButton.width - parent.spacing * 2)
                     height: parent.height
                     compact: true
                     options: root.containerOptions
                     currentValue: root.containerOptions.length ? root.containerOptions[0].value : ""
+                    onValueActivated: root.feedbackMessage = ""
                 }
 
                 TextButton {
                     id: addButton
-                    width: 58
+                    width: 54
                     height: parent.height
                     radius: 7
                     text: "注册"
@@ -286,7 +302,7 @@ ContentBar {
             }
 
             XCText {
-                y: 63
+                y: 99
                 width: parent.width
                 xcText: root.feedbackMessage
                 visible: root.feedbackMessage.length > 0
@@ -294,13 +310,8 @@ ContentBar {
                 xcFontSize: 9
                 boldFont: false
                 textColor: root.feedbackIsError ? Colors.error : Colors.border
+                elide: Text.ElideRight
             }
         }
-    }
-
-    XCFileDialog {
-        id: uiFileDialog
-        nameFilters: ["XCShop UI 元素 (*.xcseUI)"]
-        onAccepted: newUi.setElement(selectedFile.toString(), true)
     }
 }

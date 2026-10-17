@@ -1,0 +1,15 @@
+f7faf8de-e69c-4240-a5a9-5c0e0be6d7eb
+0
+"1.20.4"
+../blueprints/standard/main.xcshoper
+../materials/demo
+// demo 允许继续生成，只提醒 UI 源元素中的多商品槽位。
+foreach (UI[]) {
+    foreach (slots[]) {
+        if (items.length > 1) {
+            warning("槽位 " + index + " 包含多个在售物品",
+                "请确认所用模板支持多商品槽位；否则拆分商品或换用支持的模板。",
+                @parent[0].path, "$.slots[" + @index + "].items");
+        }
+    }
+}
