@@ -1,0 +1,98 @@
+1dc7404f-209f-4eea-becd-291406d52787
+0
+"26.3"
+../blueprints/alpha-r1/main.xcshoper
+../materials/alpha-r1-26.3
+[
+    "Alpha r1：基于测试包的标记实体箱子商店，面向 Minecraft Java 26.3（数据包格式 121.0）。",
+    "支持拿取、掷出、槽位/数量筛选、多商品槽位、布局匹配、四类 Cost、商品展示及成功/失败提示。",
+    "运行命名空间固定为 xcshop_alpha；同一存档只加载一份 Alpha r1 生成包。支持桶、单箱、陷阱单箱、发射器、投掷器和漏斗。",
+    "一次拿取或掷出事件统一检查、扣费一次，按顺序执行所有匹配的触发规则。command/function 动作由作者保证自身安全。"
+]
+foreach (Shop[]) {
+    if (containerType != "barrel" && containerType != "chest" && containerType != "trapped_chest"
+        && containerType != "dispenser" && containerType != "dropper" && containerType != "hopper") {
+        error("Alpha r1 不支持容器 " + containerType, "请使用桶、单箱、陷阱单箱、发射器、投掷器或漏斗，或选择其它模板。");
+    }
+    foreach (slots[]) {
+        int currentSlot = index;
+        if (items.length > 0) {
+            foreach (@parent[0].layoutInputGroups[]) {
+                if (contains(slots, currentSlot)) {
+                    error("商品槽位与布局输入器重叠: " + currentSlot,
+                        "请将普通商品放到输入器已绘制槽位之外，避免覆盖真实投入物。");
+                }
+            }
+        }
+        foreach (items[]) {
+            if (additionalCostDisplayLines.length > 256) { error("额外展示文本超过 256 行。", "请减少 Display 换行或缩短代价展示文本。"); }
+            if (count < 1 || count > 99) { error("Alpha r1 商品数量必须为 1 到 99。", "请修正物品末尾数量；实际堆叠上限仍受物品组件限制。"); }
+            int paidItems = 0;
+            int paidLevels = 0;
+            string paidObjectives = "|";
+            foreach (cost[]) {
+                if (int(amount) < 0 || int(amount) > 2147483647) {
+                    error("Alpha r1 代价数量超出 0 到 2147483647。", "请填写非负 32 位整数，负数奖励请使用执行指令。");
+                }
+                if (contains(type.value, "\n") || contains(type.value, "\r")) {
+                    error("代价值不能跨行。", "请使用单行物品谓词、计分板名或 execute 条件子命令。");
+                }
+                if (!type.filter && int(amount) > 0) {
+                    if (type.kind == "item_count") {
+                        paidItems++;
+                        if (paidItems > 1) { error("Alpha r1 每个商品至多支持一项实际扣除的物品代价。", "请合并物品代价，或改用计分板代价；避免重叠物品谓词导致部分扣费。"); }
+                    }
+                    if (type.kind == "experience_level") {
+                        paidLevels++;
+                        if (paidLevels > 1) { error("经验等级扣费重复。", "请合并同一商品的经验等级代价。"); }
+                    }
+                    if (type.kind == "scoreboard") {
+                        if (contains(paidObjectives, "|" + type.value + "|")) { error("同一计分板存在多项实际扣费。", "请合并同一计分板的代价数量。"); }
+                        paidObjectives += type.value + "|";
+                    }
+                }
+            }
+            foreach (trigger[]) {
+                if (mode.kind == "take_item" && mode.filter.kind == "slot"
+                    && (int(mode.filter.slot) < 0 || int(mode.filter.slot) > 35)) {
+                    error("Alpha r1 栏位触发只支持玩家背包 0 到 35。", "请使用快捷栏 0 到 8 或主背包 9 到 35。");
+                }
+                if (mode.kind == "take_item" && mode.filter.kind == "quantity"
+                    && mode.filter.mode == "custom" && (int(mode.filter.amount) < 1 || int(mode.filter.amount) > 2147483647)) {
+                    error("自定义触发数量必须为正 32 位整数。");
+                }
+            }
+        }
+    }
+    foreach (layoutInputGroups[]) {
+        if (int(defaultValue) < -2147483648 || int(defaultValue) > 2147483647) { error("布局默认值超出计分板整数范围。"); }
+        foreach (connections[]) {
+            if (int(value) < -2147483648 || int(value) > 2147483647) { error("布局匹配值必须为 32 位整数。"); }
+        }
+    }
+}
+string nestedSourcePaths = "|";
+foreach (UI[]) {
+    foreach (nestedGroups[]) {
+        if (enabled && !layoutInput.enabled && slots.length > 0) { nestedSourcePaths += @parent[0].path + "|"; }
+    }
+}
+foreach (UI[]) {
+    foreach (nestedGroups[]) {
+        if (enabled && !layoutInput.enabled && slots.length > 0 && !empty(filter.scoreboard)) {
+            error("Alpha r1 暂不支持普通嵌套组的整组筛选。", "请把筛选条件移到每个在售物品，或选用支持此功能的模板。",
+                @parent[0].path, "$.nestedGroups[" + @index + "].filter");
+        }
+        if (enabled && !layoutInput.enabled && slots.length > 0 && contains(nestedSourcePaths, "|" + element + "|")) {
+            error("Alpha r1 暂不支持多层普通嵌套组。", "请展开为一层普通嵌套组，避免当前 IR 未完整汇总的商品被忽略。",
+                @parent[0].path, "$.nestedGroups[" + @index + "].element");
+        }
+        if (enabled && layoutInput.enabled) {
+            foreach (layoutInput.connections[]) {
+                if (contains(nestedSourcePaths, "|" + element + "|")) {
+                    error("布局匹配引用的 UI 不能再包含普通嵌套商品。", "请将匹配物品直接绘制到所引用 UI 的槽位中。");
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,7 @@
+// Do not let any synthetic display stack pay an item-count cost.
+costPredicate = trim(type.value);
+if (endsWith(costPredicate, "]")) {
+    costPredicate = substr(costPredicate, 0, len(costPredicate) - 1) + ",!custom_data~{xca:{token:1b}}]";
+} else {
+    costPredicate += "[!custom_data~{xca:{token:1b}}]";
+}

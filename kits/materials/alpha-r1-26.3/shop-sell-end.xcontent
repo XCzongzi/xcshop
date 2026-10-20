@@ -1,0 +1,4 @@
+shop/{{shopName}}/sell.mcfunction
+execute if score #source _xca matches 1 run function xcshop_alpha:shop/{{shopName}}/cleanup with storage xcshop_alpha:runtime ctx
+execute if score #source _xca matches 1 run function xcshop_alpha:shop/{{shopName}}/return
+function xcshop_alpha:shop/{{shopName}}/set

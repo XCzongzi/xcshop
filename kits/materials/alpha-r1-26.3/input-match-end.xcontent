@@ -1,0 +1,2 @@
+input/{{shopName}}/{{inputName}}/{{connectionNumber}}.mcfunction
+return 1

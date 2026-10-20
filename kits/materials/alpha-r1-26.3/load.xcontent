@@ -1,0 +1,7 @@
+load.mcfunction
+# Alpha r1 / Java 26.3. Reload must never reset live shop IDs or user balances.
+scoreboard objectives add _xca dummy
+execute unless score #next _xca matches 1.. run scoreboard players set #next _xca 1
+tag @a remove xca.buyer
+kill @e[type=item_display,tag=xca.cursor]
+tellraw @a {text:"XCShop Alpha r1 已加载",color:"gold"}

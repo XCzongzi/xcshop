@@ -1,0 +1,2 @@
+shop/{{shopName}}/cleanup.mcfunction
+$clear @s *[custom_data~{xca:{token:1b,shop:"{{shopName}}",id:$(id)}}]

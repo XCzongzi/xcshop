@@ -1,0 +1,4 @@
+return_slot.mcfunction
+execute at @s run summon item ~ ~ ~ {Item:{id:"minecraft:stone",count:1},Tags:["xca.return"],PickupDelay:0s}
+$data modify entity @e[type=item,tag=xca.return,limit=1] Item set from block ~ ~ ~ Items[{Slot:$(slot)b}]
+tag @e[type=item,tag=xca.return] remove xca.return

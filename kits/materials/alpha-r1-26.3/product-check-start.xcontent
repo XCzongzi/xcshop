@@ -1,0 +1,2 @@
+{{itemPath}}/check.mcfunction
+# Pure preflight: conditions first, then available resources; never deduct here.

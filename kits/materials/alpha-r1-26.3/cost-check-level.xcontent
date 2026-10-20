@@ -1,0 +1,4 @@
+{{itemPath}}/check.mcfunction
+scoreboard players set #available _xca 0
+execute store result score #available _xca run experience query @s levels
+execute unless score #available _xca matches {{amount}}.. run return fail

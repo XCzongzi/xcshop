@@ -1,0 +1,23 @@
+// All version-specific commands live in the flat material package.
+build "pack.xcontent"
+cd "minecraft" "tags/function"
+build "tags.xclist"
+cd "xcshop_alpha" "advancement"
+build "opened-advancement.xcontent" : Shop[]{ }
+cd "xcshop_alpha" "function"
+build "runtime.xclist"
+int inventorySlot = 0;
+while (inventorySlot < 36) {
+    build "locate-inventory.xcontent"
+    inventorySlot++;
+}
+inventorySlot = -106;
+build "locate-inventory.xcontent"
+build "locate-cursor.xcontent"
+foreach (Shop[]) {
+    string shopName = registrationName;
+    string blockName = containerType;
+    string shopTitle = json(customName);
+    if (startsWith(trim(customName), "{") || startsWith(trim(customName), "[")) { shopTitle = customName; }
+    build "shop.xcshoper"
+}

@@ -1,0 +1,2 @@
+{{itemPath}}/sell.mcfunction
+scoreboard players set #matched _xca 0

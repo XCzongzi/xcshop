@@ -1,0 +1,2 @@
+{{rulePath}}/run.mcfunction
+# The product handler has checked and charged this event once before invoking matching actions.

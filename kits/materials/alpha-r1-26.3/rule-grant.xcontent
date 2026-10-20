@@ -1,0 +1,2 @@
+{{rulePath}}/run.mcfunction
+give @s {{@parent[0].item}}

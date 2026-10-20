@@ -1,0 +1,4 @@
+shop/{{shopName}}/{{slotNumber}}/set.mcfunction
+# Never overwrite genuine items deposited by a player.
+execute if items block ~ ~ ~ container.{{slotNumber}} * unless items block ~ ~ ~ container.{{slotNumber}} *[custom_data~{xca:{token:1b}}] run return fail
+item replace block ~ ~ ~ container.{{slotNumber}} with air

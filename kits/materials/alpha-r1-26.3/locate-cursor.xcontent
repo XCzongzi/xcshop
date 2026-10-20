@@ -1,0 +1,3 @@
+locate.mcfunction
+execute if data entity @e[type=item_display,tag=xca.cursor,limit=1] item.components."minecraft:custom_data".xca{token:1b} run return run execute store result score @s _xca run data get entity @e[type=item_display,tag=xca.cursor,limit=1] item.components."minecraft:custom_data".xca.id
+return fail

@@ -1,0 +1,2 @@
+{{itemPath}}/check.mcfunction
+return 1

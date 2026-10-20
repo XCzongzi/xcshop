@@ -201,6 +201,7 @@ BaseIOPage {
             "id": "",
             "enabled": false,
             "result": { "scoreboard": "", "target": "" },
+            "defaultValue": "0",
             "connections": []
         }
     }
@@ -234,6 +235,9 @@ BaseIOPage {
                               ? result.scoreboard : "",
                 "target": typeof result.target === "string" ? result.target : ""
             },
+            "defaultValue": typeof source.defaultValue === "string" ? source.defaultValue
+                          : (typeof source.defaultValue === "number"
+                             ? String(source.defaultValue) : ""),
             "connections": connections
         }
     }
@@ -506,6 +510,20 @@ BaseIOPage {
             "scoreboard": scoreboardName,
             "target": targetName
         }
+        root.saveLayoutChange(false)
+    }
+
+    function setNestedGroupLayoutInputDefaultValue(groupId, value) {
+        var index = root.nestedGroupIndex(groupId)
+        if (index < 0)
+            return
+        var nextValue = value === undefined || value === null ? "" : String(value)
+        if (!/^-?[0-9]+$/.test(nextValue) || nextValue.trim() !== nextValue)
+            return
+        var input = root.nestedGroups()[index].layoutInput
+        if (input.defaultValue === nextValue)
+            return
+        input.defaultValue = nextValue
         root.saveLayoutChange(false)
     }
 

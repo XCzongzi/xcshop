@@ -19,6 +19,7 @@ Rectangle{
     signal updateData()
 
     readonly property var triggerKinds: ["take_item", "drop_item"]
+    readonly property var dropQuantities: ["single", "all"]
     readonly property var filterKinds: ["none", "quantity", "slot"]
     readonly property var quantityModes: ["all", "less_than_all", "custom"]
     readonly property var executeKinds: ["grant_item", "command", "function"]
@@ -52,6 +53,9 @@ Rectangle{
                     ? { "kind": "drop_item" }
                     : { "kind": "take_item", "filter": filter }
         }
+        if (root.modelData.mode.kind === "drop_item"
+                && root.dropQuantities.indexOf(root.modelData.mode.quantity) < 0)
+            root.modelData.mode.quantity = "single"
 
         var execute = root.modelData.execute || ({})
         if (execute.kind === undefined) {
@@ -70,6 +74,8 @@ Rectangle{
             root.normalizeLegacyData()
             trigger_radioGroup.selected = root.enumIndex(root.triggerKinds,
                                                           root.modelData.mode.kind)
+            drop_radioGroup.selected = root.enumIndex(root.dropQuantities,
+                                                       root.modelData.mode.quantity)
             var filter = root.modelData.mode.filter || { "kind": "none" }
             comboBox_root.selected = root.enumIndex(root.filterKinds, filter.kind)
             comboBox_numfilter.selected = root.enumIndex(root.quantityModes, filter.mode)
@@ -217,7 +223,8 @@ Rectangle{
             z: 2
             y: 48
             color: Colors.transparent
-            height: trigger_radioGroup.selected ? trigger_radioGroup.y + trigger_radioGroup.height + 12 : f2.y + f2.height + 12
+            height: trigger_radioGroup.selected === 1
+                    ? dropOptions.y + dropOptions.height + 12 : f2.y + f2.height + 12
             width: parent.width
 
 
@@ -230,9 +237,34 @@ Rectangle{
                 onClicked:{
                     root.modelData.mode = selected === 0
                             ? { "kind": "take_item", "filter": { "kind": "none" } }
-                            : { "kind": "drop_item" }
+                            : { "kind": "drop_item", "quantity": "single" }
                     comboBox_root.selected = 0
+                    drop_radioGroup.selected = 0
                     root.updateData()
+                }
+            }
+            Column {
+                id: dropOptions
+                visible: trigger_radioGroup.selected === 1
+                x: 16
+                y: trigger_radioGroup.y + trigger_radioGroup.height + 10
+                spacing: 6
+
+                RadioGroup {
+                    id: drop_radioGroup
+                    text: "掷出数量"
+                    options: ["单个商品", "整组商品"]
+                    onClicked: {
+                        root.modelData.mode.quantity = root.dropQuantities[selected]
+                        root.updateData()
+                    }
+                }
+                XCText {
+                    xcText: "整组指当前栏位中的全部商品"
+                    onCenter: false
+                    xcFontSize: 12
+                    boldFont: false
+                    textColor: Colors.banned
                 }
             }
             ComboBox{
@@ -310,7 +342,7 @@ Rectangle{
                         x: slotfilter_tabel.width + 12
                         width: 32
                         horizontalAlignment: TextInput.AlignHCenter
-                        text: root.modelData.mode.filter.slot === undefined
+                        text: !root.modelData.mode.filter || root.modelData.mode.filter.slot === undefined
                               ? "0" : root.modelData.mode.filter.slot
                         onEditingFinished:{
                             root.modelData.mode.filter.slot = +text

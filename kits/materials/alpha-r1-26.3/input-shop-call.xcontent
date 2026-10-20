@@ -1,0 +1,2 @@
+shop/{{shopName}}/sell.mcfunction
+execute {{inputClause}}run function xcshop_alpha:input/{{shopName}}/{{id}}/match

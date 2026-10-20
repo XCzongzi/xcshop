@@ -1,0 +1,4 @@
+{{itemPath}}/sell.mcfunction
+scoreboard players set #rule.{{ruleNumber}} _xca 0
+execute {{eventClause}} run scoreboard players set #rule.{{ruleNumber}} _xca 1
+execute if score #rule.{{ruleNumber}} _xca matches 1 run scoreboard players set #matched _xca 1

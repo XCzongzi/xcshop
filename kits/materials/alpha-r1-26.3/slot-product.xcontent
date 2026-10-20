@@ -1,0 +1,2 @@
+shop/{{shopName}}/{{slotNumber}}/set.mcfunction
+execute {{filterClause}}run return run function xcshop_alpha:{{itemPath}}/set

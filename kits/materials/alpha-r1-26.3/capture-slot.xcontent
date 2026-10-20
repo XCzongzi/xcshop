@@ -1,0 +1,3 @@
+{{itemPath}}/sell.mcfunction
+scoreboard players set #slot.{{ruleNumber}} _xca 0
+$execute if score #source _xca matches 1 if items entity @s container.{{mode.filter.slot}} *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}] run scoreboard players set #slot.{{ruleNumber}} _xca 1

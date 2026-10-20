@@ -1,0 +1,2 @@
+shop/{{shopName}}/sell.mcfunction
+execute {{filterClause}}run function xcshop_alpha:{{itemPath}}/sell with storage xcshop_alpha:runtime ctx

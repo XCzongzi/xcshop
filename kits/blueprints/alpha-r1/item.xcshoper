@@ -1,0 +1,84 @@
+string itemPath = "shop/" + shopName + "/" + slotNumber + "/" + productNumber;
+string stackText = item;
+build "spec.xcshoper"
+string itemSpecification = stackText;
+int stackCount = count;
+build "product-base.xclist"
+if (additionalDisplay) { build "product-lore.xcontent" : additionalCostDisplayLines[]{ } }
+build "product-tag.xcontent"
+build "slot-product.xcontent"
+build "product-capture-start.xcontent"
+foreach (trigger[]) {
+    if (mode.kind == "take_item" && mode.filter.kind == "slot") {
+        int ruleNumber = @index;
+        build "capture-slot.xcontent"
+    }
+}
+build "product-capture-end.xcontent"
+build "product-match-start.xcontent"
+foreach (trigger[]) {
+    int ruleNumber = @index;
+    string rulePath = itemPath + "/trigger/" + ruleNumber;
+    string eventClause = "if score #source _xca matches 1";
+    if (mode.kind == "drop_item") {
+        eventClause = "if score #source _xca matches 2";
+        if (mode.quantity == "single") { eventClause += " if score #taken _xca matches 1"; }
+        else { eventClause += " if score #taken _xca matches 2.."; }
+    } else if (mode.filter.kind == "quantity") {
+        if (mode.filter.mode == "all") { eventClause += " if score #taken _xca matches " + stackCount; }
+        else if (mode.filter.mode == "less_than_all") {
+            if (stackCount <= 1) { eventClause += " if score #taken _xca matches 0"; }
+            else { eventClause += " if score #taken _xca matches 1.." + (stackCount - 1); }
+        } else { eventClause += " if score #taken _xca matches " + mode.filter.amount; }
+    } else if (mode.filter.kind == "slot") {
+        eventClause += " if score #slot." + ruleNumber + " _xca matches 1";
+    }
+    build "rule-route.xcontent"
+    build "rule-start.xcontent"
+    if (execute.kind == "grant_item") { build "rule-grant.xcontent" }
+    else {
+        string actionText = string(execute.value);
+        if (execute.kind == "function" && actionText != "") { actionText = "function " + actionText; }
+        content action actionText (rulePath + "/run.mcfunction")
+        build action
+    }
+    build "rule-end.xcontent"
+}
+build "product-execute-start.xcontent"
+foreach (trigger[]) {
+    int ruleNumber = @index;
+    string rulePath = itemPath + "/trigger/" + ruleNumber;
+    build "rule-execute.xcontent"
+}
+build "product-capture-return.xcontent"
+// Conditions run before resource checks, so condition functions cannot invalidate a later preflight snapshot.
+foreach (cost[]) {
+    int costNumber = @index;
+    if (type.kind == "execute_condition") { build "cost-condition.xclist" }
+}
+foreach (cost[]) {
+    int costNumber = @index;
+    if (type.kind != "execute_condition" && int(amount) > 0) { build "cost-check.xcshoper" }
+    if (type.kind == "scoreboard") { build "cost-objective.xcontent" }
+}
+build "cost-check-end.xcontent"
+foreach (cost[]) {
+    if (!type.filter && type.kind != "execute_condition" && int(amount) > 0) {
+        if (type.kind == "experience_level") { build "cost-pay-level.xcontent" }
+        else if (type.kind == "item_count") {
+            string costPredicate = "";
+            build "cost-predicate.xcshoper"
+            build "cost-pay-item.xcontent"
+        }
+        else { build "cost-pay-score.xcontent" }
+    }
+}
+if (!empty(filter.scoreboard)) { build "filter-objective.xcontent" }
+string feedbackText = hint.success.text;
+string feedbackSound = hint.success.sound;
+string feedbackPath = itemPath + "/success.mcfunction";
+build "feedback.xcshoper"
+feedbackText = hint.fail.text;
+feedbackSound = hint.fail.sound;
+feedbackPath = itemPath + "/fail.mcfunction";
+build "feedback.xcshoper"

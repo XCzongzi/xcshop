@@ -1,0 +1,4 @@
+{{itemPath}}/check.mcfunction
+scoreboard players set #condition _xca 0
+execute if score @s {{type.value}} matches {{amount}}.. run scoreboard players set #condition _xca 1
+execute unless score #condition _xca matches 1.. run return fail

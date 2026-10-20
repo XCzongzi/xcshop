@@ -1,0 +1,9 @@
+drop/detection.mcfunction
+tag @s add xca.dropped
+scoreboard players set #source _xca 2
+scoreboard players set #taken _xca 0
+execute store result score #taken _xca run data get entity @s Item.count
+execute store result score #dropId _xca run data get entity @s Item.components."minecraft:custom_data".xca.id
+execute on origin if entity @s[type=player] at @s run function xcshop_alpha:drop/player
+# Only the tagged synthetic item is destroyed, never real items around the player.
+kill @s

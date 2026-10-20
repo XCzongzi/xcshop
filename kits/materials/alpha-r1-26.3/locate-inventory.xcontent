@@ -1,0 +1,2 @@
+locate.mcfunction
+execute if data entity @s Inventory[{Slot:{{inventorySlot}}b}].components."minecraft:custom_data".xca{token:1b} run return run execute store result score @s _xca run data get entity @s Inventory[{Slot:{{inventorySlot}}b}].components."minecraft:custom_data".xca.id

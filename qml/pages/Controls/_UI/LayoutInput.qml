@@ -44,6 +44,7 @@ Item {
         layoutInputId.text = input.id || ""
         resultScoreboard.text = input.result.scoreboard || ""
         resultTarget.text = input.result.target || ""
+        defaultValueInput.text = input.defaultValue === undefined ? "" : String(input.defaultValue)
     }
 
     function refresh() {
@@ -169,12 +170,59 @@ Item {
                 }
             }
 
-            XCText {
+            Row {
                 visible: root.inputEnabled
                 width: parent.width
-                xcText: "输入界面"
-                xcFontSize: 13
+                spacing: 8
+
+                XCText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(0, parent.width - defaultValueLabel.width
+                                    - defaultValueInput.width - parent.spacing * 2)
+                    xcText: "输入界面"
+                    xcFontSize: 13
+                    onCenter: false
+                }
+
+                XCText {
+                    id: defaultValueLabel
+                    anchors.verticalCenter: parent.verticalCenter
+                    xcText: "默认值"
+                    xcFontSize: 11
+                    boldFont: false
+                    onCenter: false
+                    textColor: Colors.changeA(Colors.text, 0.78)
+                }
+
+                XCTextField {
+                    id: defaultValueInput
+                    width: 100
+                    height: 30
+                    placeholderText: "必填整数"
+                    validator: RegularExpressionValidator { regularExpression: /-?[0-9]+/ }
+                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                    onActiveFocusChanged: {
+                        if (!activeFocus && !acceptableInput) {
+                            var input = root.inputData()
+                            text = input && input.defaultValue !== undefined
+                                    ? String(input.defaultValue) : ""
+                        }
+                    }
+                    onEditingFinished: {
+                        if (root.uiPage && root.groupId.length)
+                            root.uiPage.setNestedGroupLayoutInputDefaultValue(root.groupId, text)
+                    }
+                }
+            }
+
+            XCText {
+                visible: root.inputEnabled && !defaultValueInput.acceptableInput
+                width: parent.width
+                xcText: "默认值不能为空，且必须为整数"
+                xcFontSize: 11
+                boldFont: false
                 onCenter: false
+                textColor: Colors.error
             }
 
             Repeater {

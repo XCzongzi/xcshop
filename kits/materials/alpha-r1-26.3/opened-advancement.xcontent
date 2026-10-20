@@ -1,0 +1,2 @@
+opened/{{registrationName}}.json
+{"criteria":{"open":{"trigger":"minecraft:any_block_use","conditions":{"location":{"type":"minecraft:match_block","blocks":"minecraft:{{containerType}}","predicates":{"minecraft:custom_data":{"xca":{"shop":"{{registrationName}}"}}}}}}},"rewards":{"function":"xcshop_alpha:opened/{{registrationName}}"}}

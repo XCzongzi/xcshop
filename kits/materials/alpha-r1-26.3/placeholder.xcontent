@@ -1,0 +1,4 @@
+shop/{{shopName}}/{{slotNumber}}/set.mcfunction
+item replace block ~ ~ ~ container.{{slotNumber}} with {{@parent[0].placeholderItem}}
+data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:custom_data".xca set value {token:1b,shop:"{{shopName}}"}
+data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:custom_data".xca.id set from block ~ ~ ~ components."minecraft:custom_data".xca.id

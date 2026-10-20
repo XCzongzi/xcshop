@@ -1,0 +1,7 @@
+{{itemPath}}/sell.mcfunction
+$execute if score #source _xca matches 1 store result score #taken _xca run clear @s *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}] 0
+execute if score #source _xca matches 1 run item replace entity @e[type=item_display,tag=xca.cursor,limit=1] contents from entity @s player.cursor
+$execute if score #source _xca matches 1 if score #taken _xca matches 0 if items entity @e[type=item_display,tag=xca.cursor,limit=1] contents *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}] store result score #taken _xca run data get entity @e[type=item_display,tag=xca.cursor,limit=1] item.count
+execute unless score #taken _xca matches 1.. run return fail
+$execute if score #source _xca matches 1 run clear @s *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}]
+$execute if score #source _xca matches 1 if items entity @e[type=item_display,tag=xca.cursor,limit=1] contents *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}] run item replace entity @s player.cursor with air

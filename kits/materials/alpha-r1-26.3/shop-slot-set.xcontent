@@ -1,0 +1,2 @@
+shop/{{shopName}}/set.mcfunction
+function xcshop_alpha:shop/{{shopName}}/{{slotNumber}}/set

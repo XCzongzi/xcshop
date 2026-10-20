@@ -1,0 +1,2 @@
+shop/{{shopName}}/{{slotNumber}}/set.mcfunction
+return 1
