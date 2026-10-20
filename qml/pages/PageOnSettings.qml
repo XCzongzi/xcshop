@@ -17,12 +17,14 @@ BasePage {
     }
     readonly property var sections: [
         { title: "界面", page: interfacePage },
-        { title: "商店模板", page: templatesPage },
+        { title: "构建套件", page: kitsPage },
+        { title: "构建器", page: builderPage },
         { title: "物品信息", page: itemsPage }
     ]
 
     Component { id: interfacePage; SettingsInterface {} }
-    Component { id: templatesPage; SettingsTemplates {} }
+    Component { id: kitsPage; SettingsBuildKits {} }
+    Component { id: builderPage; SettingsBuilder {} }
     Component { id: itemsPage; SettingsItems {} }
 
     Item {

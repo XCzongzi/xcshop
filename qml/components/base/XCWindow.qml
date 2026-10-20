@@ -85,7 +85,7 @@ Window {
         id: titleBar
         mainWindow: root
         z: 99
-        onCloseClicked: Qt.quit()
+        onCloseClicked: root.close()
         onMaximizeClicked: {
             if (root.visibility === Window.Maximized) {
                 root.showFullScreen()

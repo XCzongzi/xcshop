@@ -30,6 +30,7 @@ Rectangle {
         x: root.padding
         y: titleText.y + titleText.height + 6
         width: parent.width - 2 * root.padding
+        xcWrapMode: true
         xcFontSize: 12
         boldFont: false
         textColor: Colors.banned

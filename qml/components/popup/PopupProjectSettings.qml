@@ -13,6 +13,7 @@ Item {
     property var templateOptions: []
     property string validationMessage: ""
     property var result: null
+    readonly property var selectedTemplate: BuildKits.findTemplate(templateChoice.currentValue)
 
     signal closed(var result)
 
@@ -29,6 +30,10 @@ Item {
                 var values = []
                 for (var j = 0; j < versions.length; ++j)
                     values.push({ "value": String(versions[j]), "label": String(versions[j]) })
+                var current = fieldValue("version", "")
+                if (String(templateValue).toLowerCase() === fieldValue("templateId", "").toLowerCase()
+                        && versions.indexOf(current) < 0 && BuildKits.versionSupport(templateValue, current) >= 0)
+                    values.push({ "value": current, "label": current + "（未明确支持）" })
                 return values
             }
         }
@@ -40,9 +45,10 @@ Item {
         nameField.text = fieldValue("name", "")
         namespaceField.text = fieldValue("namespace", "")
         outputField.text = fieldValue("generatePath", "")
-        templateChoice.currentValue = fieldValue("template", "")
+        templateChoice.currentValue = fieldValue("templateId", "").toLowerCase()
         versionChoice.options = versionsForTemplate(templateChoice.currentValue)
         versionChoice.currentValue = fieldValue("version", "")
+        customVersion.text = ""
         validationMessage = ""
     }
 
@@ -71,12 +77,22 @@ Item {
             validationMessage = "项目名称格式不正确"
             return
         }
-        if (!/^[a-z0-9_]+$/.test(namespaceName)) {
-            validationMessage = "命名空间只能包含小写字母、数字和下划线"
+        if (!/^[a-z0-9_.-]+$/.test(namespaceName) || namespaceName === "." || namespaceName === "..") {
+            validationMessage = "命名空间只能包含小写字母、数字、下划线、点和连字符，且不能是 . 或 .."
             return
         }
-        if (!templateChoice.currentValue.length || !versionChoice.currentValue.length) {
+        var version = selectedTemplate.allowsNewer && customVersion.text.trim().length
+                ? customVersion.text.trim() : versionChoice.currentValue
+        if (!templateChoice.currentValue.length || !version.length || !selectedTemplate.valid) {
             validationMessage = "请选择构建模板和目标版本"
+            return
+        }
+        if (selectedTemplate.dataVersion !== projectData.dataVersion) {
+            validationMessage = "模板与项目数据版本不匹配，不能仅通过改写版本号迁移项目"
+            return
+        }
+        if (BuildKits.versionSupport(templateChoice.currentValue, version) < 0) {
+            validationMessage = "该模板不支持输入的目标版本"
             return
         }
         if (!outputPath.length) {
@@ -88,8 +104,8 @@ Item {
             "name": name,
             "namespace": namespaceName,
             "generatePath": outputPath,
-            "template": Number(templateChoice.currentValue),
-            "version": versionChoice.currentValue
+            "templateId": templateChoice.currentValue,
+            "version": version
         })
     }
 
@@ -97,7 +113,7 @@ Item {
 
     XCFolderDialog {
         id: outputDialog
-        onAccepted: outputField.text = Qt.url(selectedFolder).toLocaleString().replace("file:///", "")
+        onAccepted: outputField.text = BuildKits.localPath(selectedFolder.toString())
     }
 
     Rectangle {
@@ -111,7 +127,7 @@ Item {
     Rectangle {
         id: dialog
         width: Math.min(650, Math.max(420, root.width - 48))
-        height: 422
+        height: root.selectedTemplate.allowsNewer ? 452 : 422
         anchors.centerIn: parent
         radius: 15
         color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, 0.985)
@@ -208,6 +224,7 @@ Item {
                         versionChoice.options = root.versionsForTemplate(value)
                         versionChoice.currentValue = versionChoice.options.length
                                 ? String(versionChoice.options[0].value) : ""
+                        customVersion.text = ""
                         root.validationMessage = ""
                     }
                 }
@@ -218,16 +235,24 @@ Item {
                 GlobalChoiceBox {
                     id: versionChoice
                     anchors.fill: parent
-                    onValueActivated: root.validationMessage = ""
+                    onValueActivated: { customVersion.text = ""; root.validationMessage = "" }
                 }
             }
+        }
+
+        XCTextField {
+            id: customVersion
+            x: 24; y: 219; width: parent.width - 48; height: 32
+            visible: !!root.selectedTemplate.allowsNewer
+            placeholderText: "可选：输入模板允许尝试的较新版本（构建器将提示兼容性警告）"
+            onTextEdited: root.validationMessage = ""
         }
 
         XCText {
             id: outputLabel
             x: 24
-            y: 239
-            xcText: "数据包生成位置"
+            y: root.selectedTemplate.allowsNewer ? 269 : 239
+            xcText: "数据包生成父目录（最终输出为此目录 / 项目名称）"
             xcFontSize: 11
             boldFont: false
             onCenter: false
@@ -237,7 +262,7 @@ Item {
         XCTextField {
             id: outputField
             x: 24
-            y: 260
+            y: root.selectedTemplate.allowsNewer ? 290 : 260
             width: parent.width - 126
             height: 36
             placeholderText: "选择生成目录"
@@ -260,7 +285,7 @@ Item {
 
         XCText {
             x: 24
-            y: 309
+            y: root.selectedTemplate.allowsNewer ? 339 : 309
             width: parent.width - 48
             xcText: root.validationMessage
             visible: root.validationMessage.length > 0

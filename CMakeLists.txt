@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.16)
 project(xcshop VERSION 0.1 LANGUAGES CXX)
 
 
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QT_QML_GENERATE_QMLLS_INI ON)   #图形效果
 
 
 
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Network Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Concurrent)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
@@ -27,6 +28,8 @@ qt_add_executable(appxcshop
     src/XCFile.cpp
     src/MinecraftAssetImporter.cpp
     src/ElementIO.cpp
+    src/BuildKitManager.cpp
+    src/BuildManager.cpp
 )
 
 
@@ -109,6 +112,7 @@ qt_add_qml_module(appxcshop
 
         qml/components/settings/SettingsPageHeader.qml
         qml/components/settings/SettingsCard.qml
+        qml/components/settings/SettingsActionButton.qml
         qml/components/settings/SettingsNavButton.qml
         
         qml/components/relayBar/ElementCard.qml
@@ -156,7 +160,8 @@ qt_add_qml_module(appxcshop
         qml/pages/PageOnDisplay.qml
         qml/pages/PageOnSettings.qml
         qml/pages/settings/SettingsInterface.qml
-        qml/pages/settings/SettingsTemplates.qml
+        qml/pages/settings/SettingsBuildKits.qml
+        qml/pages/settings/SettingsBuilder.qml
         qml/pages/settings/SettingsItems.qml
         qml/pages/PageOnAbout.qml
 
@@ -187,6 +192,8 @@ qt_add_qml_module(appxcshop
         header/XCFile.h
         header/MinecraftAssetImporter.h
         header/ElementIO.h
+        header/BuildKitManager.h
+        header/BuildManager.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -205,8 +212,14 @@ set_target_properties(appxcshop PROPERTIES
 )
 
 target_link_libraries(appxcshop
-    PRIVATE Qt6::Quick Qt6::Network Qt6::Concurrent
+    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Concurrent
 )
+
+# Seed bundled kits without replacing templates already installed/edited by the user.
+add_custom_command(TARGET appxcshop POST_BUILD
+    COMMAND ${CMAKE_COMMAND} "-DKITS_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/kits"
+        "-DKITS_TARGET=$<TARGET_FILE_DIR:appxcshop>/kits"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/SeedBuildKits.cmake")
 
 include(GNUInstallDirs)
 install(TARGETS appxcshop
@@ -214,3 +227,22 @@ install(TARGETS appxcshop
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+install(DIRECTORY kits/ DESTINATION ${CMAKE_INSTALL_BINDIR}/kits)
+
+option(XCSHOP_BUILD_TESTS "Build editor integration tests" OFF)
+if(XCSHOP_BUILD_TESTS)
+    enable_testing()
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    qt_add_executable(editor_backend_tests tests/EditorBackendTests.cpp
+        src/BuildKitManager.cpp header/BuildKitManager.h src/BuildManager.cpp header/BuildManager.h)
+    target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test)
+    qt_add_executable(builder_protocol_fixture tests/BuilderProtocolFixture.cpp)
+    target_link_libraries(builder_protocol_fixture PRIVATE Qt6::Core)
+    target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml)
+    add_test(NAME editor_backend_tests COMMAND editor_backend_tests $<TARGET_FILE:builder_protocol_fixture>)
+    add_test(NAME editor_startup_smoke COMMAND appxcshop --startup-smoke)
+    set_tests_properties(editor_startup_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        TIMEOUT 15)
+endif()

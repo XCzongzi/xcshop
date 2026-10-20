@@ -6,6 +6,7 @@ FocusScope{
     id: root
 
     property bool delayExpand: false
+    property int padding: 16
 
     property int min_width: -1
     property bool expanded: false  //展开动画播放完毕后，此项将设为真。若此项初始时便为真，则意为取消动画
@@ -50,17 +51,17 @@ FocusScope{
         XCText{
             id: itemInput_propertyText
             y: 18
-            x: 16
-            width: parent.width - 32
+            x: root.padding
+            width: parent.width - root.padding * 2
             xcText: root.title
             xcFontSize: 18
             onCenter: false
             elide: Text.ElideRight
         }
         XCText{
-            x: 16
+            x: root.padding
             y: 46
-            width: parent.width - 32
+            width: parent.width - root.padding * 2
             xcText: root.subtitle
             xcFontSize: 12
             onCenter: false

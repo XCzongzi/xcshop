@@ -18,6 +18,7 @@ ContentBar {
     subtitle: totalElementCount + " 个元素"
     contentHeight: 438
     expanded: true
+    padding: 20
 
     component CountCell: Rectangle {
         property string typeName: ""
@@ -58,17 +59,17 @@ ContentBar {
     }
 
     Item {
-        x: 16
-        y: 62
-        width: parent.width - 32
-        height: parent.height - y - 8
+        x: root.padding
+        y: 76
+        width: parent.width - root.padding * 2
+        height: parent.height - y - 20
 
         Grid {
             id: countGrid
-            width: Math.max(112, parent.width * 0.58)
+            width: Math.max(104, parent.width * 0.54)
             columns: 2
             columnSpacing: 8
-            rowSpacing: 6
+            rowSpacing: 10
 
             CountCell { typeName: "UI"; count: Number(root.counts.UI || 0) }
             CountCell { typeName: "Item"; count: Number(root.counts.Item || 0) }
@@ -78,9 +79,9 @@ ContentBar {
 
         Column {
             id: details
-            x: countGrid.width + 9
+            x: countGrid.width + 16
             width: parent.width - x
-            spacing: 3
+            spacing: 6
 
             component DetailRow: Item {
                 property string label: ""

@@ -16,6 +16,7 @@ ContentBar {
     subtitle: root.projectLocation
     contentHeight: 230
     expanded: true
+    padding: 20
 
     function fieldValue(key, fallback) {
         if (!projectData || projectData[key] === undefined || projectData[key] === null)
@@ -26,24 +27,24 @@ ContentBar {
 
     function templateLabel(value) {
         for (var i = 0; i < templateOptions.length; ++i) {
-            if (String(templateOptions[i].value) === String(value))
+            if (String(templateOptions[i].value).toLowerCase() === String(value).toLowerCase())
                 return String(templateOptions[i].label)
         }
         return value === undefined || value === null || String(value).length === 0
-                ? "未设置" : "模板 " + String(value)
+                ? "未设置 / 旧模板" : "未安装的模板"
     }
 
     Item {
-        x: 16
-        y: 67
-        width: parent.width - 32
-        height: parent.height - y - 10
+        x: root.padding
+        y: 76
+        width: parent.width - root.padding * 2
+        height: parent.height - y - 20
 
         Grid {
             id: summaryGrid
             width: parent.width
             columns: 4
-            columnSpacing: 8
+            columnSpacing: 12
             rowSpacing: 6
 
             component SummaryField: Item {
@@ -85,7 +86,7 @@ ContentBar {
 
             SummaryField {
                 label: "构建模板"
-                value: root.templateLabel(root.projectData ? root.projectData.template : "")
+                value: root.templateLabel(root.projectData ? root.projectData.templateId : "")
             }
 
             SummaryField {
@@ -96,8 +97,8 @@ ContentBar {
 
         XCText {
             id: outputLabel
-            y: summaryGrid.height + 7
-            xcText: "数据包生成位置"
+            y: summaryGrid.height + 12
+            xcText: "数据包生成父目录"
             xcFontSize: 10
             boldFont: false
             onCenter: false

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
-import "qrc:/assets/js/request.js" as XHR
 
 BasePage {
     id: root
@@ -13,13 +12,17 @@ BasePage {
     property string namespaceValue: ""
     property string storagePathValue: ""
     property string generatePathValue: ""
-    property var templates: ({})
-    readonly property var templateItems: templates && templates.Intros ? templates.Intros : []
-    property int currentTemplate: -1
+    readonly property var templateItems: BuildKits.identityValid ? BuildKits.templates.filter(function(t) {
+        return t.valid && t.dataVersion === BuildKits.dataVersion
+    }) : []
+    property string currentTemplateId: ""
+    property bool templateSelectionTouched: false
+    readonly property int currentTemplate: templateItems.findIndex(function(t) { return t.id === root.currentTemplateId })
+    readonly property var selectedTemplate: currentTemplate >= 0 ? templateItems[currentTemplate] : ({})
     property string currentVersion: ""
-    property string templateIntroduction: ""
-    property bool templatesLoading: false
-    property string templateStatus: ""
+    readonly property string templateIntroduction: (selectedTemplate.introduction || []).join("\n\n")
+    readonly property string templateStatus: templateItems.length ? "来自设置中的构建套件 · " + templateItems.length + " 个可用模板"
+                                                                : "没有可用模板，请在设置 → 构建套件中配置或导入本地套件"
     property double controlsOpacity: 1
     property real visualContentOffset: height_output
     property bool projectCreationSucceeded: false
@@ -29,13 +32,16 @@ BasePage {
     readonly property bool projectNameGood: projectNameValue.trim().length > 0
                                              && !/[\\\\/:*?"<>|]/.test(projectNameValue)
                                              && !/[. ]$/.test(projectNameValue)
-    readonly property bool namespaceGood: /^[a-z0-9_]+$/.test(namespaceValue)
+                                             && projectNameValue.trim() !== "." && projectNameValue.trim() !== ".."
+    readonly property bool namespaceGood: /^[a-z0-9_.-]+$/.test(namespaceValue)
+                                         && namespaceValue !== "." && namespaceValue !== ".."
     readonly property bool canCreate: projectNameGood
                                       && namespaceGood
                                       && storagePathValue.trim().length > 0
                                       && generatePathValue.trim().length > 0
                                       && currentTemplate >= 0
                                       && currentVersion.length > 0
+                                      && BuildKits.versionSupport(currentTemplateId, currentVersion) >= 0
 
     Behavior on visualContentOffset {
         NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
@@ -53,68 +59,27 @@ BasePage {
     Component.onCompleted: {
         input_storagePath.setContext(APP_DIRPATH + "/projects")
         input_generatePath.setContext(DESKTOP_DIRPATH)
+        BuildKits.refresh()
         setTemplate()
     }
 
     function setTemplate() {
-        var raw = xcFile.read("templates.json")
-        try {
-            var loaded = JSON.parse(raw)
-            templates = loaded && loaded.Intros ? loaded : ({})
-            templateStatus = templateItems.length ? "已加载 " + templateItems.length + " 个模板" : "未找到可用模板"
-        } catch (error) {
-            templates = ({})
-            templateStatus = "模板列表暂不可用，可点击“更新模板”重新获取"
-        }
-        currentTemplate = -1
-        currentVersion = ""
-        templateIntroduction = ""
+        var index = templateItems.findIndex(function(t) { return t.id === BuildKits.preferredTemplateId })
+        if (index < 0 && templateItems.length) index = 0
+        selectTemplate(index)
     }
 
     function selectTemplate(index) {
-        currentTemplate = index
-        currentVersion = ""
-        templateIntroduction = "暂无介绍"
-
-        try {
-            var detail = JSON.parse(xcFile.read("templates/" + index + ".json"))
-            if (detail && detail.Intro)
-                templateIntroduction = detail.Intro
-        } catch (error) {
-        }
+        currentTemplateId = index >= 0 && index < templateItems.length ? templateItems[index].id : ""
+        var versions = selectedTemplate.versions || []
+        currentVersion = versions.length ? versions[versions.length - 1] : ""
+        customVersionField.text = ""
     }
 
-    function updateTemplates() {
-        if (templatesLoading)
-            return
-        templatesLoading = true
-        templateStatus = "正在获取模板列表…"
-        XHR.sendRequest(Constants.url_templates, function(response) {
-            try {
-                xcFile.write("templates.json", response.content)
-                root.setTemplate()
-            } catch (error) {
-                root.templateStatus = "更新失败，请检查网络后重试"
-            }
-            root.templatesLoading = false
-        })
-    }
-
-    function refreshIntroduction() {
-        if (currentTemplate < 0 || templatesLoading)
-            return
-        templatesLoading = true
-        templateIntroduction = "正在获取模板介绍…"
-        XHR.sendRequest(Constants.url_templatesPer + currentTemplate + ".json", function(response) {
-            try {
-                xcFile.write("templates/" + root.currentTemplate + ".json", response.content)
-                var detail = JSON.parse(response.content)
-                root.templateIntroduction = detail && detail.Intro ? detail.Intro : "暂无介绍。"
-            } catch (error) {
-                root.templateIntroduction = "获取介绍失败，请稍后重试。"
-            }
-            root.templatesLoading = false
-        })
+    Connections {
+        target: BuildKits
+        function onPreferredTemplateIdChanged() { if (!root.templateSelectionTouched) root.setTemplate() }
+        function onCatalogChanged() { if (root.currentTemplate < 0) root.setTemplate() }
     }
 
     function showProjectResult(title, content) {
@@ -145,22 +110,29 @@ BasePage {
         projectCreationSucceeded = false
         var name = projectNameValue.trim()
         var location = storagePathValue.trim() + "/" + name
+        if (xcFile.isDirectory(location) || xcFile.exists(location)) {
+            showProjectResult("创建失败", "目标位置已存在同名文件或目录，为避免覆盖原有数据，请更换项目名称或存储位置。")
+            return
+        }
         var projectInfo = {
             "name": name,
             "namespace": namespaceValue.trim(),
             "generatePath": generatePathValue.trim(),
             "version": currentVersion,
-            "dataVersion": 0,
-            "template": currentTemplate
+            "dataVersion": BuildKits.dataVersion,
+            "templateId": currentTemplateId,
+            "shops": []
         }
         if (xcFile.folder(location)
-                && xcFile.writeAtomic(location + "/xcshop.json", JSON.stringify(projectInfo, null, 2))
                 && xcFile.folder(location + "/UI")
                 && xcFile.folder(location + "/Item")
                 && xcFile.folder(location + "/Cost")
-                && xcFile.folder(location + "/Display")) {
+                && xcFile.folder(location + "/Display")
+                && xcFile.writeAtomic(location + "/xcshop.json", JSON.stringify(projectInfo, null, 2))) {
             Global.project_location = location
             Global.rememberProject(location, projectInfo)
+            BuildKits.preferredTemplateId = currentTemplateId
+            Global.saveSettings()
             projectCreationSucceeded = true
             showProjectResult("创建成功", "项目已成功创建至：\n" + Global.project_location
                                 + "\n\n即将在工作区中打开项目")
@@ -191,7 +163,7 @@ BasePage {
     XCFolderDialog {
         id: folderDialog
         onAccepted: {
-            var selectedPath = Qt.url(currentFolder).toLocaleString().replace("file:///", "")
+            var selectedPath = BuildKits.localPath(selectedFolder.toString())
             if (dialogID === "storage")
                 input_storagePath.setContext(selectedPath)
             else if (dialogID === "generate")
@@ -307,8 +279,8 @@ BasePage {
                     }
                     XCKeyInput {
                         id: input_generatePath
-                        keyText: "数据包生成位置"
-                        fieldText: "选择生成目录"
+                        keyText: "数据包生成父目录"
+                        fieldText: "数据包将生成在此目录 / 项目名称下"
                         width: parent.width
                         onFieldContextChanged: root.generatePathValue = getContext()
                         TextButton {
@@ -336,25 +308,12 @@ BasePage {
                 XCText {
                     x: 20
                     y: 46
-                    width: parent.width - 180
+                    width: parent.width - 40
                     xcText: root.templateStatus
                     onCenter: false
                     xcFontSize: 12
                     boldFont: false
                     textColor: Colors.banned
-                }
-                TextButton {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 20
-                    y: 16
-                    text: root.templatesLoading ? "更新中…" : "更新模板"
-                    enabled: !root.templatesLoading
-                    height: 30
-                    radius: 6
-                    textSize: 12
-                    widthBorderSize: 9
-                    buttonColor: Colors.changeA(Colors.pressed, 0.85)
-                    onClicked: root.updateTemplates()
                 }
 
                 Rectangle {
@@ -392,14 +351,14 @@ BasePage {
                                     width: templateList.width
                                     height: 38
                                     radius: 7
-                                    text: model.id
+                                    text: root.templateItems[index].name
                                     textSize: 13
                                     widthBorderSize: 10
                                     buttonColor: Colors.changeA(Colors.background, 0.30)
                                     firedColor: Colors.changeA(Colors.pressed, 0.88)
                                     pressedColor: Colors.changeA(Colors.border, 0.72)
                                     btnSelected: root.currentTemplate === index
-                                    onClicked: root.selectTemplate(index)
+                                    onClicked: { root.templateSelectionTouched = true; root.selectTemplate(index) }
                                 }
                             }
                         }
@@ -409,22 +368,7 @@ BasePage {
                         Column {
                             width: selectionRow.columnUnit * 2
                             spacing: 8
-                            Row {
-                                width: parent.width
-                                XCText { xcText: "模板介绍"; onCenter: false; xcFontSize: 13 }
-                                Item { width: Math.max(0, parent.width - refreshButton.width - 50); height: 1 }
-                                TextButton {
-                                    id: refreshButton
-                                    text: root.templatesLoading ? "获取中…" : "刷新介绍"
-                                    enabled: root.currentTemplate >= 0 && !root.templatesLoading
-                                    height: 24
-                                    radius: 5
-                                    textSize: 11
-                                    widthBorderSize: 6
-                                    buttonColor: Colors.changeA(Colors.pressed, 0.82)
-                                    onClicked: root.refreshIntroduction()
-                                }
-                            }
+                            XCText { xcText: "模板介绍"; onCenter: false; xcFontSize: 13 }
                             XCText {
                                 width: parent.width
                                 height: 178
@@ -446,7 +390,7 @@ BasePage {
                             ListView {
                                 id: versionList
                                 width: parent.width
-                                height: 178
+                                height: root.selectedTemplate.allowsNewer ? 132 : 178
                                 clip: true
                                 spacing: 6
                                 model: root.currentTemplate >= 0 && root.currentTemplate < root.templateItems.length
@@ -464,8 +408,16 @@ BasePage {
                                     firedColor: Colors.changeA(Colors.pressed, 0.88)
                                     pressedColor: Colors.changeA(Colors.border, 0.72)
                                     btnSelected: root.currentVersion === model.modelData
-                                    onClicked: root.currentVersion = model.modelData
+                                    onClicked: { customVersionField.text = ""; root.currentVersion = model.modelData }
                                 }
+                            }
+                            XCTextField {
+                                id: customVersionField
+                                visible: !!root.selectedTemplate.allowsNewer
+                                width: parent.width
+                                height: 32
+                                placeholderText: "或输入较新版本"
+                                onTextEdited: root.currentVersion = text.trim()
                             }
                         }
                     }

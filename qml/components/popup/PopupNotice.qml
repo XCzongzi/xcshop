@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls as Controls
 import xcshop
 
 Item {
@@ -17,7 +18,7 @@ Item {
     signal closed(int result)
 
     readonly property int dialogWidth: Math.min(520, Math.max(330, width - 48))
-    readonly property int dialogHeight: Math.max(194, contentText.y + contentText.height + actionRow.height + 44)
+    readonly property int dialogHeight: Math.max(194, messageArea.y + messageArea.height + actionRow.height + 44)
 
     function open() {
         scrim.opacity = 0
@@ -116,17 +117,25 @@ Item {
             color: Colors.changeA(Colors.text, 0.10)
         }
 
-        XCText {
-            id: contentText
+        Controls.ScrollView {
+            id: messageArea
             x: 28
             y: 94
             width: parent.width - 56
-            xcText: root.content
-            onCenter: false
-            xcWrapMode: true
-            xcFontSize: 14
-            boldFont: false
-            textColor: Colors.changeA(Colors.text, 0.82)
+            height: Math.min(contentText.implicitHeight, Math.max(60, root.height - 248))
+            contentWidth: availableWidth
+            clip: true
+            XCText {
+                id: contentText
+                width: messageArea.availableWidth
+                xcText: root.content
+                onCenter: false
+                xcWrapMode: true
+                textFormat: Text.PlainText
+                xcFontSize: 14
+                boldFont: false
+                textColor: Colors.changeA(Colors.text, 0.82)
+            }
         }
 
         Row {

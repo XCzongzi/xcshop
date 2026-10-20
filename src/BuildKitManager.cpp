@@ -1,0 +1,334 @@
+#include "BuildKitManager.h"
+
+#include <QCoreApplication>
+#include <QCryptographicHash>
+#include <QDirIterator>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QRegularExpression>
+#include <QUrl>
+#include <algorithm>
+#include <QHash>
+#include <QFileInfo>
+#include <array>
+#include <optional>
+#include <limits>
+
+namespace {
+const QRegularExpression uuidPattern(QStringLiteral("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"));
+
+QString readText(const QString &path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    auto bytes = file.readAll();
+    if (bytes.startsWith("\xef\xbb\xbf")) bytes.remove(0, 3);
+    return QString::fromUtf8(bytes).replace("\r\n", "\n").replace('\r', '\n');
+}
+
+// Matches the builder's ordering, including the 1.21.11 -> 26.1 transition.
+std::optional<std::array<int, 5>> versionKey(const QString &version) {
+    static const QRegularExpression pattern(QStringLiteral("^(1|[2-9][0-9])\\.([0-9]+)(?:\\.([0-9]+))?(?:-(pre|rc|snapshot)-?([0-9]+))?$"));
+    const auto match = pattern.match(version);
+    if (!match.hasMatch()) return {};
+    std::array<int, 5> key{0, 0, 0, 3, 0};
+    for (int i = 0; i < 3; ++i) {
+        const auto text = match.captured(i + 1);
+        if (text.isEmpty()) continue;
+        bool ok = false;
+        key[i] = text.toInt(&ok);
+        if (!ok || (text.size() > 1 && text.startsWith('0'))) return {};
+    }
+    if (key[0] == 1) {
+        if (key[1] > 21 || (key[1] == 21 && key[2] > 11)) return {};
+    } else if (key[0] < 26 || key[1] < 1) return {};
+    if (!match.captured(4).isEmpty()) {
+        key[3] = match.captured(4) == "snapshot" ? 0 : match.captured(4) == "pre" ? 1 : 2;
+        bool ok = false;
+        key[4] = match.captured(5).toInt(&ok);
+        if (!ok || key[4] < 1) return {};
+    }
+    return key;
+}
+
+bool within(const QString &root, const QString &path) {
+    const QString relative = QDir(root).relativeFilePath(path);
+    return relative != ".." && !relative.startsWith("../") && !QDir::isAbsolutePath(relative);
+}
+
+QString dependency(const QString &root, const QString &base, const QString &relative) {
+    if (relative.isEmpty() || QDir::isAbsolutePath(relative) || relative.contains(':')) return {};
+    const QFileInfo info(QDir(base).filePath(relative));
+    const QString path = info.canonicalFilePath();
+    return !path.isEmpty() && within(root, path) ? path : QString();
+}
+
+QVariantMap parseTemplate(const QString &root, const QString &path) {
+    const auto text = readText(path);
+    const auto lines = text.split('\n');
+    QVariantMap result{{"id", lines.value(0).trimmed().toLower()},
+                       {"name", QFileInfo(path).completeBaseName()}, {"path", path},
+                       {"relativePath", QDir(root).relativeFilePath(path)},
+                       {"valid", false}, {"dataVersion", -1}, {"allowsNewer", false}};
+    QStringList errors;
+    if (!uuidPattern.match(lines.value(0).trimmed()).hasMatch()) errors << "第一行必须是标准 UUID。";
+    bool numberOk = false;
+    const auto schema = lines.value(1).trimmed();
+    const auto number = schema.toLongLong(&numberOk);
+    if (!QRegularExpression("^[0-9]+$").match(schema).hasMatch() || !numberOk || number > std::numeric_limits<int>::max())
+        errors << "第二行必须是非负整数数据版本。";
+    else result["dataVersion"] = int(number);
+    QString versionText = lines.value(2).trimmed();
+    const bool newer = versionText.endsWith("...");
+    if (newer) {
+        versionText.chop(3);
+        versionText = versionText.trimmed();
+        if (versionText.endsWith(',')) versionText.chop(1);
+    }
+    QJsonParseError jsonError;
+    const auto versions = QJsonDocument::fromJson(("[" + versionText + "]").toUtf8(), &jsonError);
+    QStringList values;
+    bool versionsOk = jsonError.error == QJsonParseError::NoError && versions.isArray() && !versions.array().isEmpty();
+    for (const auto &value : versions.array()) {
+        if (!value.isString() || value.toString().trimmed().isEmpty() || value.toString() == "..." || values.contains(value.toString())) {
+            versionsOk = false;
+            continue;
+        }
+        const auto previous = values.isEmpty() ? std::nullopt : versionKey(values.last());
+        const auto current = versionKey(value.toString());
+        if (previous && current && *previous >= *current) versionsOk = false;
+        values << value.toString();
+    }
+    if (!versionsOk) errors << "第三行必须是从旧到新、不重复的版本字符串列表，可在末尾加 ...。";
+    result["versions"] = values;
+    result["allowsNewer"] = newer;
+    const auto blueprint = dependency(root, QFileInfo(path).absolutePath(), lines.value(3).trimmed());
+    const auto materials = dependency(root, QFileInfo(path).absolutePath(), lines.value(4).trimmed());
+    if (!QFileInfo(blueprint).isFile() || !blueprint.endsWith(".xcshoper")) errors << "第四行引用的蓝图不存在、越出套件目录，或不是 .xcshoper。";
+    if (!QFileInfo(materials).isDir()) errors << "第五行引用的材料包目录不存在或越出套件目录。";
+    int materialCount = 0;
+    if (!materials.isEmpty()) {
+        for (const auto &entry : QDir(materials).entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden)) {
+            if (!entry.isFile()) errors << "材料包内不能包含二级目录或非普通文件。";
+            if (entry.suffix() == "xcontent" || entry.suffix() == "xclist") ++materialCount;
+        }
+    }
+    result["blueprintPath"] = blueprint;
+    result["materialsPath"] = materials;
+    result["materialCount"] = materialCount;
+    // Find the closing bracket outside JSON strings. Script text after it is never parsed/executed here.
+    const QString intro = lines.mid(5).join('\n');
+    qsizetype start = 0, end = -1;
+    while (start < intro.size() && (intro[start] == ' ' || intro[start] == '\t')) ++start;
+    bool quoted = false, escaped = false;
+    int depth = 0;
+    if (start < intro.size() && intro[start] == '[') {
+        for (qsizetype i = start; i < intro.size(); ++i) {
+            const auto c = intro[i];
+            if (quoted) {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') quoted = false;
+            } else if (c == '"') quoted = true;
+            else if (c == '[') ++depth;
+            else if (c == ']' && --depth == 0) { end = i + 1; break; }
+        }
+    }
+    QStringList paragraphs;
+    const auto document = QJsonDocument::fromJson(end > start ? intro.mid(start, end - start).toUtf8() : QByteArray(), &jsonError);
+    bool introOk = jsonError.error == QJsonParseError::NoError && document.isArray();
+    for (const auto &value : document.array()) {
+        if (!value.isString()) introOk = false;
+        else paragraphs << value.toString();
+    }
+    if (end >= 0) {
+        const auto newline = intro.indexOf('\n', end);
+        if (!intro.mid(end, newline < 0 ? -1 : newline - end).trimmed().isEmpty()) introOk = false;
+    }
+    if (!introOk) errors << "第六行须以 JSON 字符串介绍数组开始，检查代码应在 ] 结束后的下一行。";
+    result["introduction"] = paragraphs;
+    result["error"] = errors.join('\n');
+    result["valid"] = errors.isEmpty();
+    return result;
+}
+
+QByteArray fileHash(const QString &path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    return hash.addData(&file) ? hash.result() : QByteArray();
+}
+}
+
+BuildKitManager::BuildKitManager(QObject *parent) : QObject(parent), m_kitsPath(defaultKitsPath()) { refresh(); }
+QString BuildKitManager::defaultKitsPath() const { return QCoreApplication::applicationDirPath() + "/kits"; }
+QString BuildKitManager::localPath(const QString &path) const {
+    const QUrl url(path);
+    const auto value = url.isLocalFile() ? url.toLocalFile() : path.trimmed();
+    return value.isEmpty() ? QString() : QDir::cleanPath(QFileInfo(value).absoluteFilePath());
+}
+void BuildKitManager::setKitsPath(const QString &path) {
+    if (m_busy) return;
+    const auto next = localPath(path);
+    if (next == m_kitsPath) return;
+    m_kitsPath = next;
+    emit kitsPathChanged();
+    refresh();
+}
+void BuildKitManager::setPreferredTemplateId(const QString &id) {
+    const auto value = id.trimmed().toLower();
+    if (value == m_preferredTemplateId) return;
+    m_preferredTemplateId = value;
+    emit preferredTemplateIdChanged();
+}
+void BuildKitManager::setBusy(bool value) {
+    if (m_busy == value) return;
+    m_busy = value;
+    emit busyChanged();
+}
+void BuildKitManager::refresh() {
+    m_templates.clear();
+    m_issues.clear();
+    const auto root = QFileInfo(m_kitsPath).canonicalFilePath();
+    const auto templateRoot = QDir(root).filePath("templates");
+    m_identityValid = !root.isEmpty() && QFileInfo(templateRoot).isDir() && within(root, QFileInfo(templateRoot).canonicalFilePath());
+    if (!m_identityValid) m_issues << "找不到有效的 kits/templates 目录，请选择构建套件根目录。";
+    else {
+        QHash<QString, int> identities;
+        QDirIterator files(templateRoot, QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+        while (files.hasNext()) {
+            const auto path = files.next();
+            if (files.fileInfo().isSymLink()) {
+                m_identityValid = false;
+                m_issues << path + "：模板目录不能包含符号链接。";
+                continue;
+            }
+            if (!files.fileInfo().isFile() || !path.endsWith(".xcshopT")) continue;
+            auto item = parseTemplate(root, path);
+            const auto id = item["id"].toString();
+            if (!uuidPattern.match(id).hasMatch()) m_identityValid = false;
+            if (identities.contains(id)) {
+                m_identityValid = false;
+                const int previous = identities.value(id);
+                auto duplicate = m_templates[previous].toMap();
+                duplicate["valid"] = false;
+                duplicate["error"] = duplicate["error"].toString() + "\n模板 ID 重复：" + path;
+                m_templates[previous] = duplicate;
+                item["valid"] = false;
+                item["error"] = item["error"].toString() + "\n模板 ID 重复：" + duplicate["path"].toString();
+            } else identities.insert(id, int(m_templates.size()));
+            m_templates << item;
+        }
+        std::sort(m_templates.begin(), m_templates.end(), [](const QVariant &a, const QVariant &b) {
+            return a.toMap()["relativePath"].toString() < b.toMap()["relativePath"].toString();
+        });
+        for (const auto &value : m_templates) {
+            const auto item = value.toMap();
+            if (!item["valid"].toBool()) m_issues << item["relativePath"].toString() + "：" + item["error"].toString();
+        }
+    }
+    emit catalogChanged();
+}
+QVariantMap BuildKitManager::findTemplate(const QString &id) const {
+    for (const auto &value : m_templates)
+        if (value.toMap()["id"].toString() == id.toLower()) return value.toMap();
+    return {};
+}
+QVariantList BuildKitManager::options(int requiredDataVersion) const {
+    QVariantList result;
+    if (!m_identityValid) return result;
+    for (const auto &value : m_templates) {
+        auto item = value.toMap();
+        if (!item["valid"].toBool() || item["dataVersion"].toInt() != requiredDataVersion) continue;
+        item["value"] = item["id"];
+        item["label"] = item["name"];
+        result << item;
+    }
+    return result;
+}
+int BuildKitManager::versionSupport(const QString &id, const QString &version) const {
+    const auto item = findTemplate(id);
+    if (!item["valid"].toBool()) return -1;
+    const auto versions = item["versions"].toStringList();
+    if (versions.contains(version)) return 0;
+    const auto current = versionKey(version);
+    const auto last = versions.isEmpty() ? std::nullopt : versionKey(versions.last());
+    return item["allowsNewer"].toBool() && current && last && *current > *last ? 1 : -1;
+}
+
+QString BuildKitManager::importKit(const QString &sourceRoot) {
+    if (m_busy) return "构建期间不能更改套件。";
+    const auto source = QFileInfo(localPath(sourceRoot)).canonicalFilePath();
+    const auto target = QFileInfo(m_kitsPath).exists() ? QFileInfo(m_kitsPath).canonicalFilePath() : localPath(m_kitsPath);
+    if (target.isEmpty()) return "请先设置有效的套件目录。";
+    if (source.isEmpty() || source == target || within(source, target) || within(target, source))
+        return "请选择与当前套件目录相互独立的构建套件根目录。";
+    BuildKitManager incoming;
+    incoming.setKitsPath(source);
+    if (!incoming.identityValid() || incoming.templates().isEmpty() || !incoming.issues().isEmpty())
+        return "待导入的套件无效：\n" + incoming.issues().join('\n');
+    refresh();
+    for (const auto &value : incoming.templates()) {
+        const auto item = value.toMap();
+        const auto existing = findTemplate(item["id"].toString());
+        if (!existing.isEmpty() && existing["relativePath"] != item["relativePath"])
+            return "模板 ID 已存在，不能以另一个文件名重复导入：" + item["name"].toString();
+    }
+    // Validate the complete merge before writing. Existing, different files are never overwritten.
+    QStringList additions, directories;
+    QDirIterator files(source, QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden, QDirIterator::Subdirectories);
+    while (files.hasNext()) {
+        const auto path = files.next();
+        const auto info = files.fileInfo();
+        if (info.isSymLink()) return "不能导入包含符号链接的套件：" + path;
+        const auto relative = QDir(source).relativeFilePath(path);
+        const auto destination = QDir(target).filePath(relative);
+        const auto existing = QFileInfo(destination);
+        if (existing.isSymLink()) return "目标目录包含符号链接：" + destination;
+        if (info.isDir()) {
+            if (existing.exists() && !existing.isDir()) return "目录与已有文件冲突：" + destination;
+            if (!existing.exists()) directories << destination;
+        } else if (info.isFile()) {
+            if (existing.exists()) {
+                const auto hash = fileHash(path);
+                if (!existing.isFile() || hash.isEmpty() || hash != fileHash(destination))
+                    return "同名文件内容不同，未覆盖任何文件：" + destination;
+            } else additions << relative;
+        } else return "套件包含非普通文件：" + path;
+    }
+    std::sort(directories.begin(), directories.end(), [](const auto &a, const auto &b) { return a.size() < b.size(); });
+    QStringList copied, created;
+    auto rollback = [&] {
+        for (const auto &file : copied) QFile::remove(file);
+        for (auto it = created.crbegin(); it != created.crend(); ++it) QDir().rmdir(*it);
+    };
+    if (!QFileInfo::exists(target)) {
+        if (!QDir().mkpath(target)) return "无法创建套件目录。";
+        created << target;
+    }
+    for (const auto &directory : directories) {
+        if (!QDir().mkdir(directory)) { rollback(); return "无法创建目录：" + directory; }
+        created << directory;
+    }
+    for (const auto &relative : additions) {
+        const auto destination = QDir(target).filePath(relative);
+        if (!QFile::copy(QDir(source).filePath(relative), destination)) {
+            rollback();
+            return "导入失败，已撤销本次新增文件：" + destination;
+        }
+        copied << destination;
+    }
+    refresh();
+    return {};
+}
+QString BuildKitManager::removeTemplate(const QString &id) {
+    if (m_busy) return "构建期间不能移除模板。";
+    refresh();
+    const auto item = findTemplate(id);
+    if (item.isEmpty()) return "找不到该模板。";
+    if (!QFile::moveToTrash(item["path"].toString())) return "无法移入回收站，模板未被移除。";
+    if (m_preferredTemplateId == id.toLower()) setPreferredTemplateId({});
+    refresh();
+    return {};
+}

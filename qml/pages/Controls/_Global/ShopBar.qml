@@ -20,6 +20,7 @@ ContentBar {
     subtitle: shops.length + " 个已注册商店"
     contentHeight: 400
     expanded: true
+    padding: 20
 
     function registrationNameExists(name) {
         for (var i = 0; i < shops.length; ++i) {
@@ -74,10 +75,10 @@ ContentBar {
     }
 
     Item {
-        x: 16
-        y: 62
-        width: parent.width - 32
-        height: parent.height - y - 8
+        x: root.padding
+        y: 76
+        width: parent.width - root.padding * 2
+        height: parent.height - y - 20
 
         XCText {
             id: registeredTitle
@@ -88,7 +89,7 @@ ContentBar {
 
         ListView {
             id: shopList
-            y: 25
+            y: 30
             width: parent.width
             height: Math.max(0, newShopArea.y - y - 9)
             clip: true
@@ -231,7 +232,7 @@ ContentBar {
             id: newShopArea
             anchors.bottom: parent.bottom
             width: parent.width
-            height: 112
+            height: 136
 
             Rectangle {
                 width: parent.width
@@ -240,7 +241,7 @@ ContentBar {
             }
 
             XCText {
-                y: 8
+                y: 12
                 xcText: "注册新商店"
                 onCenter: false
                 xcFontSize: 12
@@ -248,7 +249,7 @@ ContentBar {
 
             ElementSelectionCompact {
                 id: newUi
-                y: 29
+                y: 36
                 width: parent.width
                 height: 34
                 selectionId: "UI"
@@ -261,14 +262,14 @@ ContentBar {
 
             Row {
                 id: createFields
-                y: 68
+                y: 80
                 width: parent.width
                 height: 30
-                spacing: 6
+                spacing: 8
 
                 XCTextField {
                     id: newName
-                    width: Math.max(88, parent.width * 0.30)
+                    width: Math.max(64, parent.width * 0.30)
                     height: parent.height
                     placeholderText: "注册名"
                     font.pixelSize: 11
@@ -278,7 +279,7 @@ ContentBar {
 
                 GlobalChoiceBox {
                     id: newContainer
-                    width: Math.max(112, parent.width - newName.width - addButton.width - parent.spacing * 2)
+                    width: Math.max(64, parent.width - newName.width - addButton.width - parent.spacing * 2)
                     height: parent.height
                     compact: true
                     options: root.containerOptions
@@ -288,7 +289,7 @@ ContentBar {
 
                 TextButton {
                     id: addButton
-                    width: 54
+                    width: 48
                     height: parent.height
                     radius: 7
                     text: "注册"
@@ -302,7 +303,7 @@ ContentBar {
             }
 
             XCText {
-                y: 99
+                y: 120
                 width: parent.width
                 xcText: root.feedbackMessage
                 visible: root.feedbackMessage.length > 0

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls as Controls
 import xcshop
 
 ContentBar {
@@ -8,7 +9,7 @@ ContentBar {
     property bool builderAvailable: false
     property bool building: false
     property bool canBuild: false
-    property string buildState: builderAvailable ? "未构建" : "构建器未接入"
+    property string buildState: builderAvailable ? "未构建" : "构建器不可用"
     property string buildStage: ""
     property real buildProgress: 0
     property string elapsedText: "—"
@@ -24,6 +25,7 @@ ContentBar {
     subtitle: root.buildState
     contentHeight: 438
     expanded: true
+    padding: 20
 
     readonly property int errorCount: {
         var count = 0
@@ -41,15 +43,15 @@ ContentBar {
     }
 
     Item {
-        x: 16
-        y: 62
-        width: parent.width - 32
-        height: parent.height - y - 8
+        x: root.padding
+        y: 76
+        width: parent.width - root.padding * 2
+        height: parent.height - y - 20
 
         Item {
             id: statusArea
             width: parent.width
-            height: 57
+            height: 68
 
             XCText {
                 id: stateText
@@ -59,7 +61,7 @@ ContentBar {
                 xcFontSize: 14
             }
             XCText {
-                y: 21
+                y: 25
                 width: parent.width - actionButton.width - 18
                 xcText: "耗时 " + root.elapsedText + "   输出 "
                         + (root.outputPath.length ? root.outputPath : "—")
@@ -71,19 +73,27 @@ ContentBar {
             }
 
             Rectangle {
-                y: 44
+                y: 51
                 width: parent.width - actionButton.width - 18
                 height: 5
                 radius: 3
                 color: Colors.changeA(Colors.text, 0.10)
 
                 Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, root.buildProgress))
+                    id: progressFill
+                    width: parent.width * (root.building ? 0.28 : Math.max(0, Math.min(1, root.buildProgress)))
                     height: parent.height
                     radius: parent.radius
                     color: Colors.border
                     Behavior on width {
                         NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
+                    }
+                    SequentialAnimation on opacity {
+                        running: root.building
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.35; to: 1; duration: 650 }
+                        NumberAnimation { from: 1; to: 0.35; duration: 650 }
+                        onRunningChanged: if (!running) progressFill.opacity = 1
                     }
                 }
             }
@@ -128,10 +138,10 @@ ContentBar {
 
         Row {
             id: outputRow
-            y: statusArea.height + 4
+            y: statusArea.height + 14
             width: parent.width
             height: parent.height - y
-            spacing: 10
+            spacing: 14
 
             Item {
                 id: consolePanel
@@ -146,7 +156,7 @@ ContentBar {
 
                 XCTextArea {
                     id: consoleOutput
-                    y: 26
+                    y: 32
                     width: parent.width
                     height: parent.height - y
                     readOnly: true
@@ -170,7 +180,7 @@ ContentBar {
                 }
 
                 Rectangle {
-                    y: 26
+                    y: 32
                     width: parent.width
                     height: parent.height - y
                     radius: 7
@@ -232,6 +242,12 @@ ContentBar {
                                 cursorShape: problemRow.problem.file ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: root.problemActivated(problemRow.problem)
                             }
+                            Controls.ToolTip.visible: problemMouse.containsMouse
+                            Controls.ToolTip.delay: 500
+                            Controls.ToolTip.text: String(problemRow.problem.reason || problemRow.problem.message || "")
+                                                   + "\n" + String(problemRow.problem.file || "")
+                                                   + "\n" + String(problemRow.problem.property || "")
+                                                   + (problemRow.problem.solution ? "\n解决办法：" + problemRow.problem.solution : "")
                         }
 
                         XCText {

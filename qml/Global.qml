@@ -181,6 +181,7 @@ QtObject{
 
     //文件操作
     property XCFile xcfile: XCFile{}
+    property var savedSettings: ({})
 
     function loadSettings(){
         settingsPath = APP_DIRPATH + "/settings.json"
@@ -189,6 +190,12 @@ QtObject{
             var saved = text.length ? JSON.parse(text) : null
             if (!saved)
                 return
+            if (typeof saved !== "object" || Array.isArray(saved))
+                return
+            savedSettings = saved
+            if (typeof saved.kitsPath === "string") BuildKits.kitsPath = saved.kitsPath
+            if (typeof saved.builderPath === "string") Builder.executablePath = saved.builderPath
+            if (typeof saved.preferredTemplateId === "string") BuildKits.preferredTemplateId = saved.preferredTemplateId
             Colors.loadSettings(saved)
             if (saved.animationSpeed) animationSpeed = saved.animationSpeed
             if (saved.backgroundMode)
@@ -214,7 +221,7 @@ QtObject{
     function saveSettings(){
         if (!settingsPath.length)
             return
-        var settings = Colors.settingsData()
+        var settings = Object.assign({}, savedSettings, Colors.settingsData())
         settings.animationSpeed = animationSpeed
         settings.backgroundMode = backgroundMode
         settings.backgroundImage = backgroundImage
@@ -224,7 +231,15 @@ QtObject{
         settings.elementExplorerWidth = elementExplorerWidth
         settings.uiInspectorWidth = uiInspectorWidth
         settings.uiCanvasViews = uiCanvasViews
-        xcfile.write(settingsPath, JSON.stringify(settings))
+        settings.kitsPath = BuildKits.kitsPath
+        settings.builderPath = Builder.executablePath
+        settings.preferredTemplateId = BuildKits.preferredTemplateId
+        if (xcfile.writeAtomic(settingsPath, JSON.stringify(settings, null, 2))) {
+            savedSettings = settings
+            return true
+        }
+        console.warn("无法保存设置：" + settingsPath)
+        return false
     }
 
     function relayProjectKey(location){

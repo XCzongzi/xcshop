@@ -9,6 +9,30 @@ import xcshop 1.0
 
 XCWindow {
     id: mainWindow
+    property bool closeAfterBuild: false
+    property bool closeQuestionShown: false
+
+    onClosing: function(event) {
+        if (!Builder.running) return
+        event.accepted = false
+        if (closeQuestionShown || closeAfterBuild) return
+        closeQuestionShown = true
+        root.showPopup(Constants.popupNotice, {
+            "title": "构建仍在运行",
+            "content": "是否停止构建并退出编辑器？\n如果已经进入写入阶段，请在下次使用前重新构建确认输出。",
+            "doubleButton": true
+        }, function(result) {
+            mainWindow.closeQuestionShown = false
+            if (result !== 1) return
+            if (!Builder.running) { Qt.quit(); return }
+            mainWindow.closeAfterBuild = true
+            Builder.cancel()
+        })
+    }
+    Connections {
+        target: Builder
+        function onCompleted(success) { if (mainWindow.closeAfterBuild) Qt.quit() }
+    }
 
     Component.onCompleted: {
         Global.loadSettings()
@@ -342,14 +366,6 @@ XCWindow {
                     pageLoader.sourceComponent = undefined
                     pageLoader.pageSwitch(tempcom)
                 break
-                default:
-                    // 构建器可通过 SignalBus.sendToMain("Build.*", data)
-                    // 将状态、日志和诊断统一回传给 Global 页面。
-                    if (signalType.indexOf("Build.") === 0 && pageLoader.item) {
-                        var handler = pageLoader.item["executeFromMain"]
-                        if (typeof handler === "function")
-                            handler.call(pageLoader.item, signalType, parameters)
-                    }
             }
         }
     }

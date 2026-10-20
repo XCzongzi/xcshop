@@ -8,31 +8,39 @@ BasePage {
     workspace: true
 
     property var projectData: ({})
+    property bool manifestLoaded: false
     property var registeredShops: []
-    property var templateOptions: []
+    readonly property var templateOptions: {
+        var catalog = BuildKits.templates
+        return BuildKits.options(projectData.dataVersion === undefined ? BuildKits.dataVersion : Number(projectData.dataVersion))
+    }
     property var elementCounts: ({ "UI": 0, "Item": 0, "Cost": 0, "Display": 0 })
-    property var buildProblems: []
-    property bool builderAvailable: false
-    property bool building: false
-    property string buildState: builderAvailable ? "未构建" : "构建器未接入"
-    property string buildStage: ""
-    property real buildProgress: 0
-    property string buildConsole: ""
-    property double buildStartedAt: 0
-    property string buildElapsed: "—"
-    property string buildOutputPath: ""
+    property var preflightProblems: []
+    readonly property bool hasBuildResult: Builder.projectPath.length > 0
+                                          && Global.normalizeElementPath(Builder.projectPath).toLowerCase()
+                                             === Global.normalizeElementPath(Global.project_location).toLowerCase()
+    readonly property var buildProblems: preflightProblems.concat(hasBuildResult ? Builder.problems : [])
+    readonly property bool builderAvailable: Builder.available
+    readonly property bool building: Builder.running
+    readonly property string buildState: building && !hasBuildResult ? "其他项目正在构建"
+                                        : hasBuildResult ? Builder.state : builderAvailable ? "未构建" : "构建器不可用"
+    readonly property string buildStage: hasBuildResult ? Builder.summary : ""
+    readonly property real buildProgress: hasBuildResult && Builder.state === "构建成功" ? 1 : 0
+    readonly property string buildConsole: hasBuildResult ? Builder.consoleText : ""
+    readonly property string buildElapsed: hasBuildResult ? formatElapsed(Builder.elapsedMs) : "—"
+    readonly property string buildOutputPath: hasBuildResult ? Builder.outputPath : ""
 
     readonly property int buildErrorCount: {
         var count = 0
-        for (var i = 0; i < buildProblems.length; ++i)
-            if (String(buildProblems[i].severity).toLowerCase() === "error")
+        for (var i = 0; i < preflightProblems.length; ++i)
+            if (String(preflightProblems[i].severity).toLowerCase() === "error")
                 ++count
         return count
     }
-    readonly property bool canBuild: builderAvailable && !building && buildErrorCount === 0
+    readonly property bool canBuild: manifestLoaded && builderAvailable && !building && buildErrorCount === 0
 
-    // Global 是固定仪表盘，内部列表各自滚动，不使用页面级纵向滚动。
-    content_height: height
+    // Preserve the four-card dashboard; on short windows keep controls from being squeezed out.
+    content_height: dashboard.height + 36
 
     XCFile { id: projectFile }
 
@@ -59,49 +67,15 @@ BasePage {
     }
 
     function normalizeShop(shop) {
-        var defaultContainer = Constants.shopContainerOptions.length
-                ? Constants.shopContainerOptions[0].value : ""
-        return {
-            "element": shop && shop.element ? Global.projectRelativeElementPath(shop.element)
-                                             : (shop && shop.ui ? Global.projectRelativeElementPath(shop.ui) : ""),
-            "registrationName": shop && shop.registrationName ? String(shop.registrationName)
-                                                                : (shop && shop.name ? String(shop.name) : ""),
-            "containerType": shop && containerOptionExists(String(shop.containerType || shop.containerId || ""))
-                             ? String(shop.containerType || shop.containerId) : defaultContainer
-        }
-    }
-
-    function loadTemplates() {
-        var options = []
-        try {
-            var source = JSON.parse(projectFile.read("templates.json"))
-            var items = source && Array.isArray(source.Intros) ? source.Intros : []
-            for (var i = 0; i < items.length; ++i) {
-                options.push({
-                    "value": String(i),
-                    "label": items[i].id ? String(items[i].id) : "模板 " + (i + 1),
-                    "versions": Array.isArray(items[i].versions) ? items[i].versions : []
-                })
-            }
-        } catch (error) {
-        }
-
-        var currentTemplate = projectData && projectData.template !== undefined
-                ? String(projectData.template) : ""
-        var found = false
-        for (var j = 0; j < options.length; ++j)
-            found = found || options[j].value === currentTemplate
-        if (!found && currentTemplate.length) {
-            options.push({
-                "value": currentTemplate,
-                "label": "模板 " + currentTemplate,
-                "versions": projectData.version ? [String(projectData.version)] : []
-            })
-        }
-        templateOptions = options
+        var data = clone(shop) || ({})
+        data.element = shop && shop.element ? Global.projectRelativeElementPath(shop.element) : ""
+        data.registrationName = String(shop && shop.registrationName || "")
+        data.containerType = String(shop && shop.containerType || "")
+        return data
     }
 
     function loadProject() {
+        manifestLoaded = false
         var manifestPath = Global.project_location + "/xcshop.json"
         var loaded
         try {
@@ -114,26 +88,28 @@ BasePage {
             showNotice("项目配置读取失败", "xcshop.json 的根节点必须是对象。")
             return
         }
+        if (loaded.shops !== undefined && !Array.isArray(loaded.shops)) {
+            showNotice("项目配置读取失败", "xcshop.json 的 shops 必须是数组。当前配置未被修改，请修正后重新打开项目。")
+            return
+        }
 
         var rawShops = Array.isArray(loaded.shops) ? loaded.shops : []
         var shops = []
         for (var i = 0; i < rawShops.length; ++i)
             shops.push(normalizeShop(rawShops[i]))
         projectData = loaded
+        manifestLoaded = true
         registeredShops = shops
         Global.version = loaded.version ? String(loaded.version) : ""
-        buildOutputPath = loaded.generatePath ? String(loaded.generatePath) : ""
-        loadTemplates()
         refreshStatistics()
     }
 
     function saveManifest(nextProjectData, nextShops) {
+        if (!manifestLoaded || building) return false
         var data = clone(nextProjectData)
         var shops = clone(nextShops)
         if (!data || !shops)
             return false
-        if (data.dataVersion === undefined)
-            data.dataVersion = 0
         data.shops = shops
         var saved = projectFile.writeAtomic(Global.project_location + "/xcshop.json",
                                             JSON.stringify(data, null, 2))
@@ -144,7 +120,6 @@ BasePage {
         projectData = data
         registeredShops = shops
         Global.version = data.version ? String(data.version) : ""
-        buildOutputPath = data.generatePath ? String(data.generatePath) : ""
         Global.rememberProject(Global.project_location, data)
         refreshStatistics()
         return true
@@ -156,10 +131,13 @@ BasePage {
             if (Object.prototype.hasOwnProperty.call(changes, key))
                 next[key] = changes[key]
         }
+        if (changes.templateId !== undefined)
+            delete next.template // Retire numeric identity only after an explicit template selection.
         saveManifest(next, registeredShops)
     }
 
     function editProject() {
+        if (building) return
         pageEvent("Popup.show", {
             "component": Constants.popupProjectSettings,
             "properties": {
@@ -175,6 +153,7 @@ BasePage {
     }
 
     function addShop(shop) {
+        if (building) return
         var next = registeredShops.slice()
         next.push(normalizeShop(shop))
         if (saveManifest(projectData, next)) {
@@ -185,6 +164,7 @@ BasePage {
     }
 
     function updateShop(index, changes) {
+        if (building) return
         if (index < 0 || index >= registeredShops.length)
             return
         var next = clone(registeredShops)
@@ -196,6 +176,7 @@ BasePage {
     }
 
     function editShop(index) {
+        if (building) return
         if (index < 0 || index >= registeredShops.length)
             return
         var existingNames = []
@@ -218,6 +199,7 @@ BasePage {
     }
 
     function requestDeleteShop(index) {
+        if (building) return
         if (index < 0 || index >= registeredShops.length)
             return
         var shop = registeredShops[index]
@@ -262,13 +244,23 @@ BasePage {
         var result = []
         if (!projectData.name || !String(projectData.name).trim().length)
             result.push({ "severity": "error", "code": "E_PROJECT_NAME", "message": "项目名称为空", "file": "xcshop.json" })
-        if (!projectData.namespace || !/^[a-z0-9_]+$/.test(String(projectData.namespace)))
+        if (!projectData.namespace || !/^[a-z0-9_.-]+$/.test(String(projectData.namespace))
+                || projectData.namespace === "." || projectData.namespace === "..")
             result.push({ "severity": "error", "code": "E_NAMESPACE", "message": "项目命名空间格式不正确", "file": "xcshop.json" })
         if (!projectData.generatePath || !String(projectData.generatePath).trim().length)
             result.push({ "severity": "error", "code": "E_OUTPUT_PATH", "message": "未设置数据包生成位置", "file": "xcshop.json" })
-        if (projectData.template === undefined || projectData.template === null
-                || String(projectData.template).length === 0)
-            result.push({ "severity": "error", "code": "E_TEMPLATE", "message": "未设置构建模板", "file": "xcshop.json" })
+        var manifest = Global.project_location + "/xcshop.json"
+        var template = BuildKits.findTemplate(String(projectData.templateId || ""))
+        if (!projectData.templateId)
+            result.push({ "severity": "error", "message": "未设置模板 ID；旧数字模板需在项目设置中重新选择", "file": manifest, "property": "$.templateId", "solution": "打开项目设置，选择本地可用模板。" })
+        else if (!template.valid || !BuildKits.identityValid)
+            result.push({ "severity": "error", "message": "所选模板不可用或套件目录存在身份冲突", "file": manifest, "property": "$.templateId", "solution": "在设置 → 构建套件中检查模板与依赖，或重新选择模板。" })
+        if (projectData.dataVersion !== BuildKits.dataVersion)
+            result.push({ "severity": "error", "message": "当前编辑器不支持该项目数据版本", "file": manifest, "property": "$.dataVersion", "solution": "使用支持该项目数据版本的编辑器；不要直接改写版本号。" })
+        if (template.valid && template.dataVersion !== projectData.dataVersion)
+            result.push({ "severity": "error", "message": "模板与项目的数据版本不一致", "file": manifest, "property": "$.dataVersion", "solution": "请选择数据版本匹配的模板。" })
+        if (template.valid && BuildKits.versionSupport(template.id, String(projectData.version || "")) < 0)
+            result.push({ "severity": "error", "message": "模板不支持项目的目标版本", "file": manifest, "property": "$.version", "solution": "在项目设置中选择模板支持的版本。" })
         if (!projectData.version || !String(projectData.version).trim().length)
             result.push({ "severity": "error", "code": "E_TARGET_VERSION", "message": "未设置目标版本", "file": "xcshop.json" })
         if (registeredShops.length === 0)
@@ -318,7 +310,7 @@ BasePage {
         }
         infoBar.validShopCount = validCount
         infoBar.referencedUiCount = referenced.length
-        buildProblems = collectProblems()
+        preflightProblems = collectProblems()
     }
 
     function formatElapsed(milliseconds) {
@@ -329,81 +321,12 @@ BasePage {
     }
 
     function beginBuild() {
+        BuildKits.refresh()
+        Builder.recheckExecutable()
         refreshStatistics()
         if (!canBuild)
             return
-        building = true
-        buildState = "构建中"
-        buildStage = "正在准备"
-        buildProgress = 0
-        buildConsole = ""
-        buildStartedAt = Date.now()
-        buildElapsed = "0 秒"
-        pageEvent("Build.request", {
-            "projectLocation": Global.project_location,
-            "project": clone(projectData),
-            "shops": clone(registeredShops)
-        })
-    }
-
-    function appendBuildLog(level, message) {
-        var prefix = level ? "[" + String(level).toUpperCase() + "] " : ""
-        buildConsole += (buildConsole.length ? "\n" : "") + prefix + String(message || "")
-    }
-
-    function finishBuild(success, summary, outputPath) {
-        building = false
-        buildProgress = success ? 1 : buildProgress
-        buildState = success ? "构建成功" : "构建失败"
-        buildStage = summary || ""
-        if (outputPath)
-            buildOutputPath = String(outputPath)
-        if (buildStartedAt > 0)
-            buildElapsed = formatElapsed(Date.now() - buildStartedAt)
-    }
-
-    // 为构建器保留的统一回调入口。后端接入后可由 Main.qml 转发这些事件。
-    function executeFromMain(type, parameters) {
-        var data = parameters || ({})
-        switch (type) {
-        case "Build.available":
-            builderAvailable = Boolean(data.available)
-            if (!building)
-                buildState = builderAvailable ? "未构建" : "构建器未接入"
-            break
-        case "Build.started":
-            building = true
-            buildState = "构建中"
-            buildStage = data.stage || "正在准备"
-            buildStartedAt = Date.now()
-            buildElapsed = "0 秒"
-            break
-        case "Build.progress":
-            buildProgress = Math.max(0, Math.min(1, Number(data.progress) || 0))
-            buildStage = data.stage || buildStage
-            break
-        case "Build.log":
-            appendBuildLog(data.level, data.message)
-            break
-        case "Build.problems":
-            buildProblems = Array.isArray(data.problems) ? data.problems : []
-            break
-        case "Build.finished":
-            finishBuild(Boolean(data.success), data.summary, data.outputPath)
-            break
-        case "Build.canceled":
-            building = false
-            buildState = "已取消"
-            buildStage = ""
-            break
-        }
-    }
-
-    Timer {
-        interval: 500
-        repeat: true
-        running: root.building
-        onTriggered: root.buildElapsed = root.formatElapsed(Date.now() - root.buildStartedAt)
+        Builder.start(Global.project_location, BuildKits.kitsPath)
     }
 
     Connections {
@@ -412,20 +335,24 @@ BasePage {
         function onElementFilesMoved() { root.refreshStatistics() }
         function onElementFilesDeleted() { root.refreshStatistics() }
     }
+    Connections {
+        target: BuildKits
+        function onCatalogChanged() { root.refreshStatistics() }
+    }
 
-    Component.onCompleted: loadProject()
+    Component.onCompleted: { BuildKits.refresh(); Builder.recheckExecutable(); loadProject() }
 
     Item {
         id: dashboard
-        x: 12
-        y: 12
-        width: Math.max(0, parent.width - 24)
-        height: Math.max(0, parent.height - 24)
+        x: 20
+        y: 18 - root.height_output
+        width: Math.max(0, parent.width - 40)
+        height: Math.max(600, parent.height - 36)
 
-        readonly property int gap: 10
-        readonly property int topHeight: Math.max(165, Math.min(220, height * 0.28))
-        readonly property real projectWidth: Math.max(480, (width - gap) * 0.70)
-        readonly property real shopWidth: (width - gap) * 0.48
+        readonly property int gap: 16
+        readonly property int topHeight: 196
+        readonly property real projectWidth: (width - gap) * 0.62
+        readonly property real shopWidth: (width - gap) * 0.44
 
         ProjectBar {
             id: projectBar
@@ -434,6 +361,7 @@ BasePage {
             projectData: root.projectData
             projectLocation: Global.project_location
             templateOptions: root.templateOptions
+            enabled: !root.building
             onEditRequested: root.editProject()
             onRevealRequested: function(path) {
                 if (!projectFile.revealInFileManager(path))
@@ -448,6 +376,7 @@ BasePage {
             contentHeight: dashboard.height - y
             shops: root.registeredShops
             containerOptions: Constants.shopContainerOptions
+            enabled: !root.building
             onAddRequested: function(shop) { root.addShop(shop) }
             onEditRequested: function(index) { root.editShop(index) }
             onDeleteRequested: function(index) { root.requestDeleteShop(index) }
@@ -477,13 +406,26 @@ BasePage {
             consoleText: root.buildConsole
             problems: root.buildProblems
             onStartRequested: root.beginBuild()
-            onCancelRequested: root.pageEvent("Build.cancel", {})
+            onCancelRequested: Builder.cancel()
             onProblemActivated: function(problem) {
                 if (!problem || !problem.file)
                     return
                 var parsed = Global.parseElementPath(problem.file)
-                if (parsed && projectFile.exists(parsed.path))
-                    SignalBus.elementOpenRequested(parsed.path)
+                pageEvent("Popup.show", {
+                    "component": Constants.popupNotice,
+                    "properties": {
+                        "title": String(problem.severity) === "warning" ? "构建警告" : "构建错误",
+                        "content": String(problem.reason || problem.message || "")
+                                   + "\n\n文件：" + problem.file
+                                   + (problem.property ? "\n属性：" + problem.property : "")
+                                   + (problem.solution ? "\n\n解决办法：" + problem.solution : "")
+                                   + (parsed ? "\n\n确认后定位到此元素。" : "")
+                    },
+                    "callback": function(result) {
+                        if (result === 1 && parsed && projectFile.exists(parsed.path))
+                            SignalBus.elementOpenRequested(parsed.path)
+                    }
+                })
             }
         }
 
