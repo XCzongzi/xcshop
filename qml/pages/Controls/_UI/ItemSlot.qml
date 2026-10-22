@@ -85,7 +85,7 @@ Rectangle {
         if (!texturePath.length || !elementFile.exists(texturePath))
             return defaultIconSource
 
-        return "file:///" + texturePath.replace(/\\/g, "/")
+        return "file:///" + texturePath.replace(/\\/g, "/") + "?revision=" + Global.minecraftIconRevision
     }
 
     function setElement(filePath, notifyChange) {

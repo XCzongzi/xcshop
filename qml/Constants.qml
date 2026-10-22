@@ -9,10 +9,6 @@ QtObject{
     readonly property int titleBarHeight: 36
     readonly property int typeBarWidth: 48
 
-    // url
-    readonly property string url_itemMappings: "https://raw.githubusercontent.com/Plagiatus/ForeverIds/main/items/items.min.json"
-    readonly property string url_itemMappingTags: "https://api.github.com/repos/Plagiatus/ForeverIds/tags?per_page=1"
-
 
     // 页面
     readonly property Component pageWithEmpty: Qt.createComponent("pages/PageWithEmpty.qml")
@@ -32,7 +28,6 @@ QtObject{
     readonly property Component popupTextInput: Qt.createComponent("components/popup/PopupTextInput.qml")
     readonly property Component popupProjectSettings: Qt.createComponent("components/popup/PopupProjectSettings.qml")
     readonly property Component popupShopSettings: Qt.createComponent("components/popup/PopupShopSettings.qml")
-    readonly property Component popupMappingHistory: Qt.createComponent("components/popup/PopupMappingHistory.qml")
     readonly property Component popupJsonTextEditor: Qt.createComponent("components/popup/PopupJsonTextEditor.qml")
     
 

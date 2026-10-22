@@ -80,8 +80,47 @@ QtObject{
 
     }
 
+    property string minecraftPackPath: ""
+    property var minecraftCustomIds: ({})
+    property int minecraftIconRevision: 0
+    property Connections minecraftImportConnection: Connections {
+        target: MinecraftAssetImporter
+        function onImportFinished(report) {
+            if (report.ok) Global.reloadMinecraftResources()
+        }
+    }
+
+    function reloadMinecraftResources(){
+        var root = APP_DIRPATH + "/assets/minecraft/items"
+        var pack = ""
+        var custom = ({})
+        var vanilla = ({})
+        try {
+            var active = JSON.parse(xcfile.read(root + "/active.json"))
+            if (active.schemaVersion === 2
+                    && /^packs\/[a-f0-9]{40}-r[0-9]+-[a-f0-9-]+$/.test(active.pack))
+                pack = root + "/" + active.pack
+        } catch (error) {}
+        if (pack.length) {
+            try {
+                var catalog = JSON.parse(xcfile.read(pack + "/catalog.json"))
+                for (var itemIndex = 0; itemIndex < catalog.items.length; ++itemIndex)
+                    vanilla[catalog.items[itemIndex].name] = true
+            } catch (error) { pack = "" }
+        }
+        try {
+            var entries = JSON.parse(xcfile.read(root + "/custom-items.json"))
+            for (var i = 0; i < entries.length; ++i)
+                if (entries[i].itemId && !vanilla[entries[i].itemId]) custom[entries[i].itemId] = true
+        } catch (error) {}
+        minecraftPackPath = pack
+        minecraftCustomIds = custom
+        minecraftIconRevision += 1
+    }
+
 //通过物品id获取纹理位置
     function getItemTexturePath(itemId){
+        var revision = minecraftIconRevision
         var value = itemId === undefined || itemId === null ? "" : String(itemId).trim()
         if (!value.length)
             return ""
@@ -89,10 +128,14 @@ QtObject{
         var separator = value.indexOf(":")
         var namespaceName = separator > 0 ? value.substring(0, separator) : "minecraft"
         var itemName = separator >= 0 ? value.substring(separator + 1) : value
-        if (!itemName.length)
+        if (namespaceName === "." || namespaceName === ".."
+                || !/^[a-z0-9_.-]+$/.test(namespaceName) || !/^[a-z0-9_./-]+$/.test(itemName)
+                || itemName.split("/").some(function(part) { return !part.length || part === "." || part === ".." }))
             return ""
 
-        return APP_DIRPATH + "/assets/minecraft/items/assets/"
+        var base = minecraftPackPath.length && !minecraftCustomIds[namespaceName + ":" + itemName]
+                 ? minecraftPackPath : APP_DIRPATH + "/assets/minecraft/items"
+        return base + "/assets/"
                 + namespaceName + "/" + itemName + ".png"
     }
 
@@ -185,6 +228,7 @@ QtObject{
     property var savedSettings: ({})
 
     function loadSettings(){
+        reloadMinecraftResources()
         settingsPath = APP_DIRPATH + "/settings.json"
         var text = xcfile.read(settingsPath)
         try {

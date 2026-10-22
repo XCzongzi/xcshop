@@ -27,6 +27,8 @@ qt_add_executable(appxcshop
     src/main.cpp
     src/XCFile.cpp
     src/MinecraftAssetImporter.cpp
+    src/MinecraftGameData.cpp
+    src/MinecraftItemRenderer.cpp
     src/ElementIO.cpp
     src/BuildKitManager.cpp
     src/BuildManager.cpp
@@ -95,7 +97,6 @@ qt_add_qml_module(appxcshop
         qml/components/popup/PopupTextInput.qml
         qml/components/popup/PopupProjectSettings.qml
         qml/components/popup/PopupShopSettings.qml
-        qml/components/popup/PopupMappingHistory.qml
         qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
@@ -193,6 +194,7 @@ qt_add_qml_module(appxcshop
 
         header/XCFile.h
         header/MinecraftAssetImporter.h
+        header/MinecraftImportSupport.h
         header/ElementIO.h
         header/BuildKitManager.h
         header/BuildManager.h
@@ -240,10 +242,19 @@ if(XCSHOP_BUILD_TESTS)
     target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test)
     qt_add_executable(builder_protocol_fixture tests/BuilderProtocolFixture.cpp)
     target_link_libraries(builder_protocol_fixture PRIVATE Qt6::Core)
+    qt_add_executable(minecraft_import_tests tests/MinecraftImportTests.cpp
+        src/MinecraftGameData.cpp src/MinecraftItemRenderer.cpp)
+    target_link_libraries(minecraft_import_tests PRIVATE Qt6::Gui Qt6::Network Qt6::Test)
+    add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
+    set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml)
     add_test(NAME editor_backend_tests COMMAND editor_backend_tests $<TARGET_FILE:builder_protocol_fixture>)
     add_test(NAME editor_startup_smoke COMMAND appxcshop --startup-smoke)
+    add_test(NAME minecraft_items_ui_smoke COMMAND appxcshop --minecraft-ui-smoke)
+    set_tests_properties(minecraft_items_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        TIMEOUT 20)
     set_tests_properties(editor_startup_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
         TIMEOUT 15)
