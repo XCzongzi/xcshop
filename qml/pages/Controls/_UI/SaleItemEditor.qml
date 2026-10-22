@@ -1,7 +1,7 @@
 import QtQuick
 import xcshop
 
-Rectangle {
+ContentSurface {
     id: root
 
     property int itemIndex: -1
@@ -29,12 +29,7 @@ Rectangle {
 
     implicitHeight: headerHeight + (expanded ? editorColumn.height + 12 : 0)
     height: implicitHeight
-    radius: 9
     clip: true
-    color: Colors.changeA(Colors.foreground, 0.50)
-    border.width: 1
-    border.color: expanded ? Colors.changeA(Colors.border, 0.35)
-                           : Colors.changeA(Colors.text, 0.10)
 
     Behavior on height {
         NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic }

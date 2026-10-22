@@ -1,8 +1,9 @@
 import QtQuick
 import xcshop
 
-Rectangle {
+ContentSurface {
     id: root
+    hoverEffectsEnabled: true
 
     property int desiredWidth: 400
     property int minimumWidth: 260
@@ -13,10 +14,6 @@ Rectangle {
     signal widthResizeFinished()
 
     width: Math.min(desiredWidth, maximumWidth)
-    radius: 10
-    color: Colors.changeA(Colors.foreground, 0.72)
-    border.width: 1
-    border.color: Colors.changeA(Colors.border, 0.13)
 
     XCText {
         x: 18

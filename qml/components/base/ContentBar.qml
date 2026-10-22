@@ -13,7 +13,7 @@ FocusScope{
     property int contentHeight
     property string title: ""
     property string subtitle: ""
-    property color color: Colors.changeA(Colors.foreground, 0.72)
+    property alias color: surface.color
     width: parent.layout ? parent.contentWidthEnhance + min_width : parent.width - 32
     height: 0
     clip: true
@@ -31,23 +31,11 @@ FocusScope{
         expandAnimation.start()
     }
 
-    Rectangle{
-        color: root.color
-        radius: 12
-        
+    ContentSurface {
+        id: surface
+        hoverEffectsEnabled: true
+        hoverTarget: root
         anchors.fill: root
-
-        opacity: (hoverHandler.hovered || root.activeFocus) ? 1 : 0.92
-
-        property double borderOpacity: (hoverHandler.hovered || root.activeFocus) ? 0.72 : 0.13
-        border.color: Colors.changeA(Colors.border,borderOpacity)
-        border.width: 1
-        Behavior on borderOpacity{
-            enabled: !root.activeFocus
-            NumberAnimation{
-                duration: 180 / Global.animationSpeed
-            }
-        }
         XCText{
             id: itemInput_propertyText
             y: 18
@@ -94,22 +82,6 @@ FocusScope{
             }
         }
 
-
-        //基础动画
-        Behavior on color {
-                ColorAnimation{
-                duration: 180 / Global.animationSpeed
-                }
-            }
-        Behavior on opacity {
-                NumberAnimation{
-                    duration: 300 / Global.animationSpeed
-                }
-            }
-
-        HoverHandler{       //监测鼠标的悬停事件
-            id: hoverHandler
-        }
 
         MouseArea{
             anchors.fill: parent

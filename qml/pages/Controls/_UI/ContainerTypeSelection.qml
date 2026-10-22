@@ -13,12 +13,8 @@ Item {
     signal confirmed(string containerTypeName)
     signal canceled()
 
-    Rectangle {
+    ContentSurface {
         anchors.fill: parent
-        color: Colors.changeA(Colors.foreground, 0.18)
-        radius: 10
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.07)
     }
 
     Item {

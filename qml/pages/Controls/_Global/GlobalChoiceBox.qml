@@ -94,8 +94,8 @@ Item {
             border.width: 1
             border.color: root.menuOpened || choice.hovered ? Colors.changeA(Colors.border, 0.60)
                                                             : Colors.changeA(Colors.text, 0.10)
-            Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-            Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+            Behavior on color { ColorAnimation { duration: 500 / Global.animationSpeed } }
+            Behavior on border.color { ColorAnimation { duration: 500 / Global.animationSpeed } }
         }
         XCText {
             anchors.right: parent.right

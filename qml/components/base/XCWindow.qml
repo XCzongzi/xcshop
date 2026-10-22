@@ -17,6 +17,7 @@ Window {
 
     readonly property int titleBarHeight: titleBar.height
     readonly property Image background: backgroundImage
+    readonly property Item backdrop: rawBackdrop
     readonly property int titleBar_height: titleBar.height
     property string backgroundMode: Global.backgroundMode
     property color backgroundColor: Colors.backgroundColor
@@ -33,22 +34,24 @@ Window {
     // Keep flags stable so minimizing never destroys the previous normal or
     // maximized placement. NativeFramelessWindow backports QTBUG-127116.
 
-    Rectangle {
+    Item {
         id: windowSurface
         
         x: root.margins
         y: root.margins
         width: root.width - 2*root.margins
         height: root.height - 2*root.margins
-        radius: Constants.window_radius
-        color: Colors.background_n
-
-        Behavior on color {
-            ColorAnimation { duration: 500 / Global.animationSpeed }
-        }
-
-        Item{
+        // Keep hover captures separate from the rounded, shadowed display
+        // layer so a cropped capture cannot alter the window's own texture.
+        Rectangle {
+            id: rawBackdrop
             anchors.fill: parent
+            color: Colors.background_n
+
+            Behavior on color {
+                ColorAnimation { duration: 500 / Global.animationSpeed }
+            }
+
             Image {
                 id: backgroundImage
                 anchors.fill: parent
@@ -61,8 +64,15 @@ Window {
                     blur: root.backgroundBlur
                 }
             }
-            
+        }
 
+        ShaderEffectSource {
+            anchors.fill: parent
+            sourceItem: rawBackdrop
+            // Keep nested image effects visible to the renderer while hiding
+            // the original backdrop from the normal scene composition.
+            hideSource: true
+            live: true
             layer.enabled: root.visibility !== Window.Maximized
             layer.effect: OpacityMask{
                 maskSource: Rectangle{

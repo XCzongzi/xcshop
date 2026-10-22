@@ -43,6 +43,7 @@ XCWindow {
         typeBar.isEnabled = false
         //mainWindow.showFilePage = true //临时的
         Global.mainWindow_background = mainWindow.background
+        Global.mainWindow_backdrop = mainWindow.backdrop
     }
     WindowSurface{
         id: root

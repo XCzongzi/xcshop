@@ -2,8 +2,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
 
-Rectangle {
+ContentSurface {
     id: root
+    hoverEffectsEnabled: true
 
     property var uiPage: null
     property int draggedGroupIndex: -1
@@ -22,11 +23,7 @@ Rectangle {
                                                             root.selectedGroup.id)
 
     height: 140
-    radius: 10
     clip: true
-    color: Colors.changeA(Colors.foreground, 0.72)
-    border.width: 1
-    border.color: Colors.changeA(Colors.border, 0.13)
 
     ListModel { id: nestedGroupModel }
 

@@ -28,6 +28,7 @@ BasePage {
     property bool projectCreationSucceeded: false
     // Set by PageOnStart when this page is hosted in its right-side panel.
     property var embeddedBackAction: null
+    property Item backdropSource: Global.mainWindow_backdrop
 
     readonly property bool projectNameGood: projectNameValue.trim().length > 0
                                              && !/[\\\\/:*?"<>|]/.test(projectNameValue)
@@ -45,15 +46,6 @@ BasePage {
 
     Behavior on visualContentOffset {
         NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
-    }
-
-    component CreationCard: Rectangle {
-        // Keep sections distinct without making them look raised above the page.
-        radius: 9
-        color: Colors.changeA(Colors.foreground,
-                              Global.backgroundMode === "color" ? 0.38 : 0.44)
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.08)
     }
 
     Component.onCompleted: {
@@ -193,8 +185,10 @@ BasePage {
                 xcFontSize: 22
             }
 
-            CreationCard {
+            ContentSurface {
                 id: baseCard
+                hoverEffectsEnabled: true
+                backdropSource: root.backdropSource
                 width: parent.width
                 height: baseForm.height + 40
 
@@ -244,8 +238,10 @@ BasePage {
                 }
             }
 
-            CreationCard {
+            ContentSurface {
                 id: pathCard
+                hoverEffectsEnabled: true
+                backdropSource: root.backdropSource
                 width: parent.width
                 height: pathForm.height + 40
 
@@ -299,8 +295,10 @@ BasePage {
                 }
             }
 
-            CreationCard {
+            ContentSurface {
                 id: templateCard
+                hoverEffectsEnabled: true
+                backdropSource: root.backdropSource
                 width: parent.width
                 height: 318
 
@@ -424,7 +422,9 @@ BasePage {
                 }
             }
 
-            CreationCard {
+            ContentSurface {
+                hoverEffectsEnabled: true
+                backdropSource: root.backdropSource
                 width: parent.width
                 height: 70
 

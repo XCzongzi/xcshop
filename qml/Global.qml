@@ -11,6 +11,7 @@ QtObject{
     //全局信息
 
     property Image mainWindow_background
+    property Item mainWindow_backdrop: null
 
     property real animationSpeed: 1.0
     property string backgroundMode: "color" // color / image

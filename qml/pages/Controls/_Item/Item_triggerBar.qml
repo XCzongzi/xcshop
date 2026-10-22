@@ -122,22 +122,10 @@ Rectangle{
             easing.type: Easing.InOutQuad
         }
     }
-    Rectangle{
+    ContentSurface {
         id: frame
         width: parent.width
         height: parent.height
-        color: Colors.changeA(Colors.foreground, 0.76)
-        radius: 12
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.10)
-
-        layer.enabled: true
-        layer.effect: XCShadow{
-            shadowColor: Colors.changeA(Colors.shadow, 0.55)
-            shadowBlur: 0.55
-            shadowVerticalOffset: 3
-            shadowHorizontalOffset: 0
-        }
 
         Rectangle {
             id: cardHeader

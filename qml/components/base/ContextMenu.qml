@@ -18,6 +18,7 @@ Item {
     property int horizontalPadding: 6
     property int verticalPadding: 6
     property int edgeMargin: 8
+    readonly property int animationDuration: 500 / Global.animationSpeed
     property bool opened: false
     property bool closing: false
 
@@ -178,7 +179,7 @@ Item {
 
     Timer {
         id: closeTimer
-        interval: 150
+        interval: root.animationDuration
         onTriggered: {
             root.closing = false
             root.closed()
@@ -192,7 +193,7 @@ Item {
         opacity: root.opened ? 0.36 : 0
 
         Behavior on opacity {
-            NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic }
         }
 
         MouseArea {
@@ -226,10 +227,10 @@ Item {
         onHeightChanged: if (root.opened) repositionTimer.restart()
 
         Behavior on opacity {
-            NumberAnimation { duration: 130 / Global.animationSpeed; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic }
         }
         Behavior on scale {
-            NumberAnimation { duration: 170 / Global.animationSpeed; easing.type: Easing.OutBack }
+            NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutBack }
         }
 
         layer.enabled: true
@@ -296,7 +297,7 @@ Item {
                             height: parent.height
                             visible: !menuRow.entry.separator
                             scale: menuRow.pressed ? 0.985 : 1
-                            Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on scale { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
 
                             ButtonStateOverlay {
                                 hoverColor: Colors.changeA(Colors.fired, 0.44)
@@ -304,7 +305,7 @@ Item {
                                 hovered: menuRow.hovered
                                 pressed: menuRow.pressed
                                 stateEnabled: menuRow.entry.enabled !== false
-                                duration: 130
+                                duration: 500
                                 cornerRadius: 6
                             }
                         }
@@ -321,8 +322,8 @@ Item {
                             color: Colors.border
                             opacity: menuRow.pressed ? 1 : (menuRow.hovered ? 0.78 : 0)
 
-                            Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                            Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
+                            Behavior on height { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
                         }
 
                         Image {
@@ -410,10 +411,10 @@ Item {
         onHeightChanged: if (root.opened) repositionTimer.restart()
 
         Behavior on opacity {
-            NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic }
         }
         Behavior on scale {
-            NumberAnimation { duration: 150 / Global.animationSpeed; easing.type: Easing.OutBack }
+            NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutBack }
         }
 
         layer.enabled: visible
@@ -468,7 +469,7 @@ Item {
                             height: parent.height
                             visible: !submenuRow.entry.separator
                             scale: submenuRow.pressed ? 0.985 : 1
-                            Behavior on scale { NumberAnimation { duration: 80 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on scale { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
 
                             ButtonStateOverlay {
                                 hoverColor: Colors.changeA(Colors.fired, 0.44)
@@ -476,7 +477,7 @@ Item {
                                 hovered: submenuRow.hovered
                                 pressed: submenuRow.pressed
                                 stateEnabled: submenuRow.entry.enabled !== false
-                                duration: 130
+                                duration: 500
                                 cornerRadius: 6
                             }
                         }
@@ -493,8 +494,8 @@ Item {
                             color: Colors.border
                             opacity: submenuRow.pressed ? 1 : (submenuRow.hovered ? 0.78 : 0)
 
-                            Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
-                            Behavior on height { NumberAnimation { duration: 120 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
+                            Behavior on height { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
                         }
 
                         XCText {
