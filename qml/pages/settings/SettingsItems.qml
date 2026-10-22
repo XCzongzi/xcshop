@@ -10,13 +10,22 @@ Item {
     property var customItems: []
     property var filteredItems: []
     property string currentVersion: "尚未导入"
-    property string catalogSummary: "选择版本后，从官方游戏数据生成完整物品列表和默认图标。"
+    property string catalogSummary: "从游戏资源生成物品列表和默认图标。"
     property string formError: ""
     property int filter: 0
     property int iconRevision: 0
     property bool showSnapshots: false
+    property string importSource: "local"
+    property string onlineVersion: ""
+    property bool advancedOpen: false
     property var versionCatalog: MinecraftAssetImporter.versions
+    property var localInfo: MinecraftAssetImporter.localInfo
     readonly property bool busy: MinecraftAssetImporter.importing
+    readonly property bool serverFallbackAvailable: !busy && MinecraftAssetImporter.lastReport.canUseServer === true
+            && MinecraftAssetImporter.lastReport.cancelled !== true
+            && MinecraftAssetImporter.lastReport.requestSource === importSource
+            && MinecraftAssetImporter.lastReport.requestPath === (importSource === "local" ? localField.text.trim() : "")
+            && MinecraftAssetImporter.lastReport.requestVersion === (importSource === "download" ? onlineVersion : "")
     readonly property var pickerVersions: {
         var keyword = versionSearch.text.trim().toLowerCase()
         return root.versionCatalog.filter(function(version) {
@@ -54,7 +63,7 @@ Item {
             loaded = readJson(itemsRootPath + "/items.json", [])
             if (!Array.isArray(loaded)) loaded = []
             catalogSummary = loaded.length ? "当前为旧版物品列表。完成官方数据导入后自动切换，已有自定义图标保留。"
-                                            : "尚无物品资源。请选择 Minecraft 版本并开始导入。"
+                                            : "尚无物品资源。选择本地游戏，或在线下载后导入。"
         }
         var combined = []
         for (var i = 0; i < loaded.length; ++i) {
@@ -107,12 +116,20 @@ Item {
         default: return "缺少图标"
         }
     }
-    function startImport() {
-        var settings = {version: versionField.text.trim(), javaPath: javaField.text.trim(), clientJar: jarField.text.trim()}
+    function importOptions(generator) {
+        return {itemsRoot: itemsRootPath, source: importSource,
+                sourcePath: importSource === "local" ? localField.text.trim() : "",
+                version: importSource === "download" ? onlineVersion : "",
+                javaPath: javaField.text.trim(), librariesPath: librariesField.text.trim(),
+                allowNetwork: networkCheck.checked, rebuild: rebuildCheck.checked,
+                generator: generator || "client"}
+    }
+    function startImport(generator) {
+        var settings = {source: importSource, version: onlineVersion, sourcePath: localField.text.trim(),
+                        javaPath: javaField.text.trim(), librariesPath: librariesField.text.trim(),
+                        allowNetwork: networkCheck.checked}
         file.writeAtomic(itemsRootPath + "/import-settings.json", JSON.stringify(settings))
-        MinecraftAssetImporter.startImport({itemsRoot: itemsRootPath, version: settings.version,
-                                            javaPath: settings.javaPath, clientJar: settings.clientJar,
-                                            rebuild: rebuildCheck.checked})
+        MinecraftAssetImporter.startImport(importOptions(generator))
     }
     function saveCustomItem() {
         var id = customId.text.trim().toLowerCase()
@@ -145,9 +162,12 @@ Item {
     }
     Component.onCompleted: {
         var settings = readJson(itemsRootPath + "/import-settings.json", {})
-        versionField.text = settings.version || ""
+        onlineVersion = settings.version || ""
+        importSource = settings.source === "download" ? "download" : "local"
         javaField.text = settings.javaPath || ""
-        jarField.text = settings.clientJar || ""
+        librariesField.text = settings.librariesPath || ""
+        localField.text = settings.sourcePath || settings.clientJar || ""
+        networkCheck.checked = settings.allowNetwork !== false
         loadItems()
     }
     Connections {
@@ -156,7 +176,13 @@ Item {
             if (report.ok) root.loadItems()
         }
     }
-    XCFileDialog { id: jarDialog; nameFilters: ["Minecraft 客户端 (*.jar)"]; onAccepted: jarField.text = selectedFile.toString() }
+    Timer {
+        id: inspectTimer; interval: 400
+        onTriggered: MinecraftAssetImporter.inspectLocal(localField.text)
+    }
+    XCFileDialog { id: jarDialog; nameFilters: ["Minecraft 客户端 (*.jar)"]; onAccepted: localField.text = selectedFile.toString() }
+    XCFolderDialog { id: gameDialog; title: "选择游戏目录或版本目录"; onAccepted: localField.text = selectedFolder.toString() }
+    XCFolderDialog { id: librariesDialog; title: "选择 libraries 依赖目录"; onAccepted: librariesField.text = selectedFolder.toString() }
     XCFileDialog { id: javaDialog; nameFilters: ["Java 可执行文件 (java.exe java)", "所有文件 (*)"]; onAccepted: javaField.text = selectedFile.toString() }
     XCFileDialog { id: iconDialog; nameFilters: ["图片 (*.png *.jpg *.jpeg *.webp *.bmp)"]; onAccepted: customIcon.text = selectedFile.toString() }
 
@@ -170,41 +196,103 @@ Item {
             spacing: 16
             SettingsPageHeader { title: "物品资源"; width: parent.width }
             SettingsCard {
-                title: "从官方游戏数据导入"
-                description: "支持 Java 原版 1.13 起的正式版及后续测试版。首次导入需要下载对应游戏文件并运行 Java；完成后可离线使用。"
+                title: "导入物品资源"
+                description: "导入 Minecraft Java 1.13+ 基础物品。可选择整合包里的游戏文件，不包含模组新增物品。"
                 contentHeight: importForm.height
                 Column {
                     id: importForm
                     width: parent.width
                     spacing: 10
-                    XCText { xcText: "Minecraft 版本"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                     Row {
-                        width: parent.width
-                        spacing: 8
-                        XCTextField { id: versionField; objectName: "minecraftVersionField"; width: Math.max(120, parent.width - 116); placeholderText: "例如 1.13、1.21.4；本地 JAR 可自动识别"; enabled: !root.busy }
+                        width: parent.width; spacing: 8
                         SettingsActionButton {
-                            objectName: "minecraftVersionPickerButton"
-                            text: "选择版本…"; enabled: !root.busy
-                            onClicked: { versionPicker.open(); if (!root.versionCatalog.length) MinecraftAssetImporter.refreshVersions(root.itemsRootPath) }
+                            objectName: "minecraftLocalSourceButton"
+                            width: (parent.width - 8) / 2; text: "本地游戏"; enabled: !root.busy
+                            buttonColor: root.importSource === "local" ? Colors.changeA(Colors.border, 0.28) : Colors.changeA(Colors.pressed, 0.72)
+                            onClicked: root.importSource = "local"
+                        }
+                        SettingsActionButton {
+                            objectName: "minecraftDownloadSourceButton"
+                            width: (parent.width - 8) / 2; text: "在线下载"; enabled: !root.busy
+                            buttonColor: root.importSource === "download" ? Colors.changeA(Colors.border, 0.28) : Colors.changeA(Colors.pressed, 0.72)
+                            onClicked: root.importSource = "download"
                         }
                     }
-                    XCText { xcText: "本地客户端 JAR（可选，留空时从官方下载）"; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                    Row {
-                        width: parent.width; spacing: 8
-                        XCTextField { id: jarField; width: Math.max(120, parent.width - 74); placeholderText: "选择对应版本的原版客户端文件"; enabled: !root.busy }
-                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: jarDialog.openXC(false, "minecraftClient") }
+                    Column {
+                        objectName: "minecraftLocalForm"; width: parent.width; spacing: 8; visible: root.importSource === "local"
+                        XCTextField {
+                            id: localField; objectName: "minecraftLocalPathField"; width: parent.width
+                            placeholderText: "选择客户端 JAR 或游戏目录，自动识别版本"; enabled: !root.busy
+                            onTextChanged: inspectTimer.restart()
+                        }
+                        Flow {
+                            width: parent.width; spacing: 8
+                            SettingsActionButton { text: "选择游戏文件…"; enabled: !root.busy; onClicked: jarDialog.openXC(false, "minecraftClient") }
+                            SettingsActionButton { text: "选择目录…"; enabled: !root.busy; onClicked: gameDialog.open() }
+                        }
+                        XCText {
+                            objectName: "minecraftDetectedVersion"; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
+                            xcText: !localField.text.trim().length ? "版本会自动识别，无需手动选择。"
+                                    : MinecraftAssetImporter.inspectingLocal || inspectTimer.running ? "正在识别本地游戏…"
+                                    : root.localInfo.sourcePath === localField.text.trim() ? root.localInfo.message || "" : "等待识别…"
+                            textColor: root.localInfo.sourcePath === localField.text.trim() && root.localInfo.ok === false ? Colors.error : Colors.banned
+                        }
                     }
-                    XCText { xcText: "Java 路径（可选，留空时自动查找已安装的 Java）"; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
-                    Row {
-                        width: parent.width; spacing: 8
-                        XCTextField { id: javaField; width: Math.max(120, parent.width - 74); placeholderText: "java.exe 或 Java 安装目录"; enabled: !root.busy }
-                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: javaDialog.openXC(false, "minecraftJava") }
+                    Column {
+                        objectName: "minecraftDownloadForm"; width: parent.width; spacing: 8; visible: root.importSource === "download"
+                        Row {
+                            width: parent.width; spacing: 8
+                            XCTextField { id: versionField; objectName: "minecraftVersionField"; width: Math.max(100, parent.width - 116); readOnly: true; text: root.onlineVersion; placeholderText: "选择要下载的版本"; enabled: !root.busy }
+                            SettingsActionButton {
+                                objectName: "minecraftVersionPickerButton"; text: "选择版本…"; enabled: !root.busy
+                                onClicked: { versionPicker.open(); if (!root.versionCatalog.length) MinecraftAssetImporter.refreshVersions(root.itemsRootPath, networkCheck.checked) }
+                            }
+                        }
+                        XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcText: networkCheck.checked ? "从官方下载客户端和所需依赖，已有文件直接复用。" : "当前仅使用缓存。如需下载，请在高级选项允许联网补齐。" }
+                    }
+                    SettingsActionButton {
+                        objectName: "minecraftAdvancedButton"; text: root.advancedOpen ? "收起高级选项" : "高级选项…"
+                        onClicked: root.advancedOpen = !root.advancedOpen
+                    }
+                    Column {
+                        objectName: "minecraftAdvancedForm"; width: parent.width; spacing: 8; visible: root.advancedOpen
+                        XCText { xcText: "Java（留空自动查找）"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                        Row {
+                            width: parent.width; spacing: 8
+                            XCTextField { id: javaField; objectName: "minecraftJavaField"; width: Math.max(100, parent.width - 74); placeholderText: "java.exe 或 Java 安装目录"; enabled: !root.busy }
+                            SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: javaDialog.openXC(false, "minecraftJava") }
+                        }
+                        XCText { xcText: "依赖目录（留空自动查找）"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                        Row {
+                            width: parent.width; spacing: 8
+                            XCTextField { id: librariesField; objectName: "minecraftLibrariesField"; width: Math.max(100, parent.width - 74); placeholderText: "libraries 目录"; enabled: !root.busy }
+                            SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: librariesDialog.open() }
+                        }
+                        XCCheckBox { id: networkCheck; objectName: "minecraftNetworkCheck"; text: "允许联网补齐缺失文件"; height: 32; checked: true; enabled: !root.busy }
+                        XCCheckBox { id: rebuildCheck; text: "重新生成已有图标"; height: 32; enabled: !root.busy }
+                        SettingsActionButton {
+                            objectName: "minecraftServerFallbackButton"
+                            visible: root.serverFallbackAvailable
+                            text: MinecraftAssetImporter.lastReport.serverCached ? "使用已缓存的服务端导入"
+                                  : "下载服务端并导入（约 " + Math.ceil((MinecraftAssetImporter.lastReport.serverSize || 0) / 1048576) + " MiB）"
+                            enabled: networkCheck.checked || MinecraftAssetImporter.lastReport.serverCached === true
+                            onClicked: root.startImport("server")
+                        }
+                        XCText {
+                            width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned
+                            visible: !root.busy && MinecraftAssetImporter.lastReport.ok === false && (MinecraftAssetImporter.lastReport.message || "").indexOf("\n") >= 0
+                            xcText: MinecraftAssetImporter.lastReport.message || ""
+                        }
                     }
                     Flow {
                         width: parent.width; spacing: 12
-                        SettingsActionButton { objectName: "minecraftImportButton"; text: root.busy ? "正在导入…" : "导入并启用"; enabled: !root.busy; onClicked: root.startImport() }
+                        SettingsActionButton {
+                            objectName: "minecraftImportButton"; text: root.busy ? "正在导入…" : "导入并启用"
+                            enabled: !root.busy && (root.importSource === "download" ? root.onlineVersion.length > 0
+                                     : !MinecraftAssetImporter.inspectingLocal && !inspectTimer.running && root.localInfo.ok === true && root.localInfo.sourcePath === localField.text.trim())
+                            onClicked: root.startImport("client")
+                        }
                         SettingsActionButton { text: "取消"; visible: root.busy; onClicked: MinecraftAssetImporter.cancel() }
-                        XCCheckBox { id: rebuildCheck; text: "重新生成已有图标"; height: 32; enabled: !root.busy }
                     }
                     Rectangle {
                         width: parent.width; height: 6; radius: 3
@@ -214,7 +302,9 @@ Item {
                     }
                     XCText {
                         width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
-                        xcText: MinecraftAssetImporter.status.length ? MinecraftAssetImporter.status : "已导入的版本会保存在本地。切换页面不会中断导入。"
+                        xcText: MinecraftAssetImporter.status.length ? MinecraftAssetImporter.status.split("\n")[0]
+                                + (root.serverFallbackAvailable && !root.advancedOpen ? " 可在高级选项尝试服务端备用导入。" : "")
+                                : networkCheck.checked ? "Java 和依赖会自动查找。切换页面不会中断导入。" : "当前仅使用本地文件和缓存。切换页面不会中断导入。"
                         textColor: !root.busy && MinecraftAssetImporter.lastReport.ok === false && !MinecraftAssetImporter.lastReport.cancelled ? Colors.error : Colors.banned
                     }
                 }
@@ -322,7 +412,7 @@ Item {
             Flow {
                 width: parent.width; spacing: 12
                 XCCheckBox { text: "显示测试版"; height: 32; checked: root.showSnapshots; onToggled: root.showSnapshots = checked }
-                SettingsActionButton { text: MinecraftAssetImporter.loadingVersions ? "正在刷新…" : "刷新官方列表"; enabled: !MinecraftAssetImporter.loadingVersions; onClicked: MinecraftAssetImporter.refreshVersions(root.itemsRootPath) }
+                SettingsActionButton { text: MinecraftAssetImporter.loadingVersions ? "正在读取…" : networkCheck.checked ? "刷新官方列表" : "读取缓存列表"; enabled: !MinecraftAssetImporter.loadingVersions; onClicked: MinecraftAssetImporter.refreshVersions(root.itemsRootPath, networkCheck.checked) }
             }
             XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcText: MinecraftAssetImporter.versionsStatus }
             ListView {
@@ -334,7 +424,7 @@ Item {
                     required property var modelData
                     objectName: "minecraftVersionChoice_" + modelData.id
                     width: versionsList.width - 12; text: modelData.label
-                    onClicked: { versionField.text = modelData.id; jarField.text = ""; versionPicker.close() }
+                    onClicked: { root.onlineVersion = modelData.id; versionPicker.close() }
                 }
             }
             SettingsActionButton { text: "关闭"; onClicked: versionPicker.close() }

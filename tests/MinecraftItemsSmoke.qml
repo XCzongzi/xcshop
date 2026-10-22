@@ -13,6 +13,7 @@ Window {
     property int step: 0
     property bool wideCaptured: false
     property bool narrowCaptured: false
+    property bool advancedCaptured: false
     property bool pickerCaptured: false
     readonly property var versions: [
         {id: "26.3", type: "release", label: "26.3"},
@@ -69,6 +70,16 @@ Window {
                     root.check(Global.getItemTexturePath("minecraft:stone").indexOf("/packs/") >= 0, "Versioned icon path")
                     root.check(Global.getItemTexturePath("example:test").indexOf("/packs/") < 0, "Independent custom icon")
                     root.check(root.page.width > 0 && root.page.height > 0, "Settings page has visible geometry")
+                    root.check(root.find(root.page, "minecraftLocalForm").visible, "Local import is the default")
+                    root.check(!root.find(root.page, "minecraftVersionField").visible, "Local import hides the online version picker")
+                    root.check(!root.find(root.page, "minecraftJavaField").visible, "Automatic settings are collapsed")
+                    root.page.onlineVersion = "26.3"
+                    root.check(root.page.importOptions().version === "", "Local import ignores a saved online version")
+                    root.find(root.page, "minecraftDownloadSourceButton").clicked()
+                    root.check(root.find(root.page, "minecraftVersionField").visible, "Online import shows version selection")
+                    root.check(root.page.importOptions().sourcePath === "", "Online import never uses a saved local path")
+                    root.check(root.page.importOptions().version === "26.3", "Online import uses the chosen version")
+                    root.find(root.page, "minecraftLocalSourceButton").clicked()
                     root.check(root.page.grabToImage(function(result) {
                         root.wideCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-settings-preview.png")
                     }), "Request wide screenshot")
@@ -82,12 +93,25 @@ Window {
                     root.page.filterItems()
                 } else if (root.step === 1) {
                     root.check(root.wideCaptured, "Save wide screenshot")
-                    root.page.width = 620
+                    root.find(root.page, "minecraftAdvancedButton").clicked()
+                    root.check(root.find(root.page, "minecraftJavaField").visible, "Advanced Java path is accessible")
+                    root.check(root.find(root.page, "minecraftLibrariesField").visible, "Advanced libraries path is accessible")
+                    root.find(root.page, "minecraftNetworkCheck").checked = false
+                    root.check(root.page.importOptions().allowNetwork === false, "Offline choice reaches the importer")
+                    root.find(root.page, "minecraftNetworkCheck").checked = true
                 } else if (root.step === 2) {
+                    root.check(root.page.grabToImage(function(result) {
+                        root.advancedCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-settings-advanced.png")
+                    }), "Request advanced screenshot")
+                } else if (root.step === 3) {
+                    root.check(root.advancedCaptured, "Save advanced screenshot")
+                    root.find(root.page, "minecraftAdvancedButton").clicked()
+                    root.page.width = 620
+                } else if (root.step === 4) {
                     root.check(root.page.grabToImage(function(result) {
                         root.narrowCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-settings-narrow.png")
                     }), "Request narrow screenshot")
-                } else if (root.step === 3) {
+                } else if (root.step === 5) {
                     root.check(root.narrowCaptured, "Save narrow screenshot")
                     root.page.destroy()
                     root.page = settings.createObject(frame, {width: frame.width, height: frame.height})
@@ -96,16 +120,27 @@ Window {
                     root.check(root.page.pickerVersions.length === 2, "Hide snapshots by default")
                     root.page.showSnapshots = true
                     root.check(root.page.pickerVersions.length === 3, "Show snapshot versions")
+                    root.find(root.page, "minecraftDownloadSourceButton").clicked()
                     root.find(root.page, "minecraftVersionPickerButton").clicked()
-                } else if (root.step === 4) {
+                } else if (root.step === 6) {
                     root.check(root.find(root.contentItem, "minecraftVersionChoice_1.13"), "Historical version choice is visible")
                     root.check(root.contentItem.grabToImage(function(result) {
                         root.pickerCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-version-picker.png")
                     }), "Request version picker screenshot")
-                } else {
+                } else if (root.step === 7) {
                     root.check(root.pickerCaptured, "Save version picker screenshot")
                     root.find(root.contentItem, "minecraftVersionChoice_1.13").clicked()
                     root.check(root.find(root.page, "minecraftVersionField").text === "1.13", "Select historical version")
+                    root.find(root.page, "minecraftLocalSourceButton").clicked()
+                    root.check(root.page.importOptions().version === "", "Switching back to local cannot reuse the online version")
+                    root.check(file.writeAtomic(APP_DIRPATH + "/local-game/client.jar", "legacy fixture"), "Write local client fixture")
+                    root.check(file.writeAtomic(APP_DIRPATH + "/local-game/client.json", JSON.stringify({id: "1.13", mainClass: "net.minecraft.client.main.Main"})), "Write legacy version metadata")
+                    root.find(root.page, "minecraftLocalPathField").text = APP_DIRPATH + "/local-game/client.jar"
+                } else {
+                    root.check(!MinecraftAssetImporter.inspectingLocal && root.page.localInfo.ok === true, "Local inspection completes asynchronously")
+                    root.check(root.page.localInfo.version === "1.13", "Local file version is detected without the online catalog")
+                    root.check(root.find(root.page, "minecraftImportButton").enabled, "Detected local file can be imported")
+                    root.check(root.page.importOptions().version === "", "Detected local version is never supplied as an online selection")
                     console.log("MINECRAFT_ITEMS_UI_SMOKE_PASSED")
                     Qt.quit()
                 }

@@ -9,6 +9,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QJsonDocument>
 #include <QLockFile>
 #include <QNetworkAccessManager>
@@ -17,7 +18,9 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
 #include <QStandardPaths>
+#include <QSysInfo>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QThread>
@@ -140,11 +143,12 @@ QByteArray download(const QUrl &url, const QString &destination, const QString &
     return bytes;
 }
 
-QJsonObject manifest(const QString &cache, const Cancellation &cancel, bool refresh)
+QJsonObject manifest(const QString &cache, const Cancellation &cancel, bool refresh, bool allowNetwork = true)
 {
     const auto path = cache + "/manifest.json";
     auto cached = readObject(path);
     if (!refresh && !cached.value("versions").toArray().isEmpty()) return cached;
+    require(allowNetwork, "离线缓存中没有官方版本列表。请允许联网补齐，或选择完整的本地游戏安装。");
     try {
         const auto object = QJsonDocument::fromJson(download(QUrl(manifestUrl), {}, {}, cancel)).object();
         require(!object.value("versions").toArray().isEmpty(), "官方版本列表格式无效。");
@@ -158,7 +162,8 @@ QJsonObject manifest(const QString &cache, const Cancellation &cancel, bool refr
     }
 }
 
-QJsonObject versionMetadata(const QString &cache, const QJsonObject &entry, const Cancellation &cancel)
+QJsonObject versionMetadata(const QString &cache, const QJsonObject &entry, const Cancellation &cancel,
+                            bool allowNetwork = true)
 {
     const QString id = entry.value("id").toString();
     require(QRegularExpression("^[A-Za-z0-9_.+-]+$").match(id).hasMatch(), "无效的游戏版本标识。");
@@ -169,6 +174,7 @@ QJsonObject versionMetadata(const QString &cache, const QJsonObject &entry, cons
         const auto object = readObject(path);
         if (object.value("id").toString() == id) return object;
     }
+    require(allowNetwork, "缺少 Minecraft " + id + " 的版本信息。请提供同目录的版本 JSON，或允许联网补齐。");
     download(QUrl(entry.value("url").toString()), path, expected, cancel);
     const auto object = readObject(path);
     require(object.value("id").toString() == id && !object.value("downloads").toObject().isEmpty(),
@@ -177,13 +183,15 @@ QJsonObject versionMetadata(const QString &cache, const QJsonObject &entry, cons
 }
 
 QString gameFile(const QString &cache, const QJsonObject &entry, const Cancellation &cancel,
-                 const Progress &progress, int step)
+                 const Progress &progress, int step, bool allowNetwork = true)
 {
     const QString hash = entry.value("sha1").toString();
     require(QRegularExpression("^[a-f0-9]{40}$").match(hash).hasMatch(), "官方文件缺少有效校验值。");
     const QString path = cache + "/downloads/" + hash + ".jar";
-    if (!QFileInfo::exists(path) || sha1(path, cancel) != hash)
+    if (!QFileInfo::exists(path) || sha1(path, cancel) != hash) {
+        require(allowNetwork, "本地缓存中缺少所需游戏 JAR。请允许联网补齐，或选择本地客户端。");
         download(QUrl(entry.value("url").toString()), path, hash, cancel, progress, step);
+    }
     return path;
 }
 
@@ -226,19 +234,202 @@ QString tarExecutable()
     return path;
 }
 
-QString detectVersion(const QString &jar, const Cancellation &cancel)
+QJsonObject embeddedVersion(const QString &jar, const Cancellation &cancel)
 {
     const auto embedded = run(tarExecutable(), {"-xOf", jar, "version.json"},
                               QFileInfo(jar).absolutePath(), 30000, cancel);
-    const auto object = QJsonDocument::fromJson(embedded.output).object();
-    if (!object.value("id").toString().isEmpty()) return object.value("id").toString();
-    // 1.13 predates embedded version.json. Launchers keep metadata beside JARs.
-    const QFileInfo file(jar);
-    const auto adjacent = readObject(file.absolutePath() + "/" + file.completeBaseName() + ".json");
-    return adjacent.value("id").toString(file.completeBaseName());
+    return QJsonDocument::fromJson(embedded.output).object();
 }
 
-QString javaExecutable(QString selected, int required, const Cancellation &cancel)
+bool validVersionId(const QString &id)
+{
+    return id != "." && id != ".." && QRegularExpression("^[A-Za-z0-9_.+-]+$").match(id).hasMatch();
+}
+
+QStringList installationRoots(const QString &location)
+{
+    QStringList result;
+    const auto path = localPath(location);
+    QDir directory(QFileInfo(path).isDir() ? path : QFileInfo(path).absolutePath());
+    // Launchers often share libraries and Java above a version/instance folder.
+    for (int i = 0; i < 10; ++i) {
+        result << directory.absolutePath();
+        if (!directory.cdUp()) break;
+    }
+    result << qEnvironmentVariable("APPDATA") + "/.minecraft"
+           << QDir::homePath() + "/.minecraft"
+           << qEnvironmentVariable("APPDATA") + "/PrismLauncher";
+    result.removeDuplicates();
+    return result;
+}
+
+struct LocalInstallation {
+    QString jar;
+    QString version;
+    QJsonObject metadata;
+    QJsonObject embedded;
+    int count = 1;
+    QString profile;
+};
+
+QJsonObject adjacentMetadata(const QString &jar)
+{
+    const QFileInfo file(jar);
+    return readObject(file.absolutePath() + "/" + file.completeBaseName() + ".json");
+}
+
+bool vanillaMetadata(const QJsonObject &metadata)
+{
+    const auto main = metadata.value("mainClass").toString();
+    return !metadata.contains("inheritsFrom")
+        && (main.isEmpty() || main == "net.minecraft.client.main.Main");
+}
+
+bool supportedMetadata(const QJsonObject &metadata, const QJsonObject &embedded, const QString &id)
+{
+    if (embedded.contains("world_version")) return embedded.value("world_version").toInt() >= 1519;
+    const auto date = QDateTime::fromString(metadata.value("releaseTime").toString(), Qt::ISODate);
+    if (date.isValid()) return date.date() >= QDate(2018, 7, 18);
+    const auto parts = id.split('.');
+    bool numeric = false;
+    const int first = parts.value(0).toInt(&numeric);
+    return numeric && ((first == 1 && parts.value(1).toInt() >= 13) || first >= 26);
+}
+
+QJsonObject baseGameMetadata(QJsonObject metadata, const QJsonObject &embedded, const QString &version)
+{
+    // A launcher profile may start Fabric/Forge while its client JAR is still the
+    // original game. Run only the game's data entry point and ordinary libraries.
+    if (!vanillaMetadata(metadata) || metadata.value("id").toString() != version) {
+        QJsonArray libraries;
+        for (const auto &value : metadata.value("libraries").toArray()) {
+            const auto artifact = value.toObject().value("downloads").toObject().value("artifact").toObject();
+            if (officialUrl(QUrl(artifact.value("url").toString()))) libraries.append(value);
+        }
+        metadata.insert("libraries", libraries);
+        metadata.insert("mainClass", "net.minecraft.client.main.Main");
+        metadata.remove("inheritsFrom");
+        metadata.remove("jar");
+        metadata.insert("id", version);
+    }
+    if (embedded.value("java_version").toInt() > 0)
+        metadata.insert("javaVersion", QJsonObject{{"majorVersion", embedded.value("java_version")}});
+    return metadata;
+}
+
+QStringList inheritedClients(const QString &profilePath, const Cancellation &cancel, QSet<QString> &visited)
+{
+    const auto absolute = QFileInfo(profilePath).absoluteFilePath();
+    if (visited.contains(absolute) || visited.size() >= 32) return {};
+    visited.insert(absolute);
+    checkpoint(cancel);
+    const auto profile = readObject(absolute);
+    QStringList references;
+    for (const auto &field : {"jar", "inheritsFrom", "clientVersion"}) {
+        const auto id = profile.value(field).toString();
+        if (!id.isEmpty() && id == id.trimmed() && !id.endsWith('.') && id != "." && id != ".."
+            && !QRegularExpression("[/\\\\:\\x00-\\x1f]").match(id).hasMatch()) references << id;
+    }
+    for (const auto &value : profile.value("components").toArray()) {
+        const auto component = value.toObject();
+        if (component.value("uid").toString() == "net.minecraft"
+            && validVersionId(component.value("version").toString())) references << component.value("version").toString();
+    }
+    references.removeDuplicates();
+    QStringList result;
+    for (const auto &root : installationRoots(absolute)) {
+        for (const auto &id : references) {
+            for (const auto &folder : {root + "/versions/" + id, root + "/" + id}) {
+                const auto jar = folder + "/" + id + ".jar";
+                if (QFileInfo(jar).isFile()) result << jar;
+                const auto parent = folder + "/" + id + ".json";
+                if (QFileInfo(parent).isFile()) result << inheritedClients(parent, cancel, visited);
+            }
+            // Some launchers keep the game itself in their shared Maven tree.
+            const QDir folder(root + "/libraries/com/mojang/minecraft/" + id);
+            for (const auto &file : folder.entryInfoList({"*client*.jar", id + ".jar"}, QDir::Files))
+                result << file.absoluteFilePath();
+        }
+    }
+    result.removeDuplicates();
+    return result;
+}
+
+LocalInstallation localInstallation(const QString &location, const Cancellation &cancel)
+{
+    checkpoint(cancel);
+    const auto path = localPath(location.trimmed());
+    require(!path.isEmpty() && QFileInfo::exists(path), "请选择存在的客户端 JAR 或游戏目录。");
+    QStringList candidates;
+    QHash<QString, QString> profiles;
+    const auto addProfile = [&](const QString &json) {
+        const auto metadata = readObject(json);
+        if (metadata.isEmpty()) return;
+        QSet<QString> visited;
+        for (const auto &jar : inheritedClients(json, cancel, visited)) {
+            candidates << jar;
+            if (!vanillaMetadata(metadata) || metadata.contains("components"))
+                profiles.insert(jar, metadata.value("id").toString(QFileInfo(json).completeBaseName()));
+        }
+    };
+    if (QFileInfo(path).isFile()) {
+        require(QFileInfo(path).suffix().compare("jar", Qt::CaseInsensitive) == 0, "请选择 Minecraft 游戏 JAR 文件。");
+        candidates << QFileInfo(path).absoluteFilePath();
+        const QFileInfo file(path);
+        addProfile(file.absolutePath() + "/" + file.completeBaseName() + ".json");
+    } else {
+        for (const auto &base : {path, path + "/.minecraft", path + "/minecraft"}) {
+            QDir directory(base);
+            for (const auto &file : directory.entryInfoList({"*.jar"}, QDir::Files))
+                candidates << file.absoluteFilePath();
+            addProfile(directory.filePath(directory.dirName() + ".json"));
+            addProfile(directory.filePath("mmc-pack.json"));
+            QDir versions(directory.dirName() == "versions" ? base : base + "/versions");
+            for (const auto &version : versions.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+                QDir versionDirectory(versions.filePath(version));
+                for (const auto &file : versionDirectory.entryInfoList({"*.jar"}, QDir::Files))
+                    candidates << file.absoluteFilePath();
+                addProfile(versionDirectory.filePath(version + ".json"));
+            }
+        }
+    }
+    candidates.removeDuplicates();
+    // Compare game versions, including clients stored in modpack profiles.
+    std::sort(candidates.begin(), candidates.end(), [](const QString &a, const QString &b) {
+        const auto time = [](const QString &file) {
+            const auto date = QDateTime::fromString(adjacentMetadata(file).value("releaseTime").toString(), Qt::ISODate);
+            return date.isValid() ? date : QFileInfo(file).lastModified();
+        };
+        return time(a) > time(b);
+    });
+    LocalInstallation result;
+    QSet<QString> versionsFound;
+    for (const auto &candidate : candidates) {
+        checkpoint(cancel);
+        const auto metadata = adjacentMetadata(candidate);
+        const auto fileName = QFileInfo(candidate).completeBaseName().toLower();
+        if (QFileInfo(path).isDir() && (fileName == "server" || fileName.startsWith("minecraft_server"))) continue;
+        const auto embedded = embeddedVersion(candidate, cancel);
+        if (embedded.isEmpty() && !vanillaMetadata(metadata)
+            && metadata.value("downloads").toObject().value("client").toObject().isEmpty()) continue;
+        const auto fallback = metadata.value("clientVersion").toString(
+                    vanillaMetadata(metadata) ? metadata.value("id").toString(QFileInfo(candidate).completeBaseName())
+                                              : metadata.value("inheritsFrom").toString());
+        const auto id = embedded.value("id").toString(fallback);
+        if (!validVersionId(id) || !supportedMetadata(metadata, embedded, id)) continue;
+        versionsFound.insert(id);
+        if (result.jar.isEmpty()) {
+            const auto profile = profiles.value(candidate, !vanillaMetadata(metadata)
+                                                ? metadata.value("id").toString(QFileInfo(candidate).completeBaseName()) : "");
+            result = {candidate, id, baseGameMetadata(metadata, embedded, id), embedded, 1, profile};
+        }
+    }
+    require(!result.jar.isEmpty(), "未找到 Minecraft 1.13+ 游戏本体。可选择整合包里的游戏 JAR 或版本目录；继承配置需要本地基础版本文件，1.13 请保留版本 JSON。");
+    result.count = versionsFound.size();
+    return result;
+}
+
+QString javaExecutable(QString selected, int required, const Cancellation &cancel, const QStringList &gameRoots = {})
 {
     selected = localPath(selected.trimmed());
     if (QFileInfo(selected).isDir()) {
@@ -258,6 +449,10 @@ QString javaExecutable(QString selected, int required, const Cancellation &cance
         QStringList roots{qEnvironmentVariable("ProgramFiles") + "/Java",
                           QDir::homePath() + "/.minecraft/runtime",
                           qEnvironmentVariable("APPDATA") + "/.minecraft/runtime"};
+        for (const auto &root : gameRoots)
+            for (const auto &name : {"runtime", "java", "jre", "runtimes"})
+                roots << root + "/" + name;
+        roots.removeDuplicates();
         for (const auto &root : roots) {
             if (!QDir(root).exists()) continue;
             QDirIterator files(root, {"java.exe", "java"}, QDir::Files, QDirIterator::Subdirectories);
@@ -287,34 +482,153 @@ QString javaExecutable(QString selected, int required, const Cancellation &cance
     return fallback;
 }
 
-QJsonArray generatedItems(const QString &cache, const QJsonObject &metadata,
-                          const QString &javaPath, const Cancellation &cancel, const Progress &progress)
+bool safeLibraryPath(const QString &path)
 {
+    if (!QRegularExpression("^[A-Za-z0-9_.+/-]+$").match(path).hasMatch()) return false;
+    for (const auto &part : path.split('/'))
+        if (part.isEmpty() || part == "." || part == "..") return false;
+    return !QDir::isAbsolutePath(path);
+}
+
+bool libraryAllowed(const QJsonObject &library)
+{
+    if (!library.contains("rules")) return true;
+#ifdef Q_OS_WIN
+    const QString osName = "windows";
+#elif defined(Q_OS_MACOS)
+    const QString osName = "osx";
+#else
+    const QString osName = "linux";
+#endif
+    QString arch = QSysInfo::currentCpuArchitecture();
+    if (arch == "x86_64") arch = "amd64";
+    bool allowed = false;
+    for (const auto &value : library.value("rules").toArray()) {
+        const auto rule = value.toObject();
+        const auto os = rule.value("os").toObject();
+        if (os.contains("name") && os.value("name").toString() != osName) continue;
+        if (os.contains("arch") && !QRegularExpression(os.value("arch").toString()).match(arch).hasMatch()) continue;
+        if (os.contains("version") && !QRegularExpression(os.value("version").toString()).match(QSysInfo::kernelVersion()).hasMatch()) continue;
+        bool matches = true;
+        const auto features = rule.value("features").toObject();
+        for (auto it = features.begin(); it != features.end(); ++it)
+            if (it.value().toBool()) matches = false; // No optional launcher features for reports.
+        if (matches) allowed = rule.value("action").toString() == "allow";
+    }
+    return allowed;
+}
+
+struct PreparedLibraries { QStringList paths; QJsonArray downloads; };
+
+PreparedLibraries clientLibraries(const QString &cache, const QJsonObject &metadata,
+                                  const QString &location, const QString &selectedRoot, bool allowNetwork,
+                                  const Cancellation &cancel)
+{
+    require(metadata.value("libraries").isArray() && !metadata.value("libraries").toArray().isEmpty(),
+            "版本 JSON 缺少依赖信息。请提供完整的本地版本 JSON，或允许联网读取官方信息。");
+    QStringList roots;
+    if (!selectedRoot.isEmpty()) roots << localPath(selectedRoot) << localPath(selectedRoot) + "/libraries";
+    for (const auto &root : installationRoots(location))
+        roots << root + "/libraries" << root + "/.minecraft/libraries";
+    roots.removeDuplicates();
+    PreparedLibraries prepared;
+    QStringList missing;
+    QSet<QString> seenHashes;
+    for (const auto &value : metadata.value("libraries").toArray()) {
+        checkpoint(cancel);
+        const auto library = value.toObject();
+        if (!libraryAllowed(library)) continue;
+        const auto artifact = library.value("downloads").toObject().value("artifact").toObject();
+        // Old launcher metadata stores native-only classifiers separately. Reports
+        // use the ordinary Java artifacts; no game window or audio is started.
+        if (artifact.isEmpty() && library.value("downloads").toObject().contains("classifiers")) continue;
+        const auto relative = artifact.value("path").toString();
+        const auto hash = artifact.value("sha1").toString();
+        require(safeLibraryPath(relative) && QRegularExpression("^[a-f0-9]{40}$").match(hash).hasMatch(),
+                "版本信息含有无效的依赖路径或校验值：" + library.value("name").toString());
+        if (seenHashes.contains(hash)) continue;
+        seenHashes.insert(hash);
+        const QString cached = cache + "/libraries/" + hash + ".jar";
+        QString found;
+        for (const auto &root : roots) {
+            for (const auto &candidate : {root + "/" + relative, root + "/" + hash + ".jar"}) {
+                if (QFileInfo(candidate).isFile() && sha1(candidate, cancel) == hash) {
+                    found = QFileInfo(candidate).absoluteFilePath();
+                    break;
+                }
+            }
+            if (!found.isEmpty()) break;
+        }
+        if (found.isEmpty() && QFileInfo(cached).isFile() && sha1(cached, cancel) == hash) found = cached;
+        if (found.isEmpty()) {
+            if (!allowNetwork) { missing << relative; continue; }
+            require(officialUrl(QUrl(artifact.value("url").toString())), "依赖包含非官方或非 HTTPS 下载地址：" + relative);
+            prepared.downloads.append(artifact);
+            continue;
+        }
+        prepared.paths << QDir::toNativeSeparators(QFileInfo(found).absoluteFilePath());
+    }
+    require(missing.isEmpty(), QString("缺少或损坏 %1 个依赖文件。请开启“允许联网补齐缺失文件”，或在高级选项指定已有依赖目录。\n%2%3")
+            .arg(missing.size()).arg(missing.mid(0, 12).join('\n'))
+            .arg(missing.size() > 12 ? "\n……" : ""));
+    prepared.paths.removeDuplicates();
+    require(!prepared.paths.isEmpty() || !prepared.downloads.isEmpty(), "未找到可用于生成物品表的客户端依赖。");
+    return prepared;
+}
+
+QJsonArray generatedItems(const QString &cache, const QJsonObject &metadata, const QString &clientJar,
+                          const QString &clientHash, const QVariantMap &options,
+                          const Cancellation &cancel, const Progress &progress)
+{
+    const bool useServer = options.value("generator").toString() == "server";
+    const bool allowNetwork = options.value("allowNetwork", true).toBool();
     const auto server = metadata.value("downloads").toObject().value("server").toObject();
-    const auto hash = server.value("sha1").toString();
-    require(QRegularExpression("^[a-f0-9]{40}$").match(hash).hasMatch(), "该版本未提供官方服务端文件，无法生成完整物品清单。");
-    const QString reportsCache = cache + "/reports/" + hash;
+    const auto hash = useServer ? server.value("sha1").toString() : clientHash;
+    require(QRegularExpression("^[a-f0-9]{40}$").match(hash).hasMatch(), "该版本缺少生成物品表所需的文件校验信息。");
+    const QString hashField = useServer ? "serverSha1" : "clientSha1";
+    const QString reportsCache = cache + "/reports/" + hash + (useServer ? "" : "-client");
     QString error;
     const auto complete = readObject(reportsCache + "/complete.json");
-    if (complete.value("serverSha1").toString() == hash && complete.value("componentsVersion").toInt() == 1) {
+    if (complete.value(hashField).toString() == hash && complete.value("componentsVersion").toInt() == 1) {
         const auto entries = parseItemReports(readObject(reportsCache + "/registries.json"),
                                              readObject(reportsCache + "/items.json"), &error);
         if (!entries.isEmpty()) return entries;
     }
-    progress(16, "正在准备对应版本的官方服务端与物品注册数据…");
-    const QString serverJar = gameFile(cache, server, cancel, progress, 16);
     const int requiredJava = metadata.value("javaVersion").toObject().value("majorVersion").toInt(8);
-    const QString java = javaExecutable(javaPath, requiredJava, cancel);
+    PreparedLibraries libraries;
+    if (!useServer) {
+        progress(12, "正在检查客户端依赖，优先复用本地文件…");
+        libraries = clientLibraries(cache, metadata, options.value("sourcePath", clientJar).toString(),
+                                     options.value("librariesPath").toString(), allowNetwork, cancel);
+    }
+    progress(12, "正在查找适合该版本的 Java…");
+    const QString java = javaExecutable(options.value("javaPath").toString(), requiredJava, cancel,
+                                        installationRoots(options.value("sourcePath", clientJar).toString()));
     QTemporaryDir generation(cache + "/generate-XXXXXX");
     require(generation.isValid(), "无法创建数据生成目录。");
     const QString output = generation.path() + "/generated";
-    const auto bundled = run(tarExecutable(), {"-xOf", serverJar, "META-INF/versions.list"},
-                             generation.path(), 30000, cancel);
     QStringList arguments;
-    if (bundled.code == 0 && !bundled.output.trimmed().isEmpty())
-        arguments << "-DbundlerMainClass=net.minecraft.data.Main" << "-jar" << serverJar;
-    else
-        arguments << "-cp" << serverJar << "net.minecraft.data.Main";
+    if (useServer) {
+        progress(16, "正在准备手动选择的服务端备用生成器…");
+        const QString serverJar = gameFile(cache, server, cancel, progress, 16, allowNetwork);
+        const auto bundled = run(tarExecutable(), {"-xOf", serverJar, "META-INF/versions.list"},
+                                 generation.path(), 30000, cancel);
+        if (bundled.code == 0 && !bundled.output.trimmed().isEmpty())
+            arguments << "-DbundlerMainClass=net.minecraft.data.Main" << "-jar" << serverJar;
+        else
+            arguments << "-cp" << serverJar << "net.minecraft.data.Main";
+    } else {
+        for (const auto &value : libraries.downloads) {
+            const auto artifact = value.toObject();
+            const auto cached = cache + "/libraries/" + artifact.value("sha1").toString() + ".jar";
+            progress(16, "正在补齐依赖：" + artifact.value("path").toString());
+            download(QUrl(artifact.value("url").toString()), cached, artifact.value("sha1").toString(), cancel, progress, 16);
+            libraries.paths << QDir::toNativeSeparators(QFileInfo(cached).absoluteFilePath());
+        }
+        auto classpath = libraries.paths;
+        classpath.prepend(QDir::toNativeSeparators(QFileInfo(clientJar).absoluteFilePath()));
+        arguments << "-cp" << classpath.join(QDir::listSeparator()) << "net.minecraft.data.Main";
+    }
     arguments << "--reports" << "--output" << output;
     progress(24, "正在从游戏注册表生成完整物品清单…");
     const auto generated = run(java, arguments, generation.path(), 300000, cancel, progress, 24);
@@ -347,11 +661,67 @@ QJsonArray generatedItems(const QString &cache, const QJsonObject &metadata,
     }
     writeJson(reportsCache + "/registries.json", registries);
     writeJson(reportsCache + "/items.json", normalized);
-    writeJson(reportsCache + "/complete.json", {{"serverSha1", hash}, {"version", metadata.value("id")}, {"componentsVersion", 1}});
+    writeJson(reportsCache + "/complete.json", {{hashField, hash}, {"version", metadata.value("id")}, {"componentsVersion", 1}});
     return entries;
 }
 
+QJsonObject officialMetadata(const QString &cache, const QString &version, bool allowNetwork,
+                             const Cancellation &cancel)
+{
+    for (int attempt = 0; attempt < (allowNetwork ? 2 : 1); ++attempt) {
+        const auto source = manifest(cache, cancel, attempt != 0, allowNetwork);
+        for (const auto &candidate : parseVersions(source)) {
+            if (candidate.toMap().value("id").toString() != version) continue;
+            for (const auto &entry : source.value("versions").toArray())
+                if (entry.toObject().value("id").toString() == version)
+                    return versionMetadata(cache, entry.toObject(), cancel, allowNetwork);
+        }
+    }
+    throw std::runtime_error("未找到该原版版本。请刷新在线版本列表，或选择包含版本 JSON 的本地安装；支持 Java 原版 1.13 起的版本。");
+}
+
+QVariantMap activateCached(const QString &root, const QString &hash, const QString &version,
+                           const Cancellation &cancel)
+{
+    const auto cached = readObject(root + "/cache/packs/" + hash + "-r" + QString::number(RendererVersion) + ".json")
+                        .value("pack").toString();
+    if (!QRegularExpression("^packs/[a-f0-9]{40}-r[0-9]+-[a-f0-9-]+$").match(cached).hasMatch()) return {};
+    const auto catalog = readObject(root + "/" + cached + "/catalog.json");
+    if (catalog.value("clientSha1").toString() != hash || catalog.value("rendererVersion").toInt() != RendererVersion
+        || catalog.value("gameVersion").toString() != version) return {};
+    checkpoint(cancel);
+    QString error;
+    require(activatePack(root, cached, &error), error);
+    auto report = catalog.toVariantMap();
+    report.remove("items");
+    report.insert("ok", true);
+    report.insert("message", "已启用缓存的 Minecraft " + version + " 物品资源。");
+    return report;
+}
+
 } // namespace
+
+QVariantMap inspectLocalInstallation(const QString &sourcePath, const Cancellation &cancel)
+{
+    QVariantMap result{{"sourcePath", sourcePath}};
+    try {
+        const auto installation = localInstallation(sourcePath, cancel);
+        result.insert("ok", true);
+        result.insert("version", installation.version);
+        result.insert("clientJar", installation.jar);
+        result.insert("count", installation.count);
+        result.insert("profile", installation.profile);
+        result.insert("message", installation.count > 1
+                      ? QString("发现 %1 个 Minecraft 版本，将导入最新的 %2 基础资源。也可直接选择目标版本的 JAR。").arg(installation.count).arg(installation.version)
+                      : installation.profile.isEmpty() ? "已识别 Minecraft " + installation.version
+                      : "已识别整合包的 Minecraft " + installation.version + " 基础资源（不含模组物品）");
+    } catch (const std::exception &error) {
+        result.insert("ok", false);
+        result.insert("cancelled", cancel && cancel->load());
+        result.insert("message", QString::fromUtf8(error.what()));
+    }
+    return result;
+}
 
 QString localPath(const QString &path)
 {
@@ -423,12 +793,13 @@ QVariantList parseVersions(const QJsonObject &source)
     return result;
 }
 
-QVariantMap fetchVersions(const QString &itemsRoot, const Cancellation &cancel)
+QVariantMap fetchVersions(const QString &itemsRoot, const Cancellation &cancel, bool allowNetwork)
 {
     try {
-        const auto source = manifest(localPath(itemsRoot) + "/cache", cancel, true);
+        const auto source = manifest(localPath(itemsRoot) + "/cache", cancel, allowNetwork, allowNetwork);
         return {{"ok", true}, {"versions", parseVersions(source)},
-                {"message", source.value("xcshopOffline").toBool() ? "网络不可用，使用已缓存的官方版本列表。" : "已更新官方版本列表。"}};
+                {"message", !allowNetwork ? "使用已缓存的官方版本列表。" : source.value("xcshopOffline").toBool()
+                     ? "网络不可用，使用已缓存的官方版本列表。" : "已更新官方版本列表。"}};
     } catch (const std::exception &error) {
         return {{"ok", false}, {"message", QString::fromUtf8(error.what())}};
     }
@@ -460,52 +831,76 @@ bool activatePack(const QString &itemsRoot, const QString &relativePack, QString
 
 QVariantMap importGame(const QVariantMap &options, const Cancellation &cancel, const Progress &progress)
 {
+    QVariantMap failure;
     try {
+        checkpoint(cancel);
         const QString root = QDir(localPath(options.value("itemsRoot").toString())).absolutePath();
         require(!options.value("itemsRoot").toString().isEmpty() && QDir().mkpath(root + "/cache"), "无法创建物品资源目录。");
         QLockFile lock(root + "/cache/import.lock");
         require(lock.tryLock(), "另一个窗口正在导入此资源目录，请稍后重试。");
         const QString cache = root + "/cache";
-        const auto source = manifest(cache, cancel, false);
+        const bool allowNetwork = options.value("allowNetwork", true).toBool();
+        const QString generator = options.value("generator", "client").toString();
+        require(generator == "client" || generator == "server", "无效的数据生成方式。");
+        const QString source = options.value("source", options.value("clientJar").toString().isEmpty() ? "download" : "local").toString();
+        require(source == "local" || source == "download", "无效的导入来源。");
+        const bool fromLocal = source == "local";
         QString version = options.value("version").toString().trimmed();
-        QString jar = localPath(options.value("clientJar").toString().trimmed());
-        if (!jar.isEmpty()) {
-            require(QFileInfo(jar).isFile(), "本地客户端 JAR 不存在。");
-            if (version.isEmpty()) version = detectVersion(jar, cancel);
-        }
-        require(!version.isEmpty(), "请选择 Minecraft 版本，或提供可识别版本的客户端 JAR。");
-        QJsonObject selected;
-        const auto supported = parseVersions(source);
-        for (const auto &candidate : supported)
-            if (candidate.toMap().value("id").toString() == version) {
-                for (const auto &entry : source.value("versions").toArray())
-                    if (entry.toObject().value("id").toString() == version) selected = entry.toObject();
-                break;
+        QString jar, clientHash;
+        QJsonObject metadata;
+        if (fromLocal) {
+            progress(1, "正在识别本地游戏版本…");
+            const auto installation = localInstallation(options.value("sourcePath", options.value("clientJar")).toString(), cancel);
+            jar = installation.jar;
+            version = installation.version; // Never use a stale online version for a local file.
+            clientHash = sha1(jar, cancel);
+            if (!options.value("rebuild").toBool()) {
+                const auto cached = activateCached(root, clientHash, version, cancel);
+                if (!cached.isEmpty()) return cached;
             }
-        require(!selected.isEmpty(), "未找到该版本。请刷新官方版本列表；支持范围为 Java 原版 1.13 起的正式版及后续测试版。");
-        progress(3, "正在读取 " + version + " 的官方版本信息…");
-        const auto metadata = versionMetadata(cache, selected, cancel);
-        const auto client = metadata.value("downloads").toObject().value("client").toObject();
-        const QString clientHash = client.value("sha1").toString();
-        require(QRegularExpression("^[a-f0-9]{40}$").match(clientHash).hasMatch(), "官方客户端校验信息无效。");
-        if (!jar.isEmpty()) require(sha1(jar, cancel) == clientHash,
-                     "所选 JAR 与该版本的官方客户端不一致。请选择对应的原版客户端文件；暂不支持修改过的客户端或模组包。");
-        const QString index = cache + "/packs/" + clientHash + "-r" + QString::number(RendererVersion) + ".json";
-        const auto cached = readObject(index).value("pack").toString();
-        const auto cachedCatalog = readObject(root + "/" + cached + "/catalog.json");
-        QString error;
-        if (!options.value("rebuild").toBool() && cachedCatalog.value("clientSha1").toString() == clientHash
-            && cachedCatalog.value("rendererVersion").toInt() == RendererVersion) {
-            checkpoint(cancel);
-            require(activatePack(root, cached, &error), error);
-            auto report = cachedCatalog.toVariantMap();
-            report.remove("items");
-            report.insert("ok", true);
-            report.insert("message", "已启用缓存的 Minecraft " + version + " 物品资源。");
-            return report;
+            metadata = installation.metadata;
+            if (metadata.value("id").toString() != version) metadata = {};
+            if (metadata.value("downloads").toObject().value("client").toObject().value("sha1").toString().isEmpty())
+                metadata = readObject(cache + "/versions/" + version + ".json");
+            if (metadata.value("id").toString() != version
+                || metadata.value("downloads").toObject().value("client").toObject().value("sha1").toString().isEmpty()
+                || (allowNetwork && generator == "client" && metadata.value("libraries").toArray().isEmpty()))
+                metadata = officialMetadata(cache, version, allowNetwork, cancel);
+            if (!metadata.contains("javaVersion") && installation.embedded.value("java_version").toInt() > 0)
+                metadata.insert("javaVersion", QJsonObject{{"majorVersion", installation.embedded.value("java_version")}});
+        } else {
+            require(!version.isEmpty(), "请选择要在线下载的 Minecraft 版本。");
+            progress(3, "正在读取 " + version + " 的官方版本信息…");
+            metadata = officialMetadata(cache, version, allowNetwork, cancel);
         }
-        if (jar.isEmpty()) jar = gameFile(cache, client, cancel, progress, 6);
-        auto entries = generatedItems(cache, metadata, options.value("javaPath").toString(), cancel, progress);
+        require(vanillaMetadata(metadata), "无法解析基础游戏配置。可直接选择整合包内的原版游戏 JAR 或基础版本目录。");
+        const auto client = metadata.value("downloads").toObject().value("client").toObject();
+        const QString expectedHash = client.value("sha1").toString();
+        require(QRegularExpression("^[a-f0-9]{40}$").match(expectedHash).hasMatch(), "客户端校验信息无效。");
+        if (!jar.isEmpty()) require(clientHash == expectedHash,
+                     "所选 JAR 与该版本的原版游戏本体不一致。可选择整合包目录以查找基础版本；暂不支持修改过的游戏本体。");
+        clientHash = expectedHash;
+        const QString index = cache + "/packs/" + clientHash + "-r" + QString::number(RendererVersion) + ".json";
+        QString error;
+        if (!options.value("rebuild").toBool()) {
+            const auto cached = activateCached(root, clientHash, version, cancel);
+            if (!cached.isEmpty()) return cached;
+        }
+        if (jar.isEmpty()) jar = gameFile(cache, client, cancel, progress, 6, allowNetwork);
+        const auto server = metadata.value("downloads").toObject().value("server").toObject();
+        if (generator == "client" && QRegularExpression("^[a-f0-9]{40}$").match(server.value("sha1").toString()).hasMatch()
+            && officialUrl(QUrl(server.value("url").toString()))) {
+            failure.insert("canUseServer", true);
+            failure.insert("requestSource", fromLocal ? "local" : "download");
+            failure.insert("requestPath", fromLocal ? options.value("sourcePath", options.value("clientJar")).toString().trimmed() : "");
+            failure.insert("requestVersion", fromLocal ? "" : version);
+            failure.insert("serverSize", server.value("size").toVariant());
+            const auto cachedServer = cache + "/downloads/" + server.value("sha1").toString() + ".jar";
+            failure.insert("serverCached", QFileInfo(cachedServer).isFile() && sha1(cachedServer, cancel) == server.value("sha1").toString());
+        }
+        auto generationOptions = options;
+        if (!fromLocal) generationOptions.insert("sourcePath", jar);
+        auto entries = generatedItems(cache, metadata, jar, clientHash, generationOptions, cancel, progress);
         QTemporaryDir staging(root + "/cache/import-XXXXXX");
         require(staging.isValid(), "无法创建导入临时目录。");
         progress(35, "正在解压客户端显示资源…");
@@ -536,10 +931,10 @@ QVariantMap importGame(const QVariantMap &options, const Cancellation &cancel, c
         }
         QJsonObject catalog{{"schemaVersion", CatalogSchema}, {"rendererVersion", RendererVersion},
             {"gameVersion", version}, {"clientSha1", clientHash},
-            {"serverSha1", metadata.value("downloads").toObject().value("server").toObject().value("sha1")},
-            {"source", "mojang"}, {"registryComplete", true}, {"itemCount", entries.size()},
+            {"source", "mojang"}, {"generator", generator}, {"registryComplete", true}, {"itemCount", entries.size()},
             {"rendered", rendered}, {"approximate", approximate}, {"missing", missing},
             {"createdAt", QDateTime::currentDateTimeUtc().toString(Qt::ISODate)}, {"items", entries}};
+        if (generator == "server") catalog.insert("serverSha1", server.value("sha1"));
         writeJson(pack + "/catalog.json", catalog);
         checkpoint(cancel);
         progress(96, "正在保存并启用完整资源包…");
@@ -565,8 +960,13 @@ QVariantMap importGame(const QVariantMap &options, const Cancellation &cancel, c
         progress(100, report.value("message").toString());
         return report;
     } catch (const std::exception &error) {
-        return {{"ok", false}, {"cancelled", cancel && cancel->load()},
-                {"message", QString::fromUtf8(error.what())}};
+        const auto message = QString::fromUtf8(error.what());
+        if (message.startsWith("未找到可用的 Java") || message.startsWith("无法启动"))
+            failure.insert("canUseServer", false);
+        failure.insert("ok", false);
+        failure.insert("cancelled", cancel && cancel->load());
+        failure.insert("message", message);
+        return failure;
     }
 }
 } // namespace MinecraftImport

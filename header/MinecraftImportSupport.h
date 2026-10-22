@@ -21,7 +21,8 @@ QJsonArray parseItemReports(const QJsonObject &registries, const QJsonObject &it
 QVariantList parseVersions(const QJsonObject &manifest);
 bool validItemId(const QString &id);
 QString localPath(const QString &path);
-QVariantMap fetchVersions(const QString &itemsRoot, const Cancellation &cancel);
+QVariantMap fetchVersions(const QString &itemsRoot, const Cancellation &cancel, bool allowNetwork = true);
+QVariantMap inspectLocalInstallation(const QString &sourcePath, const Cancellation &cancel);
 QVariantMap importGame(const QVariantMap &options, const Cancellation &cancel,
                        const Progress &progress);
 
