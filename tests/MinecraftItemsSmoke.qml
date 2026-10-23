@@ -15,6 +15,7 @@ Window {
     property bool narrowCaptured: false
     property bool advancedCaptured: false
     property bool pickerCaptured: false
+    property bool switchCaptured: false
     readonly property var versions: [
         {id: "26.3", type: "release", label: "26.3"},
         {id: "26.3-snapshot-7", type: "snapshot", label: "26.3-snapshot-7 · 测试版"},
@@ -48,6 +49,10 @@ Window {
                     {name: "minecraft:shield", iconStatus: "approximate", iconReason: "特殊模型预览"},
                     {name: "minecraft:future_item", iconStatus: "missing", iconReason: "未知模型"}]}
         check(file.writeAtomic(base + "/" + relative + "/catalog.json", JSON.stringify(catalog)), "Write catalog")
+        var other = "packs/" + "b".repeat(40) + "-r2-5678"
+        check(file.writeAtomic(base + "/" + other + "/catalog.json", JSON.stringify({schemaVersion: 2, gameVersion: "1.21.4", itemCount: 1, rendered: 1, approximate: 0, missing: 0,
+            items: [{name: "minecraft:stone", iconStatus: "rendered"}]})), "Write second imported version")
+        check(file.copy(":/assets/gui/element/Item.png", base + "/" + other + "/assets/minecraft/stone.png"), "Copy second version icon")
         check(file.writeAtomic(base + "/active.json", JSON.stringify({schemaVersion: 2, pack: relative})), "Write active pointer")
         check(file.writeAtomic(base + "/custom-items.json", JSON.stringify([{itemId: "example:test"}])), "Write custom items")
         check(file.copy(":/assets/gui/element/Item.png", base + "/" + relative + "/assets/minecraft/stone.png"), "Copy vanilla icon")
@@ -136,11 +141,28 @@ Window {
                     root.check(file.writeAtomic(APP_DIRPATH + "/local-game/client.jar", "legacy fixture"), "Write local client fixture")
                     root.check(file.writeAtomic(APP_DIRPATH + "/local-game/client.json", JSON.stringify({id: "1.13", mainClass: "net.minecraft.client.main.Main"})), "Write legacy version metadata")
                     root.find(root.page, "minecraftLocalPathField").text = APP_DIRPATH + "/local-game/client.jar"
-                } else {
+                } else if (root.step === 8) {
                     root.check(!MinecraftAssetImporter.inspectingLocal && root.page.localInfo.ok === true, "Local inspection completes asynchronously")
                     root.check(root.page.localInfo.version === "1.13", "Local file version is detected without the online catalog")
                     root.check(root.find(root.page, "minecraftImportButton").enabled, "Detected local file can be imported")
                     root.check(root.page.importOptions().version === "", "Detected local version is never supplied as an online selection")
+                    root.find(root.page, "minecraftSwitchVersionButton").clicked()
+                    root.check(root.page.importedVersions.length === 2, "Imported version list comes from completed packs")
+                } else if (root.step === 9) {
+                    root.check(!root.find(root.contentItem, "minecraftImportedChoice_1.13").enabled, "Current imported version is marked")
+                    root.check(root.contentItem.grabToImage(function(result) {
+                        root.switchCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-switch-version.png")
+                    }), "Request imported version picker screenshot")
+                } else if (root.step === 10) {
+                    root.check(root.switchCaptured, "Save imported version picker screenshot")
+                    root.find(root.contentItem, "minecraftImportedChoice_1.21.4").clicked()
+                    root.check(root.page.currentVersion === "1.21.4", "Switch reloads current catalog")
+                    root.check(root.page.items.length === 2, "Custom entries survive switching")
+                    root.check(Global.getItemTexturePath("minecraft:stone").indexOf("b".repeat(40)) >= 0, "Editor icon lookup uses newly active pack")
+                    root.find(root.page, "minecraftSwitchVersionButton").clicked()
+                } else {
+                    root.find(root.contentItem, "minecraftImportedChoice_1.13").clicked()
+                    root.check(root.page.currentVersion === "1.13" && root.page.items.length === 4, "Previous version can be reapplied")
                     console.log("MINECRAFT_ITEMS_UI_SMOKE_PASSED")
                     Qt.quit()
                 }

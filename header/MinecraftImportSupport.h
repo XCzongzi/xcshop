@@ -36,4 +36,6 @@ IconResult renderItem(const QString &assetsRoot, const QString &id,
 // Completed packs are immutable; activation changes only a small atomic pointer.
 bool activatePack(const QString &itemsRoot, const QString &relativePack, QString *error);
 QString activePack(const QString &itemsRoot);
+QVariantList importedPacks(const QString &itemsRoot);
+QVariantMap switchPack(const QString &itemsRoot, const QString &relativePack);
 } // namespace MinecraftImport

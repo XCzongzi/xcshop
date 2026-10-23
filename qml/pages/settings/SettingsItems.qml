@@ -18,6 +18,8 @@ Item {
     property string importSource: "local"
     property string onlineVersion: ""
     property bool advancedOpen: false
+    property var importedVersions: []
+    property string switchError: ""
     property var versionCatalog: MinecraftAssetImporter.versions
     property var localInfo: MinecraftAssetImporter.localInfo
     readonly property bool busy: MinecraftAssetImporter.importing
@@ -288,6 +290,7 @@ Item {
                         width: parent.width; spacing: 12
                         SettingsActionButton {
                             objectName: "minecraftImportButton"; text: root.busy ? "正在导入…" : "导入并启用"
+                            primary: true
                             enabled: !root.busy && (root.importSource === "download" ? root.onlineVersion.length > 0
                                      : !MinecraftAssetImporter.inspectingLocal && !inspectTimer.running && root.localInfo.ok === true && root.localInfo.sourcePath === localField.text.trim())
                             onClicked: root.startImport("client")
@@ -313,6 +316,16 @@ Item {
                 title: "当前资源 · " + root.currentVersion
                 description: root.catalogSummary
                 contentHeight: itemForm.height
+                headerActions: SettingsActionButton {
+                    objectName: "minecraftSwitchVersionButton"
+                    text: "切换版本"; enabled: !root.busy
+                    onClicked: {
+                        root.importedVersions = MinecraftAssetImporter.importedVersions(root.itemsRootPath)
+                        root.switchError = ""
+                        importedSearch.text = ""
+                        importedPicker.open()
+                    }
+                }
                 Column {
                     id: itemForm
                     width: parent.width
@@ -388,11 +401,55 @@ Item {
                     Flow {
                         width: parent.width; spacing: 8
                         SettingsActionButton { text: "选择图标…"; enabled: !root.busy; onClicked: iconDialog.openXC(false, "customItemIcon") }
-                        SettingsActionButton { text: "添加物品"; enabled: !root.busy; onClicked: root.saveCustomItem() }
+                        SettingsActionButton { text: "添加物品"; primary: true; enabled: !root.busy; onClicked: root.saveCustomItem() }
                     }
                     XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.error; xcText: root.formError; visible: root.formError.length > 0 }
                 }
             }
+        }
+    }
+    Controls.Popup {
+        id: importedPicker
+        parent: Controls.Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(460, parent ? parent.width - 40 : 460)
+        height: Math.min(440, parent ? parent.height - 40 : 440)
+        padding: 18; modal: true
+        closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnPressOutside
+        background: Rectangle { color: Colors.foreground; radius: 12; border.width: 1; border.color: Colors.changeA(Colors.border, 0.4) }
+        contentItem: Column {
+            spacing: 10
+            XCText { xcText: "切换已导入的版本"; onCenter: false; xcFontSize: 18 }
+            XCText { width: parent.width; xcText: "直接应用本地资源，无需下载或重新生成。"; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+            XCTextField { id: importedSearch; width: parent.width; placeholderText: "搜索已导入版本" }
+            ListView {
+                id: importedList
+                width: parent.width; height: Math.max(60, importedPicker.availableHeight - y - 82)
+                clip: true; spacing: 4
+                model: root.importedVersions.filter(function(entry) { return entry.version.toLowerCase().indexOf(importedSearch.text.trim().toLowerCase()) >= 0 })
+                Controls.ScrollBar.vertical: Controls.ScrollBar {}
+                delegate: SettingsActionButton {
+                    required property var modelData
+                    objectName: "minecraftImportedChoice_" + modelData.version
+                    width: importedList.width - 12
+                    text: modelData.version + (modelData.active ? " · 当前使用" : "") + " · " + modelData.itemCount + " 项物品"
+                    enabled: !root.busy && !modelData.active
+                    onClicked: {
+                        if (MinecraftAssetImporter.switchVersion(root.itemsRootPath, modelData.pack)) importedPicker.close()
+                        else {
+                            root.switchError = MinecraftAssetImporter.lastReport.message
+                            root.importedVersions = MinecraftAssetImporter.importedVersions(root.itemsRootPath)
+                        }
+                    }
+                }
+                XCText {
+                    anchors.centerIn: parent; width: parent.width; onCenter: true; xcWrapMode: true; xcFontSize: 13; boldFont: false; textColor: Colors.banned
+                    visible: !importedList.count
+                    xcText: root.importedVersions.length ? "没有匹配的版本" : "暂无已导入版本，请先导入游戏资源。"
+                }
+            }
+            XCText { width: parent.width; visible: root.switchError.length > 0; xcText: root.switchError; onCenter: false; xcWrapMode: true; xcFontSize: 12; textColor: Colors.error }
+            SettingsActionButton { text: "关闭"; onClicked: importedPicker.close() }
         }
     }
     Controls.Popup {

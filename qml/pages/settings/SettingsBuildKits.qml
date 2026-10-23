@@ -73,6 +73,7 @@ Item {
                         SettingsActionButton { text: "浏览…"; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("root", BuildKits.kitsPath) }
                         SettingsActionButton {
                             text: "应用目录"; height: 32; radius: 6; textSize: 12; enabled: !BuildKits.busy
+                            primary: true
                             onClicked: {
                                 BuildKits.kitsPath = pathField.text
                                 BuildKits.refresh()
@@ -81,7 +82,7 @@ Item {
                         }
                         SettingsActionButton { text: "重新扫描"; enabled: !BuildKits.busy; onClicked: BuildKits.refresh() }
                         SettingsActionButton { text: "打开目录"; onClicked: file.revealInFileManager(BuildKits.kitsPath) }
-                        SettingsActionButton { text: "导入套件…"; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("import", BuildKits.kitsPath) }
+                        SettingsActionButton { text: "导入套件…"; primary: true; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("import", BuildKits.kitsPath) }
                         SettingsActionButton {
                             text: "恢复默认目录"; enabled: !BuildKits.busy
                             onClicked: { BuildKits.kitsPath = BuildKits.defaultKitsPath; pathField.text = BuildKits.kitsPath; Global.saveSettings() }
@@ -128,6 +129,7 @@ Item {
                             width: parent.width; spacing: 8
                             SettingsActionButton {
                                 text: "设为新项目默认"; height: 30; radius: 6; textSize: 12
+                                primary: true
                                 enabled: !!root.selectedTemplate.valid && BuildKits.identityValid && root.selectedTemplate.dataVersion === BuildKits.dataVersion
                                 onClicked: { BuildKits.preferredTemplateId = root.selectedTemplate.id; Global.saveSettings() }
                             }

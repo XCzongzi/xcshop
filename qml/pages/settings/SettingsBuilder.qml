@@ -41,6 +41,7 @@ Item {
                         SettingsActionButton { text: "浏览…"; enabled: !Builder.running; onClicked: executableDialog.openXC(false, "builder") }
                         SettingsActionButton {
                             text: "应用路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running
+                            primary: true
                             onClicked: {
                                 Builder.executablePath = pathField.text
                                 Builder.recheckExecutable()

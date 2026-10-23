@@ -680,23 +680,35 @@ QJsonObject officialMetadata(const QString &cache, const QString &version, bool 
     throw std::runtime_error("未找到该原版版本。请刷新在线版本列表，或选择包含版本 JSON 的本地安装；支持 Java 原版 1.13 起的版本。");
 }
 
+QJsonObject completedCatalog(const QString &root, const QString &pack)
+{
+    if (!QRegularExpression("^packs/[a-f0-9]{40}-r[0-9]+-[a-f0-9-]+$").match(pack).hasMatch()) return {};
+    const auto catalog = readObject(root + "/" + pack + "/catalog.json");
+    return catalog.value("schemaVersion").toInt() == CatalogSchema && !catalog.value("items").toArray().isEmpty()
+            ? catalog : QJsonObject{};
+}
+
+QVariantMap packReport(const QJsonObject &catalog)
+{
+    auto report = catalog.toVariantMap();
+    report.remove("items");
+    report.insert("ok", true);
+    report.insert("message", "已启用 Minecraft " + catalog.value("gameVersion").toString() + " 物品资源。");
+    return report;
+}
+
 QVariantMap activateCached(const QString &root, const QString &hash, const QString &version,
                            const Cancellation &cancel)
 {
     const auto cached = readObject(root + "/cache/packs/" + hash + "-r" + QString::number(RendererVersion) + ".json")
                         .value("pack").toString();
-    if (!QRegularExpression("^packs/[a-f0-9]{40}-r[0-9]+-[a-f0-9-]+$").match(cached).hasMatch()) return {};
-    const auto catalog = readObject(root + "/" + cached + "/catalog.json");
+    const auto catalog = completedCatalog(root, cached);
     if (catalog.value("clientSha1").toString() != hash || catalog.value("rendererVersion").toInt() != RendererVersion
         || catalog.value("gameVersion").toString() != version) return {};
     checkpoint(cancel);
     QString error;
     require(activatePack(root, cached, &error), error);
-    auto report = catalog.toVariantMap();
-    report.remove("items");
-    report.insert("ok", true);
-    report.insert("message", "已启用缓存的 Minecraft " + version + " 物品资源。");
-    return report;
+    return packReport(catalog);
 }
 
 } // namespace
@@ -818,14 +830,64 @@ bool activatePack(const QString &itemsRoot, const QString &relativePack, QString
 {
     try {
         require(QRegularExpression("^packs/[a-f0-9]{40}-r[0-9]+-[a-f0-9-]+$").match(relativePack).hasMatch(), "无效的资源包路径。");
-        const auto catalog = readObject(itemsRoot + "/" + relativePack + "/catalog.json");
-        require(catalog.value("schemaVersion").toInt() == CatalogSchema && !catalog.value("items").toArray().isEmpty(), "资源包未完成，无法启用。");
+        const auto catalog = completedCatalog(itemsRoot, relativePack);
+        require(!catalog.isEmpty(), "资源包未完成或已损坏，无法启用。");
         writeJson(itemsRoot + "/active.json", {{"schemaVersion", CatalogSchema}, {"pack", relativePack},
                                               {"gameVersion", catalog.value("gameVersion")}});
         return true;
     } catch (const std::exception &exception) {
         if (error) *error = QString::fromUtf8(exception.what());
         return false;
+    }
+}
+
+QVariantList importedPacks(const QString &itemsRoot)
+{
+    const auto root = localPath(itemsRoot);
+    const auto current = activePack(root);
+    QVariantList packs;
+    const QDir directory(root + "/packs");
+    for (const auto &folder : directory.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        if (folder.isSymLink()) continue;
+        const auto relative = "packs/" + folder.fileName();
+        const auto catalog = completedCatalog(root, relative);
+        if (catalog.value("gameVersion").toString().isEmpty()) continue;
+        packs.append(QVariantMap{{"pack", relative}, {"version", catalog.value("gameVersion").toString()},
+            {"itemCount", catalog.value("items").toArray().size()}, {"active", relative == current},
+            {"currentRenderer", catalog.value("rendererVersion").toInt() == RendererVersion},
+            {"createdAt", catalog.value("createdAt").toString(folder.lastModified().toUTC().toString(Qt::ISODate))}});
+    }
+    std::sort(packs.begin(), packs.end(), [](const QVariant &a, const QVariant &b) {
+        const auto left = a.toMap(), right = b.toMap();
+        for (const auto &key : {"active", "currentRenderer"})
+            if (left.value(key).toBool() != right.value(key).toBool()) return left.value(key).toBool();
+        return left.value("createdAt").toString() > right.value("createdAt").toString();
+    });
+    QSet<QString> seen;
+    QVariantList versions;
+    for (const auto &pack : packs) {
+        const auto version = pack.toMap().value("version").toString();
+        if (seen.contains(version)) continue;
+        seen.insert(version);
+        versions.append(pack);
+    }
+    return versions;
+}
+
+QVariantMap switchPack(const QString &itemsRoot, const QString &relativePack)
+{
+    try {
+        const auto root = QDir(localPath(itemsRoot)).absolutePath();
+        require(!itemsRoot.trimmed().isEmpty() && QDir().mkpath(root + "/cache"), "无法访问物品资源目录。");
+        QLockFile lock(root + "/cache/import.lock");
+        require(lock.tryLock(), "正在导入物品资源，请稍后切换版本。");
+        const auto catalog = completedCatalog(root, relativePack);
+        require(!catalog.isEmpty() && !catalog.value("gameVersion").toString().isEmpty(), "该资源包已不存在或未完成，请重新导入。");
+        QString error;
+        require(activatePack(root, relativePack, &error), error);
+        return packReport(catalog);
+    } catch (const std::exception &error) {
+        return {{"ok", false}, {"message", QString::fromUtf8(error.what())}};
     }
 }
 

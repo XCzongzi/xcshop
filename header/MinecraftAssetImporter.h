@@ -38,6 +38,8 @@ public:
     Q_INVOKABLE bool startImport(const QVariantMap &options);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void inspectLocal(const QString &sourcePath);
+    Q_INVOKABLE QVariantList importedVersions(const QString &itemsRoot) const;
+    Q_INVOKABLE bool switchVersion(const QString &itemsRoot, const QString &pack);
 
 signals:
     void stateChanged();

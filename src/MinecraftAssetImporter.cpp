@@ -101,3 +101,19 @@ void MinecraftAssetImporter::cancel()
     m_status = "正在取消导入…";
     emit stateChanged();
 }
+
+QVariantList MinecraftAssetImporter::importedVersions(const QString &itemsRoot) const
+{
+    return MinecraftImport::importedPacks(itemsRoot);
+}
+
+bool MinecraftAssetImporter::switchVersion(const QString &itemsRoot, const QString &pack)
+{
+    if (m_importing) return false;
+    m_lastReport = MinecraftImport::switchPack(itemsRoot, pack);
+    m_status = m_lastReport.value("message").toString();
+    m_progress = m_lastReport.value("ok").toBool() ? 100 : 0;
+    emit stateChanged();
+    emit importFinished(m_lastReport);
+    return m_lastReport.value("ok").toBool();
+}

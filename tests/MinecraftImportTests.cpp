@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QImage>
 #include <QJsonDocument>
+#include <QLockFile>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -115,6 +116,46 @@ private slots:
         QVERIFY(report["cancelled"].toBool());
         QCOMPARE(activePack(directory.path()), pack);
         QVERIFY(QFileInfo::exists(directory.path() + "/assets/custom/keep.png"));
+    }
+    void switchingImportedVersionsUsesOnlyCompletedLocalPacks() {
+        QTemporaryDir directory;
+        const auto root = directory.path();
+        const auto first = "packs/" + QString(40, 'a') + "-r2-1111";
+        const auto second = "packs/" + QString(40, 'b') + "-r2-2222";
+        const auto duplicate = "packs/" + QString(40, 'c') + "-r2-3333";
+        const auto broken = "packs/" + QString(40, 'd') + "-r2-4444";
+        const auto save = [&](const QString &pack, const QString &version, const QString &date) {
+            return json(root + "/" + pack + "/catalog.json", {{"schemaVersion", CatalogSchema},
+                {"rendererVersion", RendererVersion}, {"gameVersion", version}, {"createdAt", date},
+                {"items", QJsonArray{QJsonObject{{"name", "minecraft:stone"}}}}});
+        };
+        QVERIFY(save(first, "1.13", "2024-01-01T00:00:00Z"));
+        QVERIFY(save(second, "1.21.4", "2025-01-01T00:00:00Z"));
+        QVERIFY(save(duplicate, "1.21.4", "2024-01-01T00:00:00Z"));
+        QVERIFY(json(root + "/" + broken + "/catalog.json", {{"schemaVersion", CatalogSchema}, {"gameVersion", "broken"}}));
+        QVERIFY(bytes(root + "/assets/custom/keep.png", "custom"));
+        QString error;
+        QVERIFY(activatePack(root, first, &error));
+        const auto versions = importedPacks(root);
+        QCOMPARE(versions.size(), 2);
+        QVERIFY(versions[0].toMap()["active"].toBool());
+        QCOMPARE(versions[1].toMap()["pack"].toString(), second);
+        const auto switched = switchPack(root, second);
+        QVERIFY2(switched["ok"].toBool(), qPrintable(switched["message"].toString()));
+        QCOMPARE(switched["gameVersion"].toString(), "1.21.4");
+        QVERIFY(!switched.contains("items"));
+        QCOMPARE(activePack(root), second);
+        QVERIFY(QFileInfo::exists(root + "/assets/custom/keep.png"));
+        QVERIFY(!QFileInfo::exists(root + "/cache/manifest.json"));
+        QLockFile lock(root + "/cache/import.lock");
+        QVERIFY(lock.tryLock());
+        QVERIFY(!switchPack(root, first)["ok"].toBool());
+        QCOMPARE(activePack(root), second);
+        lock.unlock();
+        QVERIFY(!switchPack(root, "../outside")["ok"].toBool());
+        QVERIFY(QFile::remove(root + "/" + first + "/catalog.json"));
+        QVERIFY(!switchPack(root, first)["ok"].toBool());
+        QCOMPARE(activePack(root), second);
     }
     void cachedImportNeedsNoJavaOrNetwork() {
         QTemporaryDir directory;
