@@ -1,2 +1,0 @@
-input/{{shopName}}/{{inputName}}/match.mcfunction
-# First matching connection wins. A nonmatch writes the configured default.

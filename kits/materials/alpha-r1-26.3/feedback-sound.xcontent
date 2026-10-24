@@ -1,2 +1,0 @@
-{{feedbackPath}}
-execute at @s run playsound {{feedbackSound}} master @s ~ ~ ~ 1 1

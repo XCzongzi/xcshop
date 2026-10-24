@@ -1,2 +1,0 @@
-shop.mcfunction
-execute if entity @e[type=marker,tag=xca.shop.{{shopName}},distance=..0.1,limit=1] if block ~ ~ ~ {{blockName}} run function xcshop_alpha:shop/{{shopName}}/sell

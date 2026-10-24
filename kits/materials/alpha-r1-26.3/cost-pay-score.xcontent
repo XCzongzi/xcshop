@@ -1,2 +1,0 @@
-{{itemPath}}/pay.mcfunction
-scoreboard players remove @s {{type.value}} {{amount}}

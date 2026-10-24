@@ -1,5 +1,0 @@
-drop/player.mcfunction
-tag @s add xca.buyer
-scoreboard players operation @s _xca = #dropId _xca
-execute at @e[type=marker,tag=xca.shop,distance=..8] if score @n[type=marker,tag=xca.shop] _xca = @s _xca run function xcshop_alpha:shop
-tag @s remove xca.buyer

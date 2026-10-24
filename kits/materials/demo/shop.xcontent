@@ -1,3 +1,0 @@
-main.mcfunction
-# 商店名称：{{customName}}
-say 当前商店为 {{registrationName}}

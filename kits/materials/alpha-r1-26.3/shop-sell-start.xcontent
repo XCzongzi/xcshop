@@ -1,2 +1,0 @@
-shop/{{shopName}}/sell.mcfunction
-# All per-product handlers verify the instance ID from ctx before accepting a token.

@@ -1,8 +1,0 @@
-// stackText is caller-owned; remove a trailing top-level count, not digits in an ID or component.
-int specEnd = len(stackText);
-int specStart = specEnd;
-while (specStart > 0 && contains("0123456789", substr(stackText, specStart - 1, 1))) { specStart--; }
-if (specStart > 0 && specStart < specEnd
-    && (substr(stackText, specStart - 1, 1) == " " || substr(stackText, specStart - 1, 1) == "\t")) {
-    stackText = trim(substr(stackText, 0, specStart));
-}

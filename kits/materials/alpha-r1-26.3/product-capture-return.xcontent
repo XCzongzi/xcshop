@@ -1,3 +1,0 @@
-{{itemPath}}/sell.mcfunction
-function xcshop_alpha:{{itemPath}}/success
-return 1

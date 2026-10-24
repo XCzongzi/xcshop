@@ -1,2 +1,0 @@
-opened/{{shopName}}.mcfunction
-execute at @e[type=marker,tag=xca.shop.{{shopName}},distance=..8] run function xcshop_alpha:shop/{{shopName}}/set

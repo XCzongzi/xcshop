@@ -1,2 +1,0 @@
-{{itemPath}}/sell.mcfunction
-execute if score #rule.{{ruleNumber}} _xca matches 1 run function xcshop_alpha:{{rulePath}}/run

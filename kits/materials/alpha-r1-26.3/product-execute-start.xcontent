@@ -1,6 +1,0 @@
-{{itemPath}}/sell.mcfunction
-execute unless score #matched _xca matches 1 run return fail
-scoreboard players set #passed _xca 0
-execute store result score #passed _xca run function xcshop_alpha:{{itemPath}}/check
-execute unless score #passed _xca matches 1.. run return run function xcshop_alpha:{{itemPath}}/fail
-function xcshop_alpha:{{itemPath}}/pay

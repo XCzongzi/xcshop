@@ -1,2 +1,0 @@
-_summon/{{shopName}}.mcfunction
-execute align xyz run return run function xcshop_alpha:_summon/{{shopName}}/at

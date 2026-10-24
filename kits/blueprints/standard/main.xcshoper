@@ -1,8 +1,0 @@
-// Generate the pack metadata before entering the namespace directory.
-build "pack.xcontent"
-
-cd . "functions/shops"
-
-directory registrationName : Shop[]{
-    build "shop.xcontent"
-}

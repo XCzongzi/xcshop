@@ -1,2 +1,0 @@
-input/{{shopName}}/{{inputName}}/{{connectionNumber}}.mcfunction
-execute unless items block ~ ~ ~ container.{{inputSlotNumber}} {{stackText}} run return fail

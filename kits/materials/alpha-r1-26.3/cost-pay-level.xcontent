@@ -1,2 +1,0 @@
-{{itemPath}}/pay.mcfunction
-experience add @s -{{amount}} levels

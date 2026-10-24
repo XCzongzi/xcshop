@@ -1,2 +1,0 @@
-opened/{{shopName}}.mcfunction
-advancement revoke @s only xcshop_alpha:opened/{{shopName}}

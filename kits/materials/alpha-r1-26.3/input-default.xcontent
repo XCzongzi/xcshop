@@ -1,3 +1,0 @@
-input/{{shopName}}/{{inputName}}/match.mcfunction
-scoreboard players set {{result.target}} {{result.scoreboard}} {{defaultValue}}
-return 0

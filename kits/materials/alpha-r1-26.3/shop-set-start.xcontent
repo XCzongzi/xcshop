@@ -1,2 +1,0 @@
-shop/{{shopName}}/set.mcfunction
-execute unless block ~ ~ ~ {{blockName}} run return fail

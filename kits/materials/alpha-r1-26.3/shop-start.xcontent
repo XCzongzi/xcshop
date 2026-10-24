@@ -1,6 +1,0 @@
-shop.mcfunction
-# Executor: buyer. Position: the marker whose persistent ID matched the token.
-data remove storage xcshop_alpha:runtime ctx
-data modify storage xcshop_alpha:runtime ctx set from block ~ ~ ~ components."minecraft:custom_data".xca
-execute unless data storage xcshop_alpha:runtime ctx.id run return fail
-scoreboard players set #handled _xca 1

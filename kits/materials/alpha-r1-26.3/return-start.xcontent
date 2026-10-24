@@ -1,2 +1,0 @@
-shop/{{shopName}}/return.mcfunction
-# Genuine deposits are copied into dropped items at the buyer; no temporary cart loot is created.

@@ -1,2 +1,0 @@
-input/{{shopName}}/{{inputName}}.mcfunction
-execute {{inputClause}}at @e[type=marker,tag=xca.shop.{{shopName}},sort=nearest,limit=1,distance=..8] run function xcshop_alpha:input/{{shopName}}/{{inputName}}/match

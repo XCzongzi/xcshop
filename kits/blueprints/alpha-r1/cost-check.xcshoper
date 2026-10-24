@@ -1,7 +1,0 @@
-if (type.kind == "experience_level") { build "cost-check-level.xcontent" }
-else if (type.kind == "item_count") {
-    string costPredicate = "";
-    build "cost-predicate.xcshoper"
-    build "cost-check-item.xcontent"
-}
-else { build "cost-check-score.xcontent" }

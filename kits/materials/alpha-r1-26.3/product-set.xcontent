@@ -1,2 +1,0 @@
-{{itemPath}}/set.mcfunction
-item replace block ~ ~ ~ container.{{slotNumber}} with {{item}}

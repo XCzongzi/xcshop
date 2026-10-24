@@ -1,4 +1,0 @@
-{{itemPath}}/check.mcfunction
-scoreboard players set #condition _xca 0
-execute store result score #condition _xca run function xcshop_alpha:{{itemPath}}/condition/{{costNumber}}
-execute unless score #condition _xca matches 1.. run return fail

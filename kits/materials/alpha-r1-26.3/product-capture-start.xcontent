@@ -1,3 +1,0 @@
-{{itemPath}}/sell.mcfunction
-# Native Minecraft $(id) macro is supplied from this shop block, not a builder macro.
-$execute if score #source _xca matches 2 unless items entity @e[type=item,tag=xca.dropped,limit=1] contents *[custom_data~{xca:{token:1b,shop:"{{shopName}}",product:"{{productKey}}",id:$(id)}}] run return fail
