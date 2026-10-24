@@ -6,11 +6,25 @@ Item{
 
     property string content
     property bool highlightMacros: false
+    readonly property string inputContent: textArea.text
+    readonly property bool resizing: resizeAnimation.running
 
     signal accepted()
 
+    Behavior on height {
+        NumberAnimation {
+            id: resizeAnimation
+            duration: 120 / Global.animationSpeed
+            easing.type: Easing.InOutQuad
+        }
+    }
+
     function getContent(){
         return textArea.text
+    }
+    function setContent(value) {
+        content = value === undefined || value === null ? "" : String(value)
+        textArea.text = content
     }
 
     onContentChanged:{
@@ -19,15 +33,10 @@ Item{
 
     XCTextArea{
         id: textArea
+        objectName: "variableTextAreaInput"
         highlightMacros: root.highlightMacros
         width: parent.width
         height: parent.height - 35
-        Behavior on height {
-            NumberAnimation{
-                duration: 120 / Global.animationSpeed
-                easing.type: Easing.InOutQuad
-            }
-        }
         onEditingFinished:{
             root.content = text
             root.accepted()

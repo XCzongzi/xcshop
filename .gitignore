@@ -25,6 +25,9 @@
 # Minecraft assets
 /assets/minecraft/
 
+# Local build kits
+/kits/
+
 # Project ideas / design notes (local only)
 /项目构思/
 /重要文件/

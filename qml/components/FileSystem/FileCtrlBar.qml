@@ -1,5 +1,6 @@
 import QtQuick
 import xcshop
+import "../../../js/WorkspaceSchema.js" as Schema
 
 Item{
     id:root
@@ -23,16 +24,10 @@ Item{
             })
         }
         if (Global.current_element === "Item") {
-            return JSON.stringify({
-                "item": "",
-                "itemSyntaxError": false,
-                "display": { "mode": "original", "element": "" },
-                "cost": [],
-                "trigger": []
-            })
+            return JSON.stringify(Schema.item())
         }
         if (Global.current_element === "Display") {
-            return JSON.stringify({"frame":{"head":"","end":"","separator":""},"member":{"order":"cost_then_value","head":"","middle":"","end":"","cost":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false},"value":{"color":"","bold":false,"underlined":false,"italic":false,"strikethrough":false,"obfuscated":false}},"hint":{"success":{"text":"","sound":""},"fail":{"text":"","sound":""}}})
+            return JSON.stringify(Schema.display())
         }
         if (Global.current_element === "Cost") {
             return JSON.stringify({

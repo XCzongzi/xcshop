@@ -1,346 +1,198 @@
-pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
+import "../../js/WorkspaceSchema.js" as Schema
 
 BaseIOPage {
     id: root
     color: "transparent"
     workspace: true
-
-    readonly property var displayModes: ["original", "additional"]
-
-    //元素读取
-    function elementReading(){
-        //此函数用于在页面创建时，将从项目文件中读取到的数据更新至控件中
-        //有的数据使用属性绑定更新，而不依赖此函数
-
-        //单选框&多属性编辑栏的属性更新必须使用函数，而不能使用属性绑定
-    
-        if (typeof root.eledata.item !== "string")
-            root.eledata.item = ""
-        root.eledata.itemSyntaxError = itemInput_field.isSyntaxError(root.eledata.item)
-        if (!root.eledata.display || typeof root.eledata.display !== "object")
-            root.eledata.display = { "mode": "original", "element": "" }
-        if (root.eledata.display.mode === undefined) {
-            root.eledata.display.mode = Number(root.eledata.display.selected) === 1
-                    ? "additional" : "original"
-            delete root.eledata.display.selected
-            root.updateDataOut()
-        }
-        if (typeof root.eledata.display.element !== "string")
-            root.eledata.display.element = ""
-        var displayModeIndex = root.displayModes.indexOf(root.eledata.display.mode)
-        displayInput_selection.selected = displayModeIndex >= 0 ? displayModeIndex : 0
-        displayInput_input.setElement(root.eledata.display.element, false)
-
-        //Repeater中动态加载的组件的数据也需要使用函数来更新
-        //由于数据是存储在数组中的，而Repeater使用的模型又是ListModel，所以需要先把数组中的数据同步到ListModel当中
-        //并且在后续修改过程中，需要将数组与model中的数据同步更新
-
-        if (!Array.isArray(root.eledata.cost))
-            root.eledata.cost = []
-        if (!Array.isArray(root.eledata.trigger))
-            root.eledata.trigger = []
-        root.updateDataOut()
-
-        for(var i = 0; i < root.eledata.cost.length; i++ ){
-            costListModel.append(root.eledata.cost[i])
-        }
-
-        for(var i = 0; i < eledata.trigger.length; i++ ){
-            listModel.append(eledata.trigger[i])
-        }
-
-        Qt.callLater(function() { //稍后加载，一般用于含Repeater的ContentBar，以适应高度的初始化
-            costInput.expand()
-            displayInput.expand()
-            triggerInput.expand()
-        })
-
+    property bool operationDeleting: false
+    property bool operationAdding: false
+    function elementReading() {
+        if (!Array.isArray(eledata.operations) || eledata.cost !== undefined || eledata.trigger !== undefined)
+            throw new Error("此页面只支持操作组格式，请使用新建项目");
+        eledata.itemSyntaxError = itemField.isSyntaxError(eledata.item);
+        displayMode.selected = eledata.display.mode === "additional" ? 1 : 0;
+        displayElement.setElement(eledata.display.element, false);
+        for (var i = 0; i < eledata.operations.length; ++i)
+            operationRows.add(eledata.operations[i]);
+        Qt.callLater(function () {
+            displayBar.expand();
+            operationsBar.expand();
+        });
     }
-
-
-    function itemIdFromInput(value){
-        var text = value === undefined || value === null ? "" : String(value).trim()
-        var match = text.match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i)
-        return match ? match[1] : ""
+    function addOperation(animate) {
+        if (operationDeleting || operationAdding)
+            return;
+        operationAdding = animate !== false;
+        eledata.operations.push(Schema.operation());
+        operationRows.add(eledata.operations[eledata.operations.length - 1], operationAdding);
+        updateDataOut();
     }
-
-    function itemTextureSource(value){
-        var path = Global.getItemTexturePath(itemIdFromInput(value))
-        return path.length ? "file:///" + path.replace(/\\/g, "/") : ""
+    function removeOperation(index) {
+        eledata.operations.splice(index, 1);
+        operationRows.removeAt(index);
+        updateDataOut();
     }
-
-
-
-    //布局
+    AnimatedListRemoval {
+        id: operationRemoval
+        onFinished: function (row) {
+            root.removeOperation(row);
+            root.operationDeleting = false;
+        }
+    }
+    function itemTextureSource(value) {
+        var match = String(value || "").trim().match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i);
+        var path = Global.getItemTexturePath(match ? match[1] : "");
+        return path.length ? "file:///" + path.replace(/\\/g, "/") : "";
+    }
     maxHeadContentCount: 2
-    headContentMinWidth: itemInput.min_width + displayInput.min_width
-
-    content_height: 
-            !root.layout ? 
-                itemInput.height + costInput.height + displayInput.height + triggerInput.height + 64
-                : Math.max(itemInput.height + costInput.height, displayInput.height + triggerInput.height) + 48
-
-    //内容
-    ContentBar{
-        id: itemInput
-        //
+    headContentMinWidth: itemBar.min_width + displayBar.min_width
+    content_height: operationsBar.y + root.height_output + operationsBar.height + 16
+    ContentBar {
+        id: itemBar
         x: 16
         y: 16 - root.height_output
-        //
-        title: "物品ID"
-        subtitle: "欲售出的物品ID+物品组件（默认为原版命名空间）"
-        VariableTextField{
-            id: itemInput_field
+        min_width: 400
+        title: "物品 ID"
+        subtitle: "物品 ID、物品组件与数量"
+        contentHeight: itemField.y + itemField.height + 16
+        VariableTextField {
+            id: itemField
             x: 16
             y: 70
             width: parent.width - 32
-            height: 256
-            content: root.eledata.item
-            onAccepted:{
-                root.eledata.item = content
-                root.eledata.itemSyntaxError = syntaxError
-                root.updateDataOut()
-            }
+            height: 180
+            content: root.eledata.item || ""
             syntaxHighlightMode: Global.syntaxVersion
             highlightMacros: true
+            onAccepted: {
+                root.eledata.item = content;
+                root.eledata.itemSyntaxError = syntaxError;
+                root.updateDataOut();
+            }
         }
-        min_width: 400
-        contentHeight: itemInput_field.y + itemInput_field.height + 18
-
-        Image{
-            width: 64
-            height: width
-            y: 16
+        Image {
             x: parent.width - width - 16
-            source: root.itemTextureSource(itemInput_field.inputContent)
+            y: 12
+            width: 48
+            height: 48
+            source: root.itemTextureSource(itemField.inputContent)
             fillMode: Image.PreserveAspectFit
             smooth: false
-            mipmap: false
             visible: status === Image.Ready
-            layer.enabled: visible
-            layer.effect: XCShadow {
-                shadowBlur: 0.55
-                shadowHorizontalOffset: 2
-                shadowVerticalOffset: 2
-            }
         }
     }
-    ContentBar{
-        id:costInput
+    ContentBar {
+        id: displayBar
         delayExpand: true
-        x: itemInput.x
-        y: itemInput.y + itemInput.height + 8
-        min_width: itemInput.min_width
-        contentHeight: costInput_box.y + costInput_box.height + 16
-        title: "触发代价"
-        Column{
-            id: costInput_box
-            spacing: 8
-            x: 16
-            y: 48
-            width: parent.width - 32
-            ListModel{
-                id: costListModel
-            }
-            Repeater{
-                id: costRepeater
-                width: parent.width
-                model: costListModel
-                delegate: Item_costBar {
-                    width: parent.width
-                    required property var model
-                    z: -model.index
-                    index: model.index
-                    modelData: root.eledata.cost[model.index]
-                    onDeleteClicked: {
-                        if (model.index < costListModel.count - 1) {
-                            costRepeater.itemAt(model.index + 1).nearest = true
-                            for (var i = model.index + 1; i < costListModel.count; i++)
-                                costRepeater.itemAt(i).afterDeleting(height, model.index)
-                        } else {
-                            root.eledata.cost.splice(model.index, 1)
-                            root.updateDataOut()
-                            costListModel.remove(model.index, 1)
-                        }
-                    }
-                    onDeleteAnimFinishied: function(currentIndex) {
-                        root.eledata.cost.splice(currentIndex, 1)
-                        root.updateDataOut()
-                        costListModel.remove(currentIndex, 1)
-                    }
-                    onUpdateData: {
-                        root.eledata.cost[model.index] = modelData
-                        root.updateDataOut()
-                    }
-                }
-            }
-            TextButton{
-                id: costInput_add
-                height: 32
-                width: 150
-                z: -999
-                radius: 8
-                buttonColor: Colors.changeA(Colors.background, 0.38)
-                firedColor: Colors.changeA(Colors.fired, 0.72)
-                pressedColor: Colors.changeA(Colors.border, 0.55)
-
-                text: "＋  添加代价元素"
-                textSize: 14
-                textColor: Colors.banned
-                boldFont: false
-
-                onClicked:{
-                    root.eledata.cost.push({"element":"", "amount":"1"})
-                    root.updateDataOut()
-                    costListModel.append(root.eledata.cost[root.eledata.cost.length - 1])
-                }
-            }
-        }
-    }
-
-
-    ContentBar{
-        id: displayInput
-        // 等待文件数据读入后，再按保存的展示选项播放展开动画。
-        delayExpand: true
-        //
-        x: root.layout ? itemInput.x + itemInput.width + 8 : 16
-        y: root.layout ? itemInput.y : costInput.y + costInput.height + 8
-        //
-        min_width: 520
-        contentHeight: displayInput_selection.selected == 1
-                ? displayInput_input.y + displayInput_input.height + 24
-                : displayInput_selection.y + displayInput_selection.height + 22
-
+        x: root.layout ? itemBar.x + itemBar.width + 16 : 16
+        y: root.layout ? itemBar.y : itemBar.y + itemBar.height + 16
+        min_width: 440
         title: "商品展示"
-        RadioGroup{
-            id:displayInput_selection
+        contentHeight: displayMode.selected === 1 ? displayElement.y + displayElement.height + 20 : 104
+        RadioGroup {
+            id: displayMode
+            x: 16
             y: 54
-            text: ""
-            options: ["仅原物品","额外添加展示元素"]
-            anchors.horizontalCenter: parent.horizontalCenter
-            onClicked:{
-                root.eledata.display.mode = root.displayModes[selected]
+            options: ["仅原物品", "额外添加展示元素"]
+            onClicked: {
+                root.eledata.display.mode = selected === 1 ? "additional" : "original";
                 if (selected === 0) {
-                    root.eledata.display.element = ""
-                    displayInput_input.clearElement(false)
+                    root.eledata.display.element = "";
+                    displayElement.clearElement(false);
                 }
-                root.updateDataOut()
+                root.updateDataOut();
             }
         }
-        ElementSelection{
-            id: displayInput_input
+        ElementSelection {
+            id: displayElement
             selectionId: "display"
-            visible: displayInput_selection.selected == 1
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: displayInput_selection.y + displayInput_selection.height + 16
-            onElementSelected: function(filePath) {
-                root.eledata.display.element = filePath
-                root.updateDataOut()
+            x: 16
+            y: displayMode.y + displayMode.height + 16
+            visible: displayMode.selected === 1
+            onElementSelected: function (path) {
+                root.eledata.display.element = path;
+                root.updateDataOut();
             }
             onSelectionCleared: {
-                root.eledata.display.element = ""
-                root.updateDataOut()
+                root.eledata.display.element = "";
+                root.updateDataOut();
             }
         }
     }
-    ContentBar{
-        id:triggerInput
+    ContentBar {
+        id: operationsBar
+        objectName: "operationsBar"
         delayExpand: true
-        //
-        x: displayInput.x
-        y: displayInput.y + displayInput.height + 8
-        //
-        min_width: displayInput.min_width
-        contentHeight: triggerBar_add.y + triggerBar_add.height + 16
-        title: "触发规则"
-        subtitle: "分别定义物品被任意方式取得或掷出后应执行的操作"
-        
-        Column{
-            id: triggerBox
-            width: parent.width - 32
+        x: 16
+        y: root.layout ? Math.max(itemBar.y + itemBar.height, displayBar.y + displayBar.height) + 16 : displayBar.y + displayBar.height + 16
+        width: root.width - 32
+        title: "操作组"
+        contentHeight: cards.y + cards.height + 16
+        Column {
+            id: cards
             x: 16
-            y: 68
-            spacing: 16
-            
-            ListModel{
-                id: listModel
+            y: 54
+            width: parent.width - 32
+            spacing: 12
+            height: implicitHeight - operationRemoval.offset
+            ObjectListModel {
+                id: operationRows
             }
-            Repeater{
-                id: triggerRepeater
-                width: parent.width
-                model: listModel
-
-                delegate: Item_triggerBar{
+            Repeater {
+                model: operationRows
+                delegate: Item_operationCard {
+                    required property string objectKey
+                    required animateInsertion
+                    objectName: "operationCard" + index
                     width: parent.width
-                    required property var model
-                    z: -model.index
-                    index: model.index
-                    modelData: root.eledata.trigger[model.index]
-                    onDeleteClicked:{
-                        triggerBar_add_y_animation.enable()
-                        if(model.index < listModel.count - 1){//判断是否为最后一个栏位，以确认是否启用上滑动画
-                            triggerRepeater.itemAt(model.index + 1).nearest = true
-                            for(var i = model.index + 1; i < listModel.count; i++){
-                                triggerRepeater.itemAt(i).afterDeleting(height,model.index)
-                            }
-                        }else{
-                            root.eledata.trigger.splice(model.index,1);root.updateDataOut()
-                            listModel.remove(model.index,1)
-                        }
-                    }
-                    onDeleteAnimFinishied:function(currentIndex) {
-                        root.eledata.trigger.splice(currentIndex,1);root.updateDataOut()
-                        listModel.remove(currentIndex,1)
-                    }
-
-                    onUpdateData:{
-                        root.eledata.trigger[model.index] = modelData; root.updateDataOut()
-                    }
+                    z: -index
+                    operation: operationRows.value(objectKey)
+                    listShift: operationRemoval.shiftFor(index)
+                    onEdited: root.updateDataOut()
+                    onRemovalStarted: root.operationDeleting = true
+                    onInsertionFinished: root.operationAdding = false
+                    onRemoveRequested: operationRemoval.begin(index, height + cards.spacing)
                 }
             }
-            onHeightChanged:{
-                triggerBar_add_y_animation.start()
-            }
-        }
-        TextButton{
-                id: triggerBar_add
-                height: 100
-                width: triggerBox.width
-                y: 80
-                x: 16
-                radius: 10
-                buttonColor: Colors.changeA(Colors.background, 0.38)
-                firedColor: Colors.changeA(Colors.fired, 0.72)
-                pressedColor: Colors.changeA(Colors.border, 0.55)
-
-                text: "＋  添加触发规则"
+            TextButton {
+                transform: Translate {
+                    y: -operationRemoval.offset
+                }
+                objectName: "addOperation"
+                width: parent.width
+                height: 44
+                text: "＋ 添加操作"
+                radius: 8
                 textSize: 14
                 textColor: Colors.banned
-                boldFont: false
-
-                NumberAnimation{
-                    id: triggerBar_add_y_animation
-                    target: triggerBar_add
-                    property: "y"
-                    to: triggerBox.y + triggerBox.height + triggerBox.spacing
-                    duration: 0
-                    onFinished: duration = 0
-                    function enable(){
-                        duration = 120 / Global.animationSpeed
-                    }
-                }
-
-                onClicked:{
-                    triggerBar_add_y_animation.enable()
-                    root.eledata.trigger.push(
-                        {"mode":{"kind":"take_item","filter":{"kind":"none"}},"execute":{"kind":"grant_item"}}
-                        ); root.updateDataOut()
-                    listModel.append(root.eledata.trigger[root.eledata.trigger.length - 1])
-                }
+                buttonColor: Colors.changeA(Colors.background, 0.38)
+                onClicked: root.addOperation()
             }
-        
+        }
+        // 动画期间只拦截输入，不禁用卡片，避免按钮切换成禁用颜色。
+        MouseArea {
+            objectName: "operationInputGuard"
+            x: cards.x
+            y: cards.y
+            width: cards.width
+            height: cards.height
+            z: 1000
+            visible: root.operationDeleting || root.operationAdding
+            acceptedButtons: Qt.AllButtons
+            hoverEnabled: true
+            onVisibleChanged: if (visible)
+                forceActiveFocus()
+            onWheel: function (event) {
+                event.accepted = true;
+            }
+            Keys.onPressed: function (event) {
+                event.accepted = true;
+            }
+            Keys.onReleased: function (event) {
+                event.accepted = true;
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ BasePage{
             dataLoaded = true
             elementReading()
         } catch (error) {
+            dataLoaded = false
             dataError = "无法读取元素文件：" + filePath + "（" + error + "）"
             console.warn(dataError)
         }

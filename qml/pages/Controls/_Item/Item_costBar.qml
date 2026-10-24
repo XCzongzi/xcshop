@@ -9,10 +9,12 @@ Item {
     property bool nearest: false
     property bool deleting: false
     property int deletionIndex: -1
+    property real listShift: 0
 
     signal deleteClicked()
     signal deleteAnimFinishied(int currentIndex)
     signal updateData()
+    signal deletionStarted()
 
     width: 500
     height: 48
@@ -44,8 +46,10 @@ Item {
         width: parent.width
         height: parent.height
         spacing: 4
+        transform: Translate { y: root.listShift }
 
         ImageButton {
+            objectName: "removeCostButton"
             anchors.verticalCenter: parent.verticalCenter
             freeze: root.deleting
             btnSize: 32
@@ -72,7 +76,7 @@ Item {
             id: costAmount
             highlightMacros: true
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(32, contentWidth + leftPadding + rightPadding)
+            width: Math.min(Math.max(64, contentWidth + leftPadding + rightPadding), root.width * 0.42)
             horizontalAlignment: TextInput.AlignHCenter
             text: root.modelData.amount
             onEditingFinished: {
@@ -89,7 +93,7 @@ Item {
         to: root.width
         duration: 200 / Global.animationSpeed
         easing.type: Easing.InCubic
-        onStarted: root.deleting = true
+        onStarted: { root.deleting = true; root.deletionStarted() }
         onFinished: {
             root.opacity = 0
             root.deleteClicked()

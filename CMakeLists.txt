@@ -45,6 +45,8 @@ set_source_files_properties(appxcshop
 
 set_source_files_properties(
     js/syntax/ItemSyntaxHighlighter.js
+    js/WorkspaceSchema.js
+    js/DisplayFormatting.js
     js/syntax/MacroHighlighter.js
     js/syntax/ItemSyntaxParser.js
     js/syntax/mode-1.js
@@ -73,6 +75,9 @@ qt_add_qml_module(appxcshop
 
         qml/components/base/reusable/ButtonStateOverlay.qml
         qml/components/base/reusable/ContentSurface.qml
+        qml/components/base/reusable/ObjectListModel.qml
+        qml/components/base/reusable/AnimatedReveal.qml
+        qml/components/base/reusable/AnimatedListRemoval.qml
         qml/components/base/reusable/AmbientBackground.qml
         qml/components/base/reusable/LightEffect.qml
         qml/components/base/reusable/XCShadow.qml
@@ -128,8 +133,11 @@ qt_add_qml_module(appxcshop
 
 
         qml/pages/Controls/_Item/Item_triggerBar.qml
+        qml/pages/Controls/_Item/Item_operationCard.qml
         qml/pages/Controls/_Item/Item_costBar.qml
         qml/pages/Controls/_Display/MinecraftTooltipPreview.qml
+        qml/pages/Controls/_Display/DisplayPairEditor.qml
+        qml/pages/Controls/_Display/DisplayTextEditor.qml
         qml/pages/Controls/_Global/GlobalChoiceBox.qml
         qml/pages/Controls/_Global/ProjectBar.qml
         qml/pages/Controls/_Global/ShopBar.qml
@@ -171,6 +179,8 @@ qt_add_qml_module(appxcshop
 
         assets/js/request.js
         js/syntax/ItemSyntaxHighlighter.js
+        js/WorkspaceSchema.js
+        js/DisplayFormatting.js
         js/syntax/MacroHighlighter.js
         js/syntax/ItemSyntaxParser.js
         js/syntax/mode-1.js
@@ -248,7 +258,11 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
     set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml)
+    add_test(NAME operations_ui_smoke COMMAND appxcshop --operations-ui-smoke)
+    set_tests_properties(operations_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        TIMEOUT 25)
     add_test(NAME editor_backend_tests COMMAND editor_backend_tests $<TARGET_FILE:builder_protocol_fixture>)
     add_test(NAME editor_startup_smoke COMMAND appxcshop --startup-smoke)
     add_test(NAME minecraft_items_ui_smoke COMMAND appxcshop --minecraft-ui-smoke)

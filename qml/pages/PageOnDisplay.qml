@@ -1,419 +1,252 @@
 import QtQuick
 import xcshop
+import "../../js/WorkspaceSchema.js" as Schema
 
 BaseIOPage {
     id: root
     color: Colors.transparent
     workspace: true
-
-    // Incremented whenever one of the display-format controls changes.  The
-    // text arrays are edited in place, which otherwise would not notify a QML
-    // binding that reads them.
     property int previewRevision: 0
-
-    readonly property var memberOrders: ["cost_then_value", "value_then_cost"]
-
-    function elementReading(){
-        if (typeof eledata.member.order === "number") {
-            eledata.member.order = root.memberOrders[eledata.member.order]
-                                   || "cost_then_value"
-            root.updateDataOut()
-        }
-        if (Array.isArray(eledata.hint.success)) {
-            eledata.hint.success = {
-                "text": String(eledata.hint.success[0] || ""),
-                "sound": String(eledata.hint.success[1] || "")
-            }
-        }
-        if (Array.isArray(eledata.hint.fail)) {
-            eledata.hint.fail = {
-                "text": String(eledata.hint.fail[0] || ""),
-                "sound": String(eledata.hint.fail[1] || "")
-            }
-        }
-        root.updateDataOut()
-        frameBar.textContents = [
-            eledata.frame.head,
-            eledata.frame.end,
-            eledata.frame.separator
-        ]
-        frameBar_contentInput.setContent(frameBar.textContents[frameBar_multiPropertyEdit.selected])
-
-        var orderIndex = root.memberOrders.indexOf(eledata.member.order)
-        memberBar_radioGroup.selected = orderIndex >= 0 ? orderIndex : 0
-        memberBar.textContents = [
-            eledata.member.head,
-            eledata.member.middle,
-            eledata.member.end
-        ]
-        memberBar_multiPropertyEdit.selected = 0
-        memberBar_contentInput.setContent(memberBar.textContents[0])
-
-        noticeTextBar.textContents = [
-            eledata.hint.success.text,
-            eledata.hint.fail.text
-        ]
-        noticeTextBar.soundPaths = [
-            eledata.hint.success.sound,
-            eledata.hint.fail.sound
-        ]
-        noticeTextInput.setContent(noticeTextBar.textContents[noticeMultiPropertyEdit.selected])
-        noticeSoundInput.text = noticeTextBar.soundPaths[noticeMultiPropertyEdit.selected]
-
-        memberBar.elementColor = eledata.member.cost.color
-        memberBar.elementBold = eledata.member.cost.bold
-        memberBar.elementItalic = eledata.member.cost.italic
-        memberBar.elementUnderlined = eledata.member.cost.underlined
-        memberBar.elementStrikethrough = eledata.member.cost.strikethrough
-        memberBar.elementObfuscated = eledata.member.cost.obfuscated
-        memberBar.valueColor = eledata.member.value.color
-        memberBar.valueBold = eledata.member.value.bold
-        memberBar.valueItalic = eledata.member.value.italic
-        memberBar.valueUnderlined = eledata.member.value.underlined
-        memberBar.valueStrikethrough = eledata.member.value.strikethrough
-        memberBar.valueObfuscated = eledata.member.value.obfuscated
-
-        previewRevision++
-
-        // root.setTextStyle(memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] === "代价元素")
+    function changed() {
+        previewRevision++;
+        updateDataOut();
     }
-
-    function setTextStyle(editingElement){
-        styleEditor.color = editingElement ? memberBar.elementColor : memberBar.valueColor
-        styleEditor.bold = editingElement ? memberBar.elementBold : memberBar.valueBold
-        styleEditor.italic = editingElement ? memberBar.elementItalic : memberBar.valueItalic
-        styleEditor.underlined = editingElement ? memberBar.elementUnderlined : memberBar.valueUnderlined
-        styleEditor.strikethrough = editingElement ? memberBar.elementStrikethrough : memberBar.valueStrikethrough
-        styleEditor.obfuscated = editingElement ? memberBar.elementObfuscated : memberBar.valueObfuscated
+    function elementReading() {
+        if (!eledata.operation || typeof eledata.operation.order !== "string")
+            throw new Error("此页面只支持操作组展示格式，请使用新建项目");
+        if (eledata.operation.enabled === undefined)
+            eledata.operation.enabled = false;
+        operationEditor.load();
+        memberEditor.load();
+        loadFrame();
+        loadHint();
+        previewRevision++;
     }
-
-
-    ContentBar{
+    function loadFrame() {
+        var target = frameTabs.selected === 3 ? eledata.operation : eledata.frame;
+        if (target && frameTabs.selected >= 0)
+            frameText.setContent(target[["head", "end", "separator", "separator"][frameTabs.selected]]);
+    }
+    function loadHint() {
+        if (!eledata.hint || hintTabs.selected < 0)
+            return;
+        var hint = eledata.hint[hintTabs.selected === 0 ? "success" : "fail"];
+        hintText.setContent(hint.text);
+        hintSound.text = hint.sound;
+    }
+    maxHeadContentCount: 3
+    headContentMinWidth: operationBar.min_width + memberBar.min_width + frameBar.min_width
+    readonly property real columnWidth: root.layout ? operationBar.min_width + root.contentWidthEnhance : root.width - 32
+    readonly property real memberContentHeight: 54 + Math.max(operationEditor.height, memberEditor.height) + 16
+    content_height: Math.max(operationBar.y + operationBar.height, memberBar.y + memberBar.height, hintBar.y + hintBar.height) + root.height_output + 16
+    ContentBar {
         id: previewBar
-        title: "预览"
-        width: root.layout? memberBar.x + memberBar.width - 16 : parent.width - 32
+        objectName: "displayPreviewBar"
         x: 16
         y: 16 - root.height_output
-        // The card follows the tooltip's actual outer height, including
-        // explicit line breaks from the configured Minecraft text.
-        contentHeight: minecraftTooltip.y + minecraftTooltip.height + 32
-
+        width: root.layout ? root.columnWidth * 2 + 16 : root.width - 32
+        title: "预览"
+        contentHeight: tooltip.y + tooltip.height + 24
+        Flow {
+            id: counts
+            x: 16
+            y: 52
+            width: parent.width - 32
+            spacing: 16
+            Row {
+                spacing: 8
+                XCText {
+                    xcText: "操作数"
+                    onCenter: false
+                    onVCenter: true
+                    height: 28
+                    xcFontSize: 12
+                    textColor: Colors.banned
+                }
+                XCTextField {
+                    width: 48
+                    height: 28
+                    text: "2"
+                    horizontalAlignment: TextInput.AlignHCenter
+                    validator: IntValidator {
+                        bottom: 1
+                        top: 16
+                    }
+                    onEditingFinished: {
+                        tooltip.demoOperationCount = Math.max(1, Math.min(16, Number(text) || 1));
+                        text = tooltip.demoOperationCount;
+                    }
+                }
+            }
+            Row {
+                spacing: 8
+                XCText {
+                    xcText: "每操作代价数"
+                    onCenter: false
+                    onVCenter: true
+                    height: 28
+                    xcFontSize: 12
+                    textColor: Colors.banned
+                }
+                XCTextField {
+                    width: 48
+                    height: 28
+                    text: "3"
+                    horizontalAlignment: TextInput.AlignHCenter
+                    validator: IntValidator {
+                        bottom: 0
+                        top: 16
+                    }
+                    onEditingFinished: {
+                        tooltip.demoElementCount = Math.max(0, Math.min(16, Number(text) || 0));
+                        text = tooltip.demoElementCount;
+                    }
+                }
+            }
+        }
         MinecraftTooltipPreview {
-            id: minecraftTooltip
+            id: tooltip
+            objectName: "operationsPreview"
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 78
-            frameHead: { root.previewRevision; return frameBar.textContents[0] }
-            frameEnd: { root.previewRevision; return frameBar.textContents[1] }
-            frameSeparator: { root.previewRevision; return frameBar.textContents[2] }
-            memberHead: { root.previewRevision; return memberBar.textContents[0] }
-            memberMiddle: { root.previewRevision; return memberBar.textContents[1] }
-            memberEnd: { root.previewRevision; return memberBar.textContents[2] }
-            memberOrder: memberBar_radioGroup.selected
-            elementColor: memberBar.elementColor
-            elementBold: memberBar.elementBold
-            elementItalic: memberBar.elementItalic
-            elementUnderlined: memberBar.elementUnderlined
-            elementStrikethrough: memberBar.elementStrikethrough
-            elementObfuscated: memberBar.elementObfuscated
-            valueColor: memberBar.valueColor
-            valueBold: memberBar.valueBold
-            valueItalic: memberBar.valueItalic
-            valueUnderlined: memberBar.valueUnderlined
-            valueStrikethrough: memberBar.valueStrikethrough
-            valueObfuscated: memberBar.valueObfuscated
+            y: counts.y + counts.height + 20
+            maximumWidth: previewBar.width - 32
+            format: {
+                root.previewRevision;
+                return root.eledata.operation ? JSON.parse(JSON.stringify(root.eledata)) : Schema.display();
+            }
         }
     }
-
-
-    maxHeadContentCount: 3
-    headContentMinWidth: frameBar.min_width + memberBar.min_width + noticeTextBar.min_width
-    content_height: layout? Math.max(
-        frameBar.height, Math.max(
-            memberBar.height, noticeTextBar.height
-        )
-    ) + previewBar.height + 48 
-    : previewBar.height + frameBar.height + memberBar.height + noticeTextBar.height + 80
-
     ContentBar {
-        id: frameBar
-        title: "框架"
+        id: operationBar
+        objectName: "displayOperationBar"
+        title: "操作组成员"
         x: 16
         y: previewBar.y + previewBar.height + 16
         min_width: 400
-        contentHeight: frameBar_multiPropertyEdit.y + frameBar_multiPropertyEdit.height + 16
-        property var textContents: ["", "", ""]
-        readonly property var textPlaceholders: [
-            "示例：{\"text\":\"花费：\",\"color\":\"green\"}",
-            "示例：{\"text\":\"点击购买\",\"color\":\"blue\",\"underlined\": true}",
-            "推荐：+ 或 \\n"
-        ]
-
-        MultiPropertyEdit {
-            id: frameBar_multiPropertyEdit
-            x: 16
-            y: 48
-            width: parent.width - 32
-            options: ["头部文本", "尾部文本", "分隔文本"]
-            onSelectedChanged: frameBar_contentInput.setContent(frameBar.textContents[selected])
-
-            Item {
-                id: frameBar_textEditor
-                width: parent.width
-                height: frameBar_editorCaption.height + 8 + frameBar_contentInput.height
-
-                XCText {
-                    id: frameBar_editorCaption
-                    xcText: "JSON 内容"
-                    xcFontSize: 13
-                    onCenter: false
-                    boldFont: false
-                    textColor: Colors.banned
-                }
-                JsonTextEditorButton {
-                    targetInput: frameBar_contentInput
-                    editorTitle: "编辑" + frameBar_multiPropertyEdit.options[frameBar_multiPropertyEdit.selected] + " JSON"
-                    anchors.right: parent.right
-                    y: -3
-                }
-                VariableTextField {
-                    id: frameBar_contentInput
-                    y: frameBar_editorCaption.height + 8
-                    width: parent.width
-                    height: 128
-                    //content: frameTextContents[index]
-                    placeholderText: frameBar.textPlaceholders[frameBar_multiPropertyEdit.selected]
-                    onContentChanged: {
-                        var selected = frameBar_multiPropertyEdit.selected
-                        frameBar.textContents[selected] = content
-                        if (selected === 0)
-                            root.eledata.frame.head = content
-                        else if (selected === 1)
-                            root.eledata.frame.end = content
-                        else
-                            root.eledata.frame.separator = content
-                        root.previewRevision++
-                        root.updateDataOut()
-                    }
-                }
-
+        contentHeight: root.memberContentHeight
+        XCCheckBox {
+            id: operationEnabled
+            objectName: "operationFormatEnabled"
+            anchors.right: parent.right
+            anchors.rightMargin: 16
+            y: 18
+            text: "启用"
+            checked: root.eledata.operation ? !!root.eledata.operation.enabled : false
+            onToggled: function (value) {
+                root.eledata.operation.enabled = value;
+                root.changed();
             }
+        }
+        DisplayPairEditor {
+            id: operationEditor
+            objectName: "operationFormatEditor"
+            x: 16
+            y: 54
+            width: parent.width - 32
+            value: root.eledata.operation || null
+            firstKey: "title"
+            secondKey: "cost"
+            firstLabel: "操作名称"
+            secondLabel: "代价文本"
+            orders: ["title_then_cost", "cost_then_title"]
+            onEdited: root.changed()
         }
     }
     ContentBar {
         id: memberBar
-        title: "成员"
-        x: root.layout? frameBar.x + frameBar.width + 16 : 16
-        y: root.layout? frameBar.y : frameBar.y + frameBar.height + 16
+        objectName: "displayMemberBar"
+        title: "代价组成员"
         min_width: 400
-        contentHeight:memberBar_multiPropertyEdit.y + memberBar_multiPropertyEdit.height + 16
-        property var textContents: ["", "", ""]
-        readonly property var textPlaceholders: [
-            "输入项头文本，可使用变量",
-            "输入项中文本，可使用变量",
-            "输入项尾文本，可使用变量"
-        ]
-        property string elementColor: "white"
-        property string valueColor: "white"
-        property bool elementBold: false
-        property bool valueBold: false
-        property bool elementUnderlined: false
-        property bool valueUnderlined: false
-        property bool elementItalic: false
-        property bool valueItalic: false
-        property bool elementStrikethrough: false
-        property bool valueStrikethrough: false
-        property bool elementObfuscated: false
-        property bool valueObfuscated: false
-
-        RadioGroup {
-            id: memberBar_radioGroup
+        x: root.layout ? operationBar.x + operationBar.width + 16 : 16
+        y: root.layout ? operationBar.y : operationBar.y + operationBar.height + 16
+        contentHeight: root.memberContentHeight
+        DisplayPairEditor {
+            id: memberEditor
+            objectName: "costFormatEditor"
             x: 16
             y: 54
-            text: "提示顺序"
-            options: ["元素 + 值", "值 + 元素"]
-            onClicked: {
-                memberBar_multiPropertyEdit.selected = 0
-                root.eledata.member.order = root.memberOrders[selected]
-                root.previewRevision++
-                root.updateDataOut()
-            }
-        }
-        MultiPropertyEdit {
-            id: memberBar_multiPropertyEdit
-            x: 16
-            y: memberBar_radioGroup.y + memberBar_radioGroup.height + 14
             width: parent.width - 32
-            options: memberBar_radioGroup.selected === 0 ? ["项头文本", "代价元素", "项中文本", "代价值", "项尾文本"] : ["项头文本", "代价值", "项中文本", "代价元素", "项尾文本"]
-            onSelectedChanged: {
-                if (selected % 2 === 0) {
-                    memberBar_contentInput.setContent(memberBar.textContents[selected / 2])
-                } else {
-                    root.setTextStyle(options[selected] === "代价元素")
-                }
-            }
-
-            Item {
-                id: memberBar_textEditor
+            value: root.eledata.member || null
+            onEdited: root.changed()
+        }
+    }
+    ContentBar {
+        id: frameBar
+        objectName: "displayFrameBar"
+        title: "框架"
+        min_width: 400
+        x: root.layout ? memberBar.x + memberBar.width + 16 : 16
+        y: root.layout ? previewBar.y : memberBar.y + memberBar.height + 16
+        contentHeight: frameTabs.y + frameTabs.height + 16
+        MultiPropertyEdit {
+            id: frameTabs
+            objectName: "frameProperties"
+            x: 16
+            y: 48
+            width: parent.width - 32
+            options: ["头部文本", "尾部文本", "分隔文本", "代价分隔"]
+            onSelectedChanged: root.loadFrame()
+            DisplayTextEditor {
+                id: frameText
+                objectName: "frameTextEditor"
                 width: parent.width
-                visible: memberBar_multiPropertyEdit.selected % 2 === 0
-                height: memberBar_editorCaption.height + 8 + memberBar_contentInput.height
-
-                XCText {
-                    id: memberBar_editorCaption
-                    xcText: "JSON 内容"
-                    xcFontSize: 13
-                    onCenter: false
-                    boldFont: false
-                    textColor: Colors.banned
-                }
-                JsonTextEditorButton {
-                    targetInput: memberBar_contentInput
-                    editorTitle: "编辑" + memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] + " JSON"
-                    anchors.right: parent.right
-                    y: -3
-                }
-                VariableTextField {
-                    id: memberBar_contentInput
-                    y: memberBar_editorCaption.height + 8
-                    width: parent.width
-                    height: 128
-                    placeholderText: memberBar.textPlaceholders[memberBar_multiPropertyEdit.selected / 2]
-                    onContentChanged: {
-                        var selected = memberBar_multiPropertyEdit.selected / 2
-                        memberBar.textContents[selected] = content
-                        if (selected === 0)
-                            root.eledata.member.head = content
-                        else if (selected === 1)
-                            root.eledata.member.middle = content
-                        else
-                            root.eledata.member.end = content
-                        root.previewRevision++
-                        root.updateDataOut()
-                    }
-                }
-            }
-            Item {
-                id: memberBar_valueEdit
-                width: parent.width
-                visible: memberBar_multiPropertyEdit.selected % 2 !== 0
-                height: styleEditor.height
-
-                readonly property bool editingElement: memberBar_multiPropertyEdit.options[memberBar_multiPropertyEdit.selected] === "代价元素"
-
-                TextStyleEditor {
-                    id: styleEditor
-                    onPropertyEdited: {
-                        if (memberBar_valueEdit.editingElement) {//更新数据
-                            memberBar.elementColor = styleEditor.color
-                            memberBar.elementBold = styleEditor.bold
-                            memberBar.elementItalic = styleEditor.italic
-                            memberBar.elementUnderlined = styleEditor.underlined
-                            memberBar.elementStrikethrough = styleEditor.strikethrough
-                            memberBar.elementObfuscated = styleEditor.obfuscated
-                        } else {
-                            memberBar.valueColor = styleEditor.color
-                            memberBar.valueBold = styleEditor.bold
-                            memberBar.valueItalic = styleEditor.italic
-                            memberBar.valueUnderlined = styleEditor.underlined
-                            memberBar.valueStrikethrough = styleEditor.strikethrough
-                            memberBar.valueObfuscated = styleEditor.obfuscated
-                        }
-                        //保存数据
-                        root.eledata.member.cost.color = memberBar.elementColor
-                        root.eledata.member.cost.bold = memberBar.elementBold
-                        root.eledata.member.cost.italic = memberBar.elementItalic
-                        root.eledata.member.cost.underlined = memberBar.elementUnderlined
-                        root.eledata.member.cost.strikethrough = memberBar.elementStrikethrough
-                        root.eledata.member.cost.obfuscated = memberBar.elementObfuscated
-                        root.eledata.member.value.color = memberBar.valueColor
-                        root.eledata.member.value.bold = memberBar.valueBold
-                        root.eledata.member.value.italic = memberBar.valueItalic
-                        root.eledata.member.value.underlined = memberBar.valueUnderlined
-                        root.eledata.member.value.strikethrough = memberBar.valueStrikethrough
-                        root.eledata.member.value.obfuscated = memberBar.valueObfuscated
-
-                        root.previewRevision++
-                        root.updateDataOut()
-                    }
+                caption: frameTabs.selected === 3 ? "同一操作内的代价分隔" : frameTabs.selected === 2 ? "操作之间的分隔" : "JSON 内容"
+                onEdited: function (value) {
+                    if (!root.dataLoaded)
+                        return;
+                    var target = frameTabs.selected === 3 ? root.eledata.operation : root.eledata.frame;
+                    target[["head", "end", "separator", "separator"][frameTabs.selected]] = value;
+                    root.changed();
                 }
             }
         }
     }
     ContentBar {
-        id: noticeTextBar
+        id: hintBar
+        objectName: "displayHintBar"
         title: "提示信息"
         min_width: 400
-        contentHeight: noticeMultiPropertyEdit.y + noticeMultiPropertyEdit.height + 16
-        x: root.layout? memberBar.x + memberBar.width + 16 : 16
-        y: root.layout? previewBar.y : memberBar.y + memberBar.height + 16
-        property var textContents: ["", ""]
-        property var soundPaths: ["", ""]
-        readonly property var textPlaceholders: [
-            "示例：{\"text\":\"购买成功\",\"color\":\"green\"}",
-            "示例：{\"text\":\"购买失败\",\"color\":\"red\"}"
-        ]
-
+        x: frameBar.x
+        y: frameBar.y + frameBar.height + 16
+        contentHeight: hintTabs.y + hintTabs.height + 16
         MultiPropertyEdit {
-            id: noticeMultiPropertyEdit
+            id: hintTabs
             x: 16
             y: 48
             width: parent.width - 32
             options: ["成功信息", "失败信息"]
-            onSelectedChanged: {
-                noticeTextInput.setContent(noticeTextBar.textContents[selected])
-                noticeSoundInput.text = noticeTextBar.soundPaths[selected]
-            }
-
+            onSelectedChanged: root.loadHint()
             Item {
-                id: noticeEditor
                 width: parent.width
-                height: noticeSoundInput.y + noticeSoundInput.height
-
-                XCText {
-                    id: noticeTextCaption
-                    xcText: "提示文本（JSON）"
-                    xcFontSize: 16
-                    onCenter: false
-                }
-                JsonTextEditorButton {
-                    targetInput: noticeTextInput
-                    editorTitle: "编辑" + noticeMultiPropertyEdit.options[noticeMultiPropertyEdit.selected] + "文本 JSON"
-                    anchors.right: parent.right
-                    y: -2
-                }
-                VariableTextField {
-                    id: noticeTextInput
-                    y: noticeTextCaption.height + 12
+                height: hintSound.y + hintSound.height
+                DisplayTextEditor {
+                    id: hintText
                     width: parent.width
-                    height: 96
-                    placeholderText: noticeTextBar.textPlaceholders[noticeMultiPropertyEdit.selected]
-                    onContentChanged: {
-                        var selected = noticeMultiPropertyEdit.selected
-                        noticeTextBar.textContents[selected] = content
-                        root.eledata.hint[selected === 0 ? "success" : "fail"].text = content
-                        root.updateDataOut()
-                    }
-                    onAccepted: {
-
+                    onEdited: function (value) {
+                        if (!root.dataLoaded)
+                            return;
+                        root.eledata.hint[hintTabs.selected === 0 ? "success" : "fail"].text = value;
+                        root.changed();
                     }
                 }
                 XCText {
-                    id: noticeSoundCaption
-                    y: noticeTextInput.y + noticeTextInput.height + 16
-                    xcText: "提示音效"
-                    xcFontSize: 16
+                    id: soundLabel
+                    y: hintText.height + 14
+                    xcText: "音效"
                     onCenter: false
+                    xcFontSize: 12
+                    textColor: Colors.banned
                 }
                 XCTextField {
-                    id: noticeSoundInput
-                    y: noticeSoundCaption.y + noticeSoundCaption.height + 12
+                    id: hintSound
+                    y: soundLabel.y + soundLabel.height + 8
                     width: parent.width
-                    placeholderText: "输入" + noticeMultiPropertyEdit.options[noticeMultiPropertyEdit.selected] + "音效路径"
+                    placeholderText: "留空表示不播放音效"
                     onEditingFinished: {
-                        var selected = noticeMultiPropertyEdit.selected
-                        noticeTextBar.soundPaths[selected] = text
-                        root.eledata.hint[selected === 0 ? "success" : "fail"].sound = text
-                        root.updateDataOut()
+                        if (!root.dataLoaded)
+                            return;
+                        root.eledata.hint[hintTabs.selected === 0 ? "success" : "fail"].sound = text;
+                        root.changed();
                     }
                 }
             }

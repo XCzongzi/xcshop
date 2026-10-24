@@ -12,7 +12,7 @@ Window {
     property int step: 0
     property var page: null
     property string project: ""
-    property string alpha: "1dc7404f-209f-4eea-becd-291406d52787"
+    property string alpha: "7efaa610-f064-487d-a392-6cd8a711627e"
     XCFile { id: file }
     Rectangle {
         id: frame
@@ -53,7 +53,7 @@ Window {
             try {
                 switch (root.step++) {
                 case 0:
-                    check(BuildKits.options(0).length >= 2, "bundled templates not found")
+                    check(BuildKits.options(1).length >= 1, "bundled operation template not found")
                     show(creating)
                     break
                 case 1:
@@ -71,11 +71,12 @@ Window {
                     project = Global.project_location
                     var manifest = JSON.parse(file.read(project + "/xcshop.json"))
                     check(manifest.templateId === alpha && manifest.template === undefined, "legacy template identity written")
-                    check(manifest.dataVersion === 0 && Array.isArray(manifest.shops), "manifest schema incorrect")
+                    check(manifest.dataVersion === 1 && Array.isArray(manifest.shops), "manifest schema incorrect")
                     check(JSON.parse(file.read(Global.settingsPath)).futureSetting === "preserved", "settings dropped unknown fields")
                     check(file.writeAtomic(project + "/Item/stone.xcseItem", JSON.stringify({
-                        "item": "stone 2", "display": {"mode": "original", "element": ""}, "cost": [],
-                        "trigger": [{"mode": {"kind": "take_item", "filter": {"kind": "none"}}, "execute": {"kind": "grant_item"}}],
+                        "item": "stone 2", "display": {"mode": "original", "element": ""},
+                        "operations": [{"title":"购买","showInDisplay":true,"cost":[],
+                            "trigger":{"mode": {"kind": "take_item", "filter": {"kind": "none"}}, "execute": {"kind": "grant_item"}}}],
                         "itemSyntaxError": false
                     })), "item write failed")
                     check(file.writeAtomic(project + "/UI/shop.xcseUI", JSON.stringify({
@@ -133,7 +134,7 @@ Window {
                 case 13:
                     root.width = 1280
                     root.height = 900
-                    show(popupSettings, {projectData: page.projectData, projectLocation: project, templateOptions: BuildKits.options(0)})
+                    show(popupSettings, {projectData: page.projectData, projectLocation: project, templateOptions: BuildKits.options(1)})
                     // MultiEffect is unavailable on the software renderer; disable only this test dialog's shadow layer.
                     for (var i = 0; i < page.children.length; ++i)
                         if (page.children[i].layer.enabled) page.children[i].layer.enabled = false

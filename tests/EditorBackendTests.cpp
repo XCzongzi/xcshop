@@ -15,7 +15,7 @@ static bool writeFile(const QString &path, const QByteArray &bytes) {
     return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
 }
 static bool makeKit(const QString &root, const QString &versions = "\"1.21.11\",\"26.1\",\"26.3\"...") {
-    return writeFile(root + "/templates/nested/alpha.xcshopT", (templateId + "\n0\n" + versions
+    return writeFile(root + "/templates/nested/alpha.xcshopT", (templateId + "\n1\n" + versions
         + "\n../../blueprints/main.xcshoper\n../../materials/alpha\n[\n\"介绍包含 ] 与 \\\" 引号\",\"第二段\"\n]\nerror(\"此脚本不能在目录扫描时执行\");\n").toUtf8())
         && writeFile(root + "/blueprints/main.xcshoper", "build \"sell.xcontent\"\n")
         && writeFile(root + "/materials/alpha/sell.xcontent", "sell.mcfunction\nsay test\n");
@@ -37,8 +37,9 @@ private slots:
         QVERIFY2(kits.issues().isEmpty(), qPrintable(kits.issues().join('\n')));
         QVERIFY(kits.identityValid());
         QCOMPARE(kits.templates().size(), 1);
-        QCOMPARE(kits.options(0).size(), 1);
-        QCOMPARE(kits.options(1).size(), 0);
+        QCOMPARE(kits.dataVersion(), 1);
+        QCOMPARE(kits.options(1).size(), 1);
+        QCOMPARE(kits.options(0).size(), 0);
         QCOMPARE(kits.findTemplate(templateId)["introduction"].toStringList().size(), 2);
         QCOMPARE(kits.findTemplate(templateId)["materialCount"].toInt(), 1);
         QCOMPARE(kits.versionSupport(templateId, "26.3"), 0);
@@ -117,7 +118,7 @@ private slots:
             QVERIFY(builder.consoleText().contains("日志：中文路径与空格"));
             QCOMPARE(builder.result()["protocol"].toString(), "xcshop-builder/result");
             QCOMPARE(builder.problems().size(), 1);
-            QCOMPARE(builder.problems()[0].toMap()["property"].toString(), "$.cost[0].amount");
+            QCOMPARE(builder.problems()[0].toMap()["property"].toString(), "$.operations[0].cost[0].amount");
             QCOMPARE(builder.problems()[0].toMap()["solution"].toString(), "请修改原始属性");
         }
         if (mode == "error") {
