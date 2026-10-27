@@ -88,6 +88,7 @@ qt_add_qml_module(appxcshop
 
         qml/components/base/reusable/ButtonStateOverlay.qml
         qml/components/base/reusable/ContentSurface.qml
+        qml/components/base/reusable/FrostedSurface.qml
         qml/components/base/reusable/ObjectListModel.qml
         qml/components/base/reusable/AnimatedReveal.qml
         qml/components/base/reusable/AnimatedListRemoval.qml

@@ -6,6 +6,7 @@ import xcshop
 Window {
     id: root
     visible: true
+    opacity: 0
     width: 1100; height: 760
     color: Colors.background_n
     property int step: 0
@@ -19,12 +20,26 @@ Window {
     readonly property var simpleOptions: [{value: "first", label: "第一项"}, {value: "second", label: "第二项"}, {value: "third", label: "第三项"}]
     Component { id: projectDialog; PopupProjectSettings {} }
     Component { id: shopDialog; PopupShopSettings {} }
+    Component { id: fadeDialog; PopupFrame {} }
+    Rectangle { id: flatBackdrop; width: root.width; height: root.height; color: "#202020"; visible: false }
+    ContextMenu {
+        id: menu
+        menuItems: [{text: "更多操作", children: [{text: "子菜单操作"}]}, {text: "复制"}, {text: "重命名"}]
+    }
     Connections { target: SignalBus; function onContextMenuRequested() { ++root.contextRequests } }
     Rectangle {
         id: frame
         anchors.fill: parent
         color: Colors.background_n
         NumberAnimation on opacity { from: 0.999; to: 1; duration: 500; loops: Animation.Infinite }
+        Repeater {
+            model: 14
+            Rectangle {
+                required property int index
+                x: index * 80; y: 260; width: 40; height: 200
+                color: Colors.changeA(Colors.border, 0.22)
+            }
+        }
         Column {
             x: 24; y: 24; spacing: 12
             XCText { xcText: "项目选择控件"; onCenter: false; xcFontSize: 20 }
@@ -62,6 +77,38 @@ Window {
         check(point.x >= 0 && point.y >= 0 && point.x + list.width <= width + 1
               && point.y + list.height <= height + 1, "Popup escaped window bounds")
     }
+    function checkFade(panel, label, closing) {
+        var peak = 0
+        for (var sample = 0; sample < 18; ++sample) {
+            UiInput.settle(12)
+            var brightness = UiInput.brightnessAt(panel, panel.width / 2, panel.height / 2)
+            if (brightness < 0 && closing) break // Popup detached after its exit transition.
+            check(brightness >= 0, "Could not capture an animation frame")
+            peak = Math.max(peak, brightness)
+        }
+        console.log("DROPDOWN_FADE_PEAK " + label + ": " + peak)
+        check(peak < 60, label + " flashed over a dark backdrop: " + peak)
+    }
+    function checkDialogFades() {
+        Global.mainWindow_popupBackdrop = flatBackdrop
+        for (var cycle = 0; cycle < 2; ++cycle) {
+            openDialog(fadeDialog, {manageVisibility: true})
+            var panel = find(modal, "popupPanel")
+            check(find(modal, "popupBackdropBlur").active === panel.blurEnabled,
+                  "Modal backdrop blur must follow the renderer and the dialog lifecycle")
+            checkFade(panel, "open " + cycle)
+            modal.close(null)
+            checkFade(panel, "close " + cycle)
+            check(!find(modal, "popupBackdropBlur").active, "Backdrop blur remained active after closing")
+        }
+        modal.destroy(); modal = null
+        UiInput.click(plain)
+        check(plain.popup.visible, "Fade fixture dropdown did not open")
+        checkFade(plain.popup.background, "dropdown open")
+        plain.popup.close()
+        checkFade(plain.popup.background, "dropdown close", true)
+        Global.mainWindow_popupBackdrop = frame
+    }
     function screenshot(name, done) {
         capturing = true
         UiInput.settle()
@@ -73,7 +120,7 @@ Window {
     }
     function openDialog(component, properties) {
         if (modal) modal.destroy()
-        modal = component.createObject(frame, properties)
+        modal = component.createObject(root.contentItem, properties)
         check(modal, "Dialog creation failed: " + component.errorString())
         modal.closed.connect(function(result) { root.lastResult = result })
         modal.open()
@@ -84,6 +131,7 @@ Window {
         BuildKits.refresh()
         Colors.applyColorScheme("midnight")
         Colors.setThemeColor("#2f8cff")
+        Global.mainWindow_popupBackdrop = frame
         timer.start()
     }
     Timer {
@@ -95,9 +143,13 @@ Window {
             try {
                 switch (root.step++) {
                 case 0:
+                    root.checkDialogFades()
                     root.check(plain.currentIndex === 0, "Initial business value was not selected: index=" + plain.currentIndex + " count=" + plain.count + " value=" + plain.value + " lookup=" + plain.indexOfValue(plain.value))
                     UiInput.click(plain)
                     root.check(plain.popup.visible && !plain.popup.modal && !plain.popup.dim, "Dropdown must open without a dimming modal")
+                    root.check(plain.popup.background.backdropSource === frame && plain.popup.background.color.a < 0.95,
+                               "Dropdown must use a translucent surface and an external backdrop")
+                    console.log("DROPDOWN_BACKDROP_BLUR_ENABLED: " + plain.popup.background.blurEnabled)
                     UiInput.key(plain, Qt.Key_Down)
                     root.check(root.plainValue === "first", "Highlighting committed a value prematurely")
                     break
@@ -149,6 +201,8 @@ Window {
                     var combo = root.find(root.modal, "projectTemplateChoice")
                     UiInput.click(combo)
                     root.check(combo.popup.visible, "Selector inside project dialog failed to open")
+                    root.check(combo.popup.background.backdropSource === root.find(root.modal, "popupPanel"),
+                               "Dropdown inside a modal must sample the modal panel")
                     root.screenshot("project-light")
                     break
                 case 7:
@@ -200,7 +254,18 @@ Window {
                     plain.options = []; root.plainValue = ""
                     root.check(!plain.enabled && plain.currentLabel === plain.emptyText, "Empty model is not a disabled empty state")
                     root.check(root.contextRequests === 0, "Dropdown requested a global context menu")
-                    console.log("DROPDOWN_UI_SMOKE_PASSED: mouse, keyboard, focus, stable values, grouped headers/colors, dialogs, resize, upward placement, scroll anchoring, empty states")
+                    menu.openAt(330, 280)
+                    menu.openSubmenu(0, root.find(menu, "menuViewport"))
+                    break
+                case 15:
+                    root.check(root.find(menu, "contextMenuSurface").backdropSource === frame
+                               && root.find(menu, "contextSubmenuSurface").visible,
+                               "Context menus must share the frosted backdrop")
+                    root.screenshot("menu-light")
+                    break
+                case 16:
+                    menu.close()
+                    console.log("DROPDOWN_UI_SMOKE_PASSED: mouse, keyboard, focus, stable values, grouped headers/colors, dialogs, resize, upward placement, scroll anchoring, empty states, frosted surfaces")
                     Qt.exit(0)
                 }
             } catch (error) { console.error("DROPDOWN_UI_SMOKE_FAILED step " + root.step + ": " + error); Qt.exit(1) }

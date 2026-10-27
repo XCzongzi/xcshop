@@ -8,9 +8,6 @@ Loader {
     active: false
     asynchronous: true
 
-    // 传入 Main.qml 中不包含弹窗本身的内容层，避免模糊源产生递归渲染。
-    property Item blurTarget: null
-    property real blurAmount: 0.55
     property var pendingProperties: ({})
     property var closeCallback: null
 

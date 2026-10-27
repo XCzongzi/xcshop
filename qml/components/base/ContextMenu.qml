@@ -13,6 +13,7 @@ Item {
     // children 为数组时会显示二级菜单；contentComponent 用于完全自定义菜单内容。
     property var menuItems: []
     property Component contentComponent: null
+    property Item backdropAnchor: null
     property int minimumWidth: 176
     property int itemHeight: 30
     property int horizontalPadding: 6
@@ -68,6 +69,7 @@ Item {
     }
 
     function openAt(x, y) {
+        backdropAnchor = null
         closeTimer.stop()
         closing = false
         menuX = x
@@ -87,6 +89,7 @@ Item {
 
         var point = target.mapToItem(root, x, y)
         openAt(point.x, point.y)
+        backdropAnchor = target
     }
 
     function close() {
@@ -190,7 +193,7 @@ Item {
         id: scrim
         anchors.fill: parent
         color: "#000000"
-        opacity: root.opened ? 0.36 : 0
+        opacity: root.opened ? 0.16 : 0
 
         Behavior on opacity {
             NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic }
@@ -207,8 +210,10 @@ Item {
         }
     }
 
-    Rectangle {
+    FrostedSurface {
         id: menuSurface
+        objectName: "contextMenuSurface"
+        backdropAnchor: root.backdropAnchor
         visible: root.opened || root.closing
         x: root.menuX
         y: root.menuY
@@ -220,7 +225,6 @@ Item {
         height: Math.min(Math.max(root.customContentHeight, menuColumn.implicitHeight)
                          + root.verticalPadding * 2, Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
-        color: Colors.changeA(Colors.foreground, 0.98)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)
         onWidthChanged: if (root.opened) repositionTimer.restart()
@@ -231,13 +235,6 @@ Item {
         }
         Behavior on scale {
             NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutBack }
-        }
-
-        layer.enabled: true
-        layer.effect: XCShadow {
-            shadowVerticalOffset: 6
-            shadowHorizontalOffset: 0
-            shadowBlur: 0.7
         }
 
         Loader {
@@ -392,8 +389,10 @@ Item {
         }
     }
 
-    Rectangle {
+    FrostedSurface {
         id: submenuSurface
+        objectName: "contextSubmenuSurface"
+        backdropAnchor: root.backdropAnchor
         visible: root.submenuOpened && root.opened
         x: root.submenuX
         y: root.submenuY
@@ -404,7 +403,6 @@ Item {
         height: Math.min(submenuColumn.implicitHeight + root.verticalPadding * 2,
                          Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
-        color: Colors.changeA(Colors.foreground, 0.98)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)
         onWidthChanged: if (root.opened) repositionTimer.restart()
@@ -415,13 +413,6 @@ Item {
         }
         Behavior on scale {
             NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutBack }
-        }
-
-        layer.enabled: visible
-        layer.effect: XCShadow {
-            shadowVerticalOffset: 6
-            shadowHorizontalOffset: 0
-            shadowBlur: 0.7
         }
 
         MenuViewport {

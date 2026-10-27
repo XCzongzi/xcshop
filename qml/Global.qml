@@ -12,6 +12,7 @@ QtObject{
 
     property Image mainWindow_background
     property Item mainWindow_backdrop: null
+    property Item mainWindow_popupBackdrop: null
 
     property real animationSpeed: 1.0
     property string backgroundMode: "color" // color / image

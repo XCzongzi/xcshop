@@ -1,4 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import xcshop
 
 // PopupLoader and locally hosted pickers share the same shell and lifecycle.
@@ -14,6 +16,7 @@ Item {
     property var result: null
     property bool opened: false
     property bool manageVisibility: false
+    property real backdropBlur: 0.15
     readonly property real availableWidth: panel.width - 48
     readonly property real availableHeight: panel.height - 100
     readonly property real actionHeight: footer.height
@@ -44,6 +47,36 @@ Item {
     }
     Keys.onEscapePressed: close(cancelResult)
 
+    // Crossfade a softly blurred copy over the page; the dialog stays sharp.
+    Loader {
+        objectName: "popupBackdropBlur"
+        anchors.fill: parent
+        active: root.visible && root.opened && root.backdropBlur > 0
+                && Global.mainWindow_popupBackdrop !== null && GraphicsInfo.api !== GraphicsInfo.Software
+        opacity: scrim.opacity / 0.24
+        sourceComponent: Item {
+            ShaderEffectSource {
+                id: pageCapture
+                anchors.fill: parent
+                sourceItem: Global.mainWindow_popupBackdrop
+                visible: false
+                live: true
+                sourceRect: {
+                    if (!sourceItem) return Qt.rect(0, 0, 0, 0)
+                    sourceItem.width; sourceItem.height
+                    return root.mapToItem(sourceItem, Qt.rect(0, 0, root.width, root.height))
+                }
+            }
+            MultiEffect {
+                anchors.fill: parent
+                source: pageCapture
+                blurEnabled: true
+                blurMax: 32
+                blur: root.backdropBlur
+                autoPaddingEnabled: false
+            }
+        }
+    }
     Rectangle {
         id: scrim
         anchors.fill: parent
@@ -59,24 +92,19 @@ Item {
             }
         }
     }
-    Rectangle {
+    FrostedSurface {
         id: panel
         objectName: "popupPanel"
+        z: 1
         anchors.centerIn: parent
         width: Math.min(root.dialogWidth, Math.max(0, root.width - 48))
         height: Math.min(root.dialogHeight, Math.max(0, root.height - 48))
+        radius: 0
         bottomLeftRadius: 15
         bottomRightRadius: 15
-        color: Colors.changeA(Colors.background, 0.985)
         border.width: 1
         border.color: Colors.changeA(Colors.text, 0.12)
         opacity: 0
-        layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
-        layer.effect: XCShadow {
-            shadowColor: "#a8000000"
-            shadowBlur: 0.85
-            shadowVerticalOffset: 10
-        }
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
@@ -119,7 +147,7 @@ Item {
         PropertyAnimation {
             target: scrim
             property: "opacity"
-            to: 0.42
+            to: 0.24
             duration: 180 / Global.animationSpeed
             easing.type: Easing.OutCubic
         }

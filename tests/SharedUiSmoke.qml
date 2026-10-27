@@ -129,8 +129,6 @@ Window {
             root.lastResult = result;
             ++root.closedCount
         })
-        // Shader shadows are not available in Qt's software renderer.
-        find("popupPanel").layer.enabled = false
         page.open()
     }
     function screenshot(name, afterCapture) {

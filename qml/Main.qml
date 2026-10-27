@@ -1,8 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
-import QtQuick.Effects
-import Qt5Compat.GraphicalEffects
 import xcshop 1.0
 
 
@@ -44,6 +42,7 @@ XCWindow {
         //mainWindow.showFilePage = true //临时的
         Global.mainWindow_background = mainWindow.background
         Global.mainWindow_backdrop = mainWindow.backdrop
+        Global.mainWindow_popupBackdrop = popupBlurSource
     }
     WindowSurface{
         id: root
@@ -59,18 +58,18 @@ XCWindow {
             popup.open(component, properties, callback)
         }
 
-        // 弹窗下方的完整应用内容；PopupLoader 以此作为高斯模糊源。
+        // 独立的背景与页面内容层，不包含弹窗，供磨砂面板安全取样。
         Item {
             id: popupBlurSource
             anchors.fill: parent
-            // 通过 layer.effect 替换内容自身的最终绘制结果，而非在其上叠一张模糊副本。
-            // 因此即使页面/控件本身带透明度，也不会从底下漏出未模糊的原始画面。
-            layer.enabled: popup.active && popup.status === Loader.Ready
-            layer.effect: MultiEffect {
-                blurEnabled: popupBlurSource.layer.enabled
-                blur: popup.blurAmount
-                blurMax: 64
-                autoPaddingEnabled: false
+            ShaderEffectSource {
+                anchors.fill: parent
+                visible: GraphicsInfo.api !== GraphicsInfo.Software
+                sourceItem: mainWindow.backdrop
+                sourceRect: {
+                    root.x; root.y
+                    return popupBlurSource.mapToItem(mainWindow.backdrop, Qt.rect(0, 0, width, height))
+                }
             }
         }
         
@@ -186,7 +185,6 @@ XCWindow {
         PopupLoader {
             id: popup
             anchors.fill: parent
-            blurTarget: popupBlurSource
         }
 
         //右键菜单

@@ -254,11 +254,9 @@ T.ComboBox {
         }
         onAboutToHide: wheelMotion.stop()
         onOpened: choices.positionViewAtIndex(Math.max(0, root.highlightedIndex), ListView.Contain)
-        background: Rectangle {
+        background: FrostedSurface {
             radius: 7
-            color: Colors.changeA(Colors.background_n, 0.98)
-            border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.14)
+            backdropAnchor: root
         }
     }
 }

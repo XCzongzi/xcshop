@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QImage>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTest>
@@ -20,5 +21,15 @@ public:
         if (item && item->window())
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
     }
-    Q_INVOKABLE void settle() { QTest::qWait(180); }
+    Q_INVOKABLE void settle(int milliseconds = 180) { QTest::qWait(milliseconds); }
+    Q_INVOKABLE int brightnessAt(QQuickItem *item, qreal x, qreal y) {
+        if (!item || !item->window()) return -1;
+        const auto frame = item->window()->grabWindow();
+        if (frame.isNull()) return -1;
+        const auto point = item->mapToScene(QPointF(x, y));
+        const int px = qBound(0, qRound(point.x() * frame.width() / item->window()->width()), frame.width() - 1);
+        const int py = qBound(0, qRound(point.y() * frame.height() / item->window()->height()), frame.height() - 1);
+        const auto pixel = frame.pixel(px, py);
+        return qMax(qRed(pixel), qMax(qGreen(pixel), qBlue(pixel)));
+    }
 };
