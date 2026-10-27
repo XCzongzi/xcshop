@@ -12,7 +12,7 @@ Window {
     property int step: 0
     property var page: null
     property string project: ""
-    property string alpha: "7efaa610-f064-487d-a392-6cd8a711627e"
+    property string alpha: "89755dae-f798-440d-b3a9-342ee8a9070f"
     XCFile { id: file }
     Rectangle {
         id: frame
@@ -25,7 +25,29 @@ Window {
     Component { id: total; PageOnTotal {} }
     Component { id: settings; PageOnSettings { fullScreen: false; currentSection: 1 } }
     Component { id: popupSettings; PopupProjectSettings {} }
+    Component {
+        id: consoleTest
+        Item {
+            BuildBar {
+                objectName: "consoleSample"
+                x: 20; y: 20
+                width: parent.width - 40
+                contentHeight: parent.height - 40
+                builderAvailable: true
+                canBuild: true
+                buildState: "构建成功"
+            }
+        }
+    }
     function check(value, message) { if (!value) throw new Error(message) }
+    function find(item, name) {
+        if (item.objectName === name) return item
+        for (var i = 0; i < item.children.length; ++i) {
+            var result = find(item.children[i], name)
+            if (result) return result
+        }
+        return null
+    }
     function show(component, properties) {
         if (page) page.destroy()
         page = component.createObject(frame, Object.assign({width: frame.width, height: frame.height}, properties || {}))
@@ -53,7 +75,7 @@ Window {
             try {
                 switch (root.step++) {
                 case 0:
-                    check(BuildKits.options(1).length >= 1, "bundled operation template not found")
+                    check(BuildKits.options(0).length >= 1, "bundled operation template not found")
                     show(creating)
                     break
                 case 1:
@@ -71,7 +93,7 @@ Window {
                     project = Global.project_location
                     var manifest = JSON.parse(file.read(project + "/xcshop.json"))
                     check(manifest.templateId === alpha && manifest.template === undefined, "legacy template identity written")
-                    check(manifest.dataVersion === 1 && Array.isArray(manifest.shops), "manifest schema incorrect")
+                    check(manifest.dataVersion === 0 && Array.isArray(manifest.shops), "manifest schema incorrect")
                     check(JSON.parse(file.read(Global.settingsPath)).futureSetting === "preserved", "settings dropped unknown fields")
                     check(file.writeAtomic(project + "/Item/stone.xcseItem", JSON.stringify({
                         "item": "stone 2", "display": {"mode": "original", "element": ""},
@@ -134,7 +156,7 @@ Window {
                 case 13:
                     root.width = 1280
                     root.height = 900
-                    show(popupSettings, {projectData: page.projectData, projectLocation: project, templateOptions: BuildKits.options(1)})
+                    show(popupSettings, {projectData: page.projectData, projectLocation: project, templateOptions: BuildKits.options(0)})
                     // MultiEffect is unavailable on the software renderer; disable only this test dialog's shadow layer.
                     for (var i = 0; i < page.children.length; ++i)
                         if (page.children[i].layer.enabled) page.children[i].layer.enabled = false
@@ -157,7 +179,64 @@ Window {
                     check(!page.manifestLoaded && !page.canBuild, "invalid manifest still allowed building")
                     page.saveProjectChanges({"name": "must-not-save"})
                     check(JSON.parse(file.read(project + "/xcshop.json")).shops.invalid, "invalid manifest was overwritten")
-                    console.log("UI_SMOKE_PASSED: creation, settings, real Alpha build, page lifecycle, project editing, invalid manifest protection")
+                    show(consoleTest)
+                    var logs = []
+                    for (var line = 0; line < 3000; ++line)
+                        logs.push("构建日志 " + line + " : data/example/function/shop/example.mcfunction")
+                    find(page,"consoleSample").consoleText = logs.join("\n")
+                    break
+                case 18:
+                    var viewport = find(page,"buildConsoleViewport")
+                    var scroll = find(page,"buildConsoleScrollBar")
+                    check(scroll.visible && scroll.size < 1,"long build console has no scrollbar")
+                    check(find(page,"buildConsoleOutput").readOnly,"console is editable")
+                    check(viewport.contentHeight > viewport.height,"console did not measure long output")
+                    scroll.position = (1-scroll.size)/2
+                    screenshot("console-long-dark")
+                    break
+                case 19:
+                    var viewport = find(page,"buildConsoleViewport")
+                    check(viewport.contentY > 0 && viewport.contentY < viewport.contentHeight-viewport.height,"scrollbar does not control console position")
+                    viewport.setScrollOffset(viewport.contentHeight)
+                    Colors.applyColorScheme("cloud")
+                    screenshot("console-long-light")
+                    break
+                case 20:
+                    var viewport = find(page,"buildConsoleViewport")
+                    var scroll = find(page,"buildConsoleScrollBar")
+                    check(Math.abs(viewport.contentY-viewport.contentHeight+viewport.height) < 2,"minimum scrollbar thumb prevents reaching final log line")
+                    check(Math.abs(scroll.position+scroll.size-1) < 0.001,"console scroll position not synchronized")
+                    Colors.applyColorScheme("midnight")
+                    find(page,"consoleSample").consoleText += "\n末尾追加日志"
+                    break
+                case 21:
+                    var scroll = find(page,"buildConsoleScrollBar")
+                    scroll.position = 1-scroll.size
+                    root.height = 320
+                    break
+                case 22:
+                    var viewport = find(page,"buildConsoleViewport")
+                    var scroll = find(page,"buildConsoleScrollBar")
+                    check(viewport.height > 0 && scroll.height > 0,"compact console has invalid geometry")
+                    scroll.position = 1-scroll.size
+                    break
+                case 23:
+                    var viewport = find(page,"buildConsoleViewport")
+                    check(Math.abs(viewport.contentY-viewport.contentHeight+viewport.height) < 2,"compact console cannot reach final log line")
+                    find(page,"consoleSample").consoleText = "构建完成"
+                    root.height = 900
+                    break
+                case 24:
+                    var viewport = find(page,"buildConsoleViewport")
+                    var scroll = find(page,"buildConsoleScrollBar")
+                    check(!scroll.visible,"short console output leaves an unnecessary scrollbar: size="+scroll.size+" height="+viewport.height+" content="+viewport.contentHeight+" y="+viewport.contentY)
+                    check(Math.abs(find(page,"buildConsoleViewport").contentY) < 1,"clearing long logs left the console scrolled")
+                    find(page,"consoleSample").consoleText = ""
+                    break
+                case 25:
+                    check(!find(page,"buildConsoleScrollBar").visible,"empty console has a scrollbar")
+                    screenshot("console-empty")
+                    console.log("UI_SMOKE_PASSED: creation, settings, real Alpha build, page lifecycle, project editing, invalid manifest protection, long/short/compact build console scrolling")
                     Qt.exit(0)
                     break
                 }

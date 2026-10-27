@@ -19,7 +19,7 @@ QString absolutePath(const QString &value) {
     return text.isEmpty() ? QString() : QDir::cleanPath(QFileInfo(text).absoluteFilePath());
 }
 bool validProtocol(const QJsonObject &object) {
-    if (object["protocol"] != "xcshop-builder/result" || object["version"].toInt(-1) != 2) return false;
+    if (object["protocol"] != "xcshop-builder/result" || object["version"].toInt(-1) != 0) return false;
     for (const auto &name : {"buildEndedNormally", "buildSucceeded", "terminatedEarly"})
         if (!object[name].isBool()) return false;
     if (!object["internalError"].isNull() && !object["internalError"].isString()) return false;
@@ -211,7 +211,7 @@ void BuildManager::line(const QByteArray &raw, bool standardError) {
         m_receivedResult = true;
         const auto document = QJsonDocument::fromJson(bytes.mid(qstrlen(resultPrefix)));
         if (!document.isObject() || !validProtocol(document.object())) {
-            m_protocolError = "无法识别构建结果，要求 xcshop-builder/result 协议版本 2。";
+            m_protocolError = "无法识别构建结果，要求 xcshop-builder/result 协议版本 0。";
             return;
         }
         const auto object = document.object();
@@ -243,7 +243,7 @@ void BuildManager::finish(int exitCode, QProcess::ExitStatus status) {
         integrationError("构建器异常退出。", "请查看控制台输出，并检查构建器运行库或内部异常。");
     } else if (!m_protocolError.isEmpty() || !m_receivedResult || m_result.isEmpty()) {
         integrationError(m_protocolError.isEmpty() ? "构建器未返回完整的结果。" : m_protocolError,
-                         "请使用支持结果协议版本 2 的构建器；控制台中的普通输出不会被当作构建结果。");
+                         "请使用支持结果协议版本 0 的构建器；控制台中的普通输出不会被当作构建结果。");
     } else if (!m_result["internalError"].toString().isEmpty()) {
         integrationError("构建器内部错误：" + m_result["internalError"].toString(), "请保留构建日志以排查程序问题。");
     } else {

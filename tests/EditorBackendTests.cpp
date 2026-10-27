@@ -8,14 +8,14 @@
 #include <QDir>
 
 static QString fixture;
-static const QString templateId = "1dc7404f-209f-4eea-becd-291406d52787";
+static const QString templateId = "89755dae-f798-440d-b3a9-342ee8a9070f";
 static bool writeFile(const QString &path, const QByteArray &bytes) {
     if (!QDir().mkpath(QFileInfo(path).absolutePath())) return false;
     QFile file(path);
     return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
 }
 static bool makeKit(const QString &root, const QString &versions = "\"1.21.11\",\"26.1\",\"26.3\"...") {
-    return writeFile(root + "/templates/nested/alpha.xcshopT", (templateId + "\n1\n" + versions
+    return writeFile(root + "/templates/nested/alpha.xcshopT", (templateId + "\n0\n" + versions
         + "\n../../blueprints/main.xcshoper\n../../materials/alpha\n[\n\"介绍包含 ] 与 \\\" 引号\",\"第二段\"\n]\nerror(\"此脚本不能在目录扫描时执行\");\n").toUtf8())
         && writeFile(root + "/blueprints/main.xcshoper", "build \"sell.xcontent\"\n")
         && writeFile(root + "/materials/alpha/sell.xcontent", "sell.mcfunction\nsay test\n");
@@ -37,9 +37,9 @@ private slots:
         QVERIFY2(kits.issues().isEmpty(), qPrintable(kits.issues().join('\n')));
         QVERIFY(kits.identityValid());
         QCOMPARE(kits.templates().size(), 1);
-        QCOMPARE(kits.dataVersion(), 1);
-        QCOMPARE(kits.options(1).size(), 1);
-        QCOMPARE(kits.options(0).size(), 0);
+        QCOMPARE(kits.dataVersion(), 0);
+        QCOMPARE(kits.options(0).size(), 1);
+        QCOMPARE(kits.options(1).size(), 0);
         QCOMPARE(kits.findTemplate(templateId)["introduction"].toStringList().size(), 2);
         QCOMPARE(kits.findTemplate(templateId)["materialCount"].toInt(), 1);
         QCOMPARE(kits.versionSupport(templateId, "26.3"), 0);
@@ -95,7 +95,7 @@ private slots:
     void process_data() {
         QTest::addColumn<QString>("mode");
         QTest::addColumn<bool>("success");
-        for (const auto &mode : {"success", "error", "missing", "malformed", "duplicate", "exit", "crash", "large"})
+        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large"})
             QTest::newRow(mode) << QString(mode) << (QString(mode) == "success" || QString(mode) == "large");
     }
     void process() {

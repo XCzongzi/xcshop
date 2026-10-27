@@ -1,7 +1,7 @@
 import QtQuick
 import xcshop
 
-// 只有开关状态切换时做展开动画；内容自身逐帧调整高度时直接跟随，避免二次缓动。
+// 离散的展开或内容切换使用动画；内容自身逐帧调整高度时直接跟随，避免二次缓动。
 Item {
     id: root
     property bool expanded: false
@@ -28,12 +28,7 @@ Item {
         }
     }
     onExpandedChanged: updateHeight(true)
-    onContentHeightChanged: {
-        if (reveal.running && !contentAnimating)
-            reveal.to = expanded ? contentHeight : 0;
-        else
-            updateHeight(false);
-    }
+    onContentHeightChanged: updateHeight(!contentAnimating)
     onContentAnimatingChanged: {
         if (contentAnimating)
             updateHeight(false);

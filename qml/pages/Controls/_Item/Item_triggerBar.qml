@@ -13,6 +13,11 @@ Item {
         revision++;
         updateData();
     }
+    function loadExecutionValue() {
+        var execution = modelData.execute;
+        commandInput.text = execution.kind === "command" ? execution.value || "" : "";
+        functionInput.setContent(execution.kind === "function" ? execution.value || "" : "");
+    }
     function load() {
         triggerKind.selected = modelData.mode.kind === "drop_item" ? 1 : 0;
         dropQuantity.selected = modelData.mode.quantity === "all" ? 1 : 0;
@@ -22,6 +27,7 @@ Item {
         filterKind.selected = Math.max(0, ["none", "quantity", "slot"].indexOf(filter.kind));
         quantityMode.selected = Math.max(0, ["all", "less_than_all", "custom"].indexOf(filter.mode));
         executeKind.selected = Math.max(0, ["grant_item", "command", "function"].indexOf(modelData.execute.kind));
+        loadExecutionValue();
         revision++;
     }
     Component.onCompleted: load()
@@ -143,6 +149,7 @@ Item {
                     kind: selected === 1 ? "command" : "function",
                     value: ""
                 };
+                root.loadExecutionValue();
                 root.changed();
             }
         }
@@ -162,11 +169,9 @@ Item {
                 width: parent.width - 16
                 highlightMacros: true
                 placeholderText: "输入指令"
-                text: {
-                    root.revision;
-                    return root.modelData.execute.value || "";
-                }
                 onEditingFinished: {
+                    if (root.modelData.execute.kind !== "command")
+                        return;
                     root.modelData.execute.value = text;
                     root.changed();
                 }
@@ -180,11 +185,9 @@ Item {
                 width: parent.width - 16
                 height: 128
                 highlightMacros: true
-                content: {
-                    root.revision;
-                    return root.modelData.execute.value || "";
-                }
                 onAccepted: {
+                    if (root.modelData.execute.kind !== "function")
+                        return;
                     root.modelData.execute.value = content;
                     root.changed();
                 }

@@ -8,7 +8,8 @@ function item() {
         display: {mode: "original", element: ""}, operations: []}
 }
 function operation(title) {
-    return {title: title === undefined ? "" : String(title), showInDisplay: true, cost: [],
+    return {title: title === undefined ? "" : String(title), showInDisplay: true,
+        successHint: true, failHint: true, returnOnSuccess: false, cost: [],
         trigger: {mode: {kind: "take_item", filter: {kind: "none"}},
             execute: {kind: "grant_item"}}}
 }
@@ -17,6 +18,6 @@ function display() {
         member: {order: "cost_then_value", head: "", middle: "", end: "",
             cost: textStyle(), value: textStyle()},
         operation: {enabled: false, order: "title_then_cost", head: "", middle: "", end: "",
-            separator: "", title: textStyle(), cost: textStyle()},
+            separator: "", title: textStyle()},
         hint: {success: {text: "", sound: ""}, fail: {text: "", sound: ""}}}
 }

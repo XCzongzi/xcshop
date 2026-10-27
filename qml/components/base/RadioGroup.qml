@@ -81,5 +81,9 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: root.selected = root.initialOption
+    Component.onCompleted: {
+        // 父编辑器可能已经载入保存的选项，不再用默认值覆盖它。
+        if (root.selected < 0)
+            root.selected = root.initialOption
+    }
 }

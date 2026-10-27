@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(xcshop VERSION 0.1 LANGUAGES CXX)
+project(xcshop VERSION 0.1.0 LANGUAGES CXX)
 
 
 set(CMAKE_CXX_STANDARD 17)
@@ -78,6 +78,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/reusable/ObjectListModel.qml
         qml/components/base/reusable/AnimatedReveal.qml
         qml/components/base/reusable/AnimatedListRemoval.qml
+        qml/components/base/reusable/AnimatedListSwap.qml
         qml/components/base/reusable/AmbientBackground.qml
         qml/components/base/reusable/LightEffect.qml
         qml/components/base/reusable/XCShadow.qml

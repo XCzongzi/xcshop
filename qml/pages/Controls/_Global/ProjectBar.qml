@@ -43,14 +43,14 @@ ContentBar {
         Grid {
             id: summaryGrid
             width: parent.width
-            columns: 4
+            columns: 5
             columnSpacing: 12
             rowSpacing: 6
 
             component SummaryField: Item {
                 property alias label: labelText.xcText
                 property alias value: valueText.xcText
-                width: (summaryGrid.width - summaryGrid.columnSpacing * 3) / 4
+                width: (summaryGrid.width - summaryGrid.columnSpacing * (summaryGrid.columns - 1)) / summaryGrid.columns
                 height: 39
 
                 XCText {
@@ -92,6 +92,11 @@ ContentBar {
             SummaryField {
                 label: "目标版本"
                 value: root.fieldValue("version", "未设置")
+            }
+
+            SummaryField {
+                label: "数据格式"
+                value: root.fieldValue("dataVersion", "未设置")
             }
         }
 

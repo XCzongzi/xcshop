@@ -44,23 +44,21 @@ function render(format, operations) {
     visible.forEach(function(op) {
         var rules = format.operation
         var costs = op.cost.filter(function(cost) { return !cost.filter && cost.kind !== "execute_condition" })
-        var costStyle = style(rules.cost)
         var text = []
         costs.forEach(function(cost, costIndex) {
-            var member = source(format.member.head, costStyle)
-            var name = Object.assign({text: cost.display}, style(format.member.cost, costStyle))
-            var amount = Object.assign({text: String(cost.amount)}, style(format.member.value, costStyle))
+            var member = source(format.member.head)
+            var name = Object.assign({text: cost.display}, style(format.member.cost))
+            var amount = Object.assign({text: String(cost.amount)}, style(format.member.value))
             member.push(format.member.order === "cost_then_value" ? name : amount)
-            member = member.concat(source(format.member.middle, costStyle))
+            member = member.concat(source(format.member.middle))
             member.push(format.member.order === "cost_then_value" ? amount : name)
-            member = member.concat(source(format.member.end, costStyle))
-            if (costIndex) text = text.concat(source(rules.separator, costStyle))
+            member = member.concat(source(format.member.end))
+            if (costIndex) text = text.concat(source(rules.separator))
             text = text.concat(member)
         })
-        if (!String(op.title).trim().length) { appendPart(text); return }
-        if (!rules.enabled && !text.length) return
-        var title = rules.enabled ? [Object.assign({text: op.title}, style(rules.title))] : []
-        var middle = rules.enabled && costs.length ? source(rules.middle) : []
+        if (!rules.enabled || !String(op.title).trim().length) { appendPart(text); return }
+        var title = [Object.assign({text: op.title}, style(rules.title))]
+        var middle = costs.length ? source(rules.middle) : []
         appendPart(source(rules.head).concat(rules.order === "title_then_cost" ? title.concat(middle, text) : text.concat(middle, title), source(rules.end)))
     })
     if (out.length) out = source(format.frame.head).concat(out, source(format.frame.end))

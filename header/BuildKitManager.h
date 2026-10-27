@@ -26,10 +26,10 @@ public:
     bool identityValid() const { return m_identityValid; }
     bool busy() const { return m_busy; }
     void setBusy(bool value);
-    int dataVersion() const { return 1; } // 操作组工作区格式。
+    int dataVersion() const { return 0; } // 操作组工作区格式。
     Q_INVOKABLE void refresh();
     Q_INVOKABLE QVariantMap findTemplate(const QString &id) const;
-    Q_INVOKABLE QVariantList options(int requiredDataVersion = 1) const;
+    Q_INVOKABLE QVariantList options(int requiredDataVersion = 0) const;
     // -1 unsupported, 0 explicitly supported, 1 newer and only tentatively supported.
     Q_INVOKABLE int versionSupport(const QString &id, const QString &version) const;
     Q_INVOKABLE QString importKit(const QString &sourceRoot);

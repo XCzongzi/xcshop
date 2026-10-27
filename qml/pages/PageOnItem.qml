@@ -8,6 +8,7 @@ BaseIOPage {
     workspace: true
     property bool operationDeleting: false
     property bool operationAdding: false
+    readonly property bool operationMoving: operationSwap.running
     function elementReading() {
         if (!Array.isArray(eledata.operations) || eledata.cost !== undefined || eledata.trigger !== undefined)
             throw new Error("此页面只支持操作组格式，请使用新建项目");
@@ -22,7 +23,7 @@ BaseIOPage {
         });
     }
     function addOperation(animate) {
-        if (operationDeleting || operationAdding)
+        if (operationDeleting || operationAdding || operationMoving)
             return;
         operationAdding = animate !== false;
         eledata.operations.push(Schema.operation());
@@ -33,6 +34,26 @@ BaseIOPage {
         eledata.operations.splice(index, 1);
         operationRows.removeAt(index);
         updateDataOut();
+    }
+    function moveOperationUp(index) {
+        if (operationDeleting || operationAdding || operationMoving || index <= 0 || index >= operationRows.count)
+            return;
+        for (var i = 0; i < operationRows.count; ++i) {
+            var card = operationCards.itemAt(i);
+            if (card.deleting || card.costDeleting || card.appearing)
+                return;
+        }
+        operationSwap.begin(index, operationCards.itemAt(index - 1).height + cards.spacing,
+            operationCards.itemAt(index).height + cards.spacing);
+    }
+    AnimatedListSwap {
+        id: operationSwap
+        onFinished: function (row) {
+            var operation = root.eledata.operations.splice(row, 1)[0];
+            root.eledata.operations.splice(row - 1, 0, operation);
+            operationRows.move(row, row - 1, 1);
+            root.updateDataOut();
+        }
     }
     AnimatedListRemoval {
         id: operationRemoval
@@ -141,19 +162,21 @@ BaseIOPage {
                 id: operationRows
             }
             Repeater {
+                id: operationCards
                 model: operationRows
                 delegate: Item_operationCard {
                     required property string objectKey
                     required animateInsertion
                     objectName: "operationCard" + index
                     width: parent.width
-                    z: -index
+                    z: operationSwap.running && index === operationSwap.index ? 1 : -index
                     operation: operationRows.value(objectKey)
-                    listShift: operationRemoval.shiftFor(index)
+                    listShift: operationRemoval.shiftFor(index) + operationSwap.shiftFor(index)
                     onEdited: root.updateDataOut()
                     onRemovalStarted: root.operationDeleting = true
                     onInsertionFinished: root.operationAdding = false
                     onRemoveRequested: operationRemoval.begin(index, height + cards.spacing)
+                    onMoveUpRequested: root.moveOperationUp(index)
                 }
             }
             TextButton {
@@ -179,7 +202,7 @@ BaseIOPage {
             width: cards.width
             height: cards.height
             z: 1000
-            visible: root.operationDeleting || root.operationAdding
+            visible: root.operationDeleting || root.operationAdding || root.operationMoving
             acceptedButtons: Qt.AllButtons
             hoverEnabled: true
             onVisibleChanged: if (visible)

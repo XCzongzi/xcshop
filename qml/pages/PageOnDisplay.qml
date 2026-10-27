@@ -148,6 +148,7 @@ BaseIOPage {
             secondKey: "cost"
             firstLabel: "操作名称"
             secondLabel: "代价文本"
+            editSecondStyle: false
             orders: ["title_then_cost", "cost_then_title"]
             onEdited: root.changed()
         }

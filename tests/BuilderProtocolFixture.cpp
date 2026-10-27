@@ -22,7 +22,8 @@ int main(int argc, char **argv) {
     const bool failed = mode == "error";
     QJsonObject problem{{"file", arguments[index + 1] + "/Item/物品.xcseItem"},
         {"property", "$.operations[0].cost[0].amount"}, {"reason", "测试中文错误/警告"}, {"solution", "请修改原始属性"}, {"terminatesBuild", failed}};
-    QJsonObject result{{"protocol", "xcshop-builder/result"}, {"version", 2},
+    QJsonObject result{{"protocol", "xcshop-builder/result"}, {"version", mode == "unsupported" ? 2 : 0},
+        {"builderVersion", "0.1.0"}, {"maxSupportedDataVersion", 0},
         {"buildEndedNormally", !failed}, {"buildSucceeded", !failed}, {"terminatedEarly", failed},
         {"errorCount", failed ? 1 : 0}, {"errors", failed ? QJsonArray{problem} : QJsonArray{}},
         {"warningCount", failed ? 0 : 1}, {"warnings", failed ? QJsonArray{} : QJsonArray{problem}}, {"internalError", QJsonValue::Null}};

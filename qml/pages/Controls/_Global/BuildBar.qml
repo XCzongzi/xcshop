@@ -154,18 +154,70 @@ ContentBar {
                     xcFontSize: 13
                 }
 
-                XCTextArea {
-                    id: consoleOutput
+                Flickable {
+                    id: consoleViewport
+                    objectName: "buildConsoleViewport"
                     y: 32
                     width: parent.width
-                    height: parent.height - y
-                    readOnly: true
-                    selectByMouse: true
-                    text: root.consoleText
-                    placeholderText: "暂无构建输出"
-                    font.pixelSize: 11
-                    font.family: "Consolas"
-                    wrapMode: TextEdit.WrapAnywhere
+                    height: Math.max(0, parent.height - y)
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    flickableDirection: Flickable.VerticalFlick
+
+                    function setScrollOffset(offset) {
+                        contentY = Math.max(originY, Math.min(originY + Math.max(0, contentHeight - height), offset))
+                    }
+                    onContentHeightChanged: setScrollOffset(contentY)
+                    onHeightChanged: setScrollOffset(contentY)
+
+                    Controls.TextArea.flickable: XCTextArea {
+                        id: consoleOutput
+                        objectName: "buildConsoleOutput"
+                        readOnly: true
+                        selectByMouse: true
+                        text: root.consoleText
+                        placeholderText: "暂无构建输出"
+                        font.pixelSize: 11
+                        font.family: "Consolas"
+                        wrapMode: TextEdit.WrapAnywhere
+                        // 固定留出滑块空间，避免显隐时反复换行、改变内容高度。
+                        rightPadding: consoleScrollBar.width + 16
+                    }
+
+                    Controls.ScrollBar.vertical: Controls.ScrollBar {
+                        id: consoleScrollBar
+                        objectName: "buildConsoleScrollBar"
+                        x: consoleViewport.width - width - 4
+                        y: 4
+                        width: 8
+                        height: Math.max(0, consoleViewport.height - 8)
+                        padding: 0
+                        hoverEnabled: true
+                        policy: Controls.ScrollBar.AsNeeded
+                        visible: consoleViewport.height > 0 && consoleViewport.contentHeight > consoleViewport.height
+                        minimumSize: height > 0 ? Math.min(1, 30 / height) : 1
+                        contentItem: Rectangle {
+                            implicitWidth: 8
+                            radius: 4
+                            color: consoleScrollBar.pressed ? Colors.border
+                                   : Colors.changeA(Colors.banned, consoleScrollBar.hovered ? 0.8 : 0.45)
+                            Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
+                        }
+                        background: Item {}
+                    }
+
+                    WheelHandler {
+                        target: null
+                        onWheel: function(event) {
+                            var delta = event.pixelDelta.y || event.angleDelta.y
+                            if (!delta || consoleViewport.contentHeight <= consoleViewport.height) {
+                                event.accepted = false
+                                return
+                            }
+                            consoleViewport.setScrollOffset(consoleViewport.contentY - delta)
+                            event.accepted = true
+                        }
+                    }
                 }
             }
 

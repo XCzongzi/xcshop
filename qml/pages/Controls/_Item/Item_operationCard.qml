@@ -15,6 +15,7 @@ Item {
     signal edited
     signal removalStarted
     signal removeRequested
+    signal moveUpRequested
     signal insertionFinished
     height: contentHeight * insertionProgress
     clip: insertionProgress < 1
@@ -94,7 +95,7 @@ Item {
                 x: 14
                 y: 4
                 height: 24
-                width: ctrlBar.x - x - 10
+                width: moveUpButton.x - x - 10
                 font.pixelSize: 13
                 text: root.operation.title
                 placeholderText: "名称"
@@ -108,6 +109,19 @@ Item {
                     root.edited();
                 }
             }
+        }
+        ImageButton {
+            id: moveUpButton
+            objectName: "moveOperationUpButton"
+            x: ctrlBar.x - width
+            btnSize: ctrlBar.height
+            imgSize: 16
+            imageSource: "qrc:/assets/gui/controls/expand_up.png"
+            btnbackground: Colors.transparent
+            radius: 0
+            enabled: root.index > 0
+            opacity: enabled ? 1 : 0.35
+            onClicked: root.moveUpRequested()
         }
         Rectangle {
             id: ctrlBar
@@ -168,13 +182,45 @@ Item {
             y: 48
             width: parent.width - 32
             spacing: 14
-            XCCheckBox {
-                objectName: "operationShowInDisplay"
-                text: "在展示文本中显示"
-                checked: root.operation.showInDisplay
-                onToggled: function (value) {
-                    root.operation.showInDisplay = value;
-                    root.edited();
+            Flow {
+                objectName: "operationOptions"
+                width: parent.width
+                spacing: 16
+                XCCheckBox {
+                    objectName: "operationShowInDisplay"
+                    text: "在展示文本中显示"
+                    checked: root.operation.showInDisplay
+                    onToggled: function (value) {
+                        root.operation.showInDisplay = value;
+                        root.edited();
+                    }
+                }
+                XCCheckBox {
+                    objectName: "operationSuccessHint"
+                    text: "成功提示"
+                    checked: root.operation.successHint !== false
+                    onToggled: function (value) {
+                        root.operation.successHint = value;
+                        root.edited();
+                    }
+                }
+                XCCheckBox {
+                    objectName: "operationFailHint"
+                    text: "失败提示"
+                    checked: root.operation.failHint !== false
+                    onToggled: function (value) {
+                        root.operation.failHint = value;
+                        root.edited();
+                    }
+                }
+                XCCheckBox {
+                    objectName: "operationReturnOnSuccess"
+                    text: "成功后返回"
+                    checked: root.operation.returnOnSuccess === true
+                    onToggled: function (value) {
+                        root.operation.returnOnSuccess = value;
+                        root.edited();
+                    }
                 }
             }
             Grid {
