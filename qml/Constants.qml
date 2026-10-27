@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 
 QtObject{
+    id: root
 
     // 基础信息
     readonly property int margins: 32
@@ -86,14 +87,25 @@ QtObject{
         { "value": "black_shulker_box", "label": "黑色潜影盒（27 格）", "layoutId": "generic_9x3", "group": "shulker" }
     ]
 
-    // Keep validation and persistence flat; the picker groups shulkers into a submenu.
+    readonly property var shulkerSwatches: ({
+        "shulker_box": "#9468a0", "white_shulker_box": "#e8e8df", "orange_shulker_box": "#e88629",
+        "magenta_shulker_box": "#b953bc", "light_blue_shulker_box": "#64b2d4", "yellow_shulker_box": "#e6c53b",
+        "lime_shulker_box": "#80b839", "pink_shulker_box": "#dc8fa9", "gray_shulker_box": "#50595c",
+        "light_gray_shulker_box": "#9b9b92", "cyan_shulker_box": "#268b91", "purple_shulker_box": "#7950ac",
+        "blue_shulker_box": "#4257a4", "brown_shulker_box": "#815b3b", "green_shulker_box": "#637b30",
+        "red_shulker_box": "#b84039", "black_shulker_box": "#292b30"
+    })
+
+    // Presentation metadata stays with container data; persisted values remain flat.
     readonly property var shopContainerOptions: [
         { "value": "barrel", "label": "木桶（27 格）", "layoutId": "generic_9x3" },
         { "value": "chest", "label": "箱子（27 格）", "layoutId": "generic_9x3" },
         { "value": "trapped_chest", "label": "陷阱箱（27 格）", "layoutId": "generic_9x3" },
         { "value": "ender_chest", "label": "末影箱（27 格）", "layoutId": "generic_9x3" },
-    ].concat(shulkerBoxOptions.map(function(option) {
-        return Object.assign({}, option, { "groupLabel": "潜影盒（27 格）" })
+    ].map(function(option) {
+        return Object.assign({}, option, { "group": "common", "groupLabel": "常用容器" })
+    }).concat(shulkerBoxOptions.map(function(option) {
+        return Object.assign({}, option, { "groupLabel": "潜影盒（27 格）", "swatch": root.shulkerSwatches[option.value] })
     }), [
         { "value": "dispenser", "label": "发射器（9 格）", "layoutId": "generic_3x3" },
         { "value": "dropper", "label": "投掷器（9 格）", "layoutId": "generic_3x3" },
@@ -107,6 +119,8 @@ QtObject{
         { "value": "chest_minecart", "label": "运输矿车（27 格）", "layoutId": "generic_9x3" },
         { "value": "chest_boat", "label": "运输船（27 格）", "layoutId": "generic_9x3" },
         { "value": "hopper_minecart", "label": "漏斗矿车（5 格）", "layoutId": "hopper_5" }
-    ])
+    ]).map(function(option) {
+        return option.group ? option : Object.assign({}, option, { "group": "other", "groupLabel": "其他容器" })
+    })
     
 }

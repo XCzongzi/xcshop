@@ -88,13 +88,13 @@ Window {
                     root.check(root.page.grabToImage(function(result) {
                         root.wideCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-settings-preview.png")
                     }), "Request wide screenshot")
-                    root.page.filter = 3
+                    root.page.filter = "approximate"
                     root.page.filterItems()
                     root.check(root.page.filteredItems.length === 1, "Approximate filter")
-                    root.page.filter = 4
+                    root.page.filter = "missing"
                     root.page.filterItems()
                     root.check(root.page.filteredItems.length === 1, "Missing filter")
-                    root.page.filter = 0
+                    root.page.filter = "all"
                     root.page.filterItems()
                 } else if (root.step === 1) {
                     root.check(root.wideCaptured, "Save wide screenshot")

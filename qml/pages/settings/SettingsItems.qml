@@ -12,7 +12,7 @@ Item {
     property string currentVersion: "尚未导入"
     property string catalogSummary: "从游戏资源生成物品列表和默认图标。"
     property string formError: ""
-    property int filter: 0
+    property string filter: "all"
     property int iconRevision: 0
     property bool showSnapshots: false
     property string importSource: "local"
@@ -93,10 +93,10 @@ Item {
         var keyword = searchField.text.trim().toLowerCase()
         filteredItems = items.filter(function(item) {
             return (!keyword.length || item.itemId.indexOf(keyword) >= 0)
-                    && (root.filter !== 1 || item.builtIn)
-                    && (root.filter !== 2 || !item.builtIn)
-                    && (root.filter !== 3 || item.iconStatus === "approximate")
-                    && (root.filter !== 4 || item.iconStatus === "missing")
+                    && (root.filter !== "vanilla" || item.builtIn)
+                    && (root.filter !== "custom" || !item.builtIn)
+                    && (root.filter !== "approximate" || item.iconStatus === "approximate")
+                    && (root.filter !== "missing" || item.iconStatus === "missing")
         }).sort(function(a, b) {
             var aExact = a.itemId === keyword || a.itemId.split(":")[1] === keyword
             var bExact = b.itemId === keyword || b.itemId.split(":")[1] === keyword
@@ -329,9 +329,12 @@ Item {
                 Flow {
                     width: parent.width; spacing: 8; z: 2
                     XCTextField { id: searchField; width: Math.max(160, parent.width - 150); placeholderText: "按物品 ID 搜索"; onTextChanged: root.filterItems() }
-                    ComboBox {
-                        per_width: 132; options: ["全部", "原版", "自定义", "近似图标", "缺少图标"]
-                        onClicked: { root.filter = selected; root.filterItems() }
+                    XCComboBox {
+                        width: 132; height: 32
+                        options: [{value: "all", label: "全部"}, {value: "vanilla", label: "原版"},
+                                  {value: "custom", label: "自定义"}, {value: "approximate", label: "近似图标"}, {value: "missing", label: "缺少图标"}]
+                        value: root.filter
+                        onValueActivated: function(value) { root.filter = value; root.filterItems() }
                         z: 20
                     }
                 }

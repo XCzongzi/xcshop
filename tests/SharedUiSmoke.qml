@@ -48,9 +48,11 @@ Window {
                 width: 500
                 height: 128
             }
-            ComboBox {
+            XCComboBox {
+                id: selectionSample
                 objectName: "choice"
-                options: ["甲", "乙", "丙"]
+                options: [{value: "first", label: "甲"}, {value: "second", label: "乙"}, {value: "third", label: "丙"}]
+                onValueActivated: function(value) { selectionSample.value = value }
             }
             ElementSelection {
                 objectName: "fullSelection"
@@ -213,10 +215,10 @@ Window {
                         root.check(editor.content === "修改后", "Editor failed to commit")
                     }
                     var selector = root.find("choice")
-                    selector.selected = 2
+                    selector.value = "third"
                     root.check(selector.currentLabel === "丙", "Programmatic index selection lost")
-                    selector.menuOptions[1].action()
-                    root.check(selector.selected === 1 && selector.currentLabel === "乙", "Menu selection did not update legacy index")
+                    selector.activated(1)
+                    root.check(selector.value === "second" && selector.currentLabel === "乙", "Menu selection did not update legacy index")
                     var full = root.find("fullSelection"), compact = root.find("compactSelection")
                     full.requestElementSelection()
                     compact.requestElementSelection()

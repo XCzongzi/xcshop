@@ -55,7 +55,7 @@ ContentBar {
             feedbackIsError = true
             return
         }
-        if (!newContainer.currentValue.length) {
+        if (!newContainer.value.length) {
             feedbackMessage = "请选择容器类型"
             feedbackIsError = true
             return
@@ -63,7 +63,7 @@ ContentBar {
         addRequested({
             "element": Global.projectRelativeElementPath(newElementPath),
             "registrationName": registrationName,
-            "containerType": newContainer.currentValue
+            "containerType": newContainer.value
         })
     }
 
@@ -71,7 +71,7 @@ ContentBar {
         newElementPath = ""
         newUi.clearElement(false)
         newName.text = ""
-        newContainer.currentValue = containerOptions.length ? containerOptions[0].value : ""
+        newContainer.value = containerOptions.length ? containerOptions[0].value : ""
     }
 
     Item {
@@ -277,14 +277,15 @@ ContentBar {
                     onAccepted: root.submitNewShop()
                 }
 
-                GlobalChoiceBox {
+                XCComboBox {
                     id: newContainer
+                    objectName: "newShopContainerChoice"
                     width: Math.max(64, parent.width - newName.width - addButton.width - parent.spacing * 2)
                     height: parent.height
                     compact: true
                     options: root.containerOptions
-                    currentValue: root.containerOptions.length ? root.containerOptions[0].value : ""
-                    onValueActivated: root.feedbackMessage = ""
+                    value: root.containerOptions.length ? root.containerOptions[0].value : ""
+                    onValueActivated: function(value) { newContainer.value = value; root.feedbackMessage = "" }
                 }
 
                 ActionButton {

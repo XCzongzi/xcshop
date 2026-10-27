@@ -15,7 +15,7 @@ PopupFrame {
 
     onAboutToOpen: {
         nameField.text = shop && shop.registrationName ? String(shop.registrationName) : ""
-        containerChoice.currentValue = shop && shop.containerType ? String(shop.containerType) : ""
+        containerChoice.value = shop && shop.containerType ? String(shop.containerType) : ""
         validationMessage = ""
         Qt.callLater(function() {
             nameField.forceActiveFocus()
@@ -33,13 +33,13 @@ PopupFrame {
             validationMessage = "注册名已存在"
             return
         }
-        if (!containerChoice.currentValue.length) {
+        if (!containerChoice.value.length) {
             validationMessage = "请选择容器类型"
             return
         }
         close({
             "registrationName": registrationName,
-            "containerType": containerChoice.currentValue
+            "containerType": containerChoice.value
         })
     }
 
@@ -110,14 +110,15 @@ PopupFrame {
         textColor: Colors.changeA(Colors.text, 0.72)
     }
 
-    GlobalChoiceBox {
+    XCComboBox {
         id: containerChoice
+        objectName: "shopContainerChoice"
         x: 24
         y: 232
         width: parent.width - 48
         height: 36
         options: root.containerOptions
-        onValueActivated: root.validationMessage = ""
+        onValueActivated: function(value) { containerChoice.value = value; root.validationMessage = "" }
     }
 
     XCText {

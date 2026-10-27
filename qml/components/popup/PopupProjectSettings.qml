@@ -12,7 +12,7 @@ PopupFrame {
     property string projectLocation: ""
     property var templateOptions: []
     property string validationMessage: ""
-    readonly property var selectedTemplate: BuildKits.findTemplate(templateChoice.currentValue)
+    readonly property var selectedTemplate: BuildKits.findTemplate(templateChoice.value)
 
     function fieldValue(key, fallback) {
         if (!projectData || projectData[key] === undefined || projectData[key] === null)
@@ -42,9 +42,9 @@ PopupFrame {
         nameField.text = fieldValue("name", "")
         namespaceField.text = fieldValue("namespace", "")
         outputField.text = fieldValue("generatePath", "")
-        templateChoice.currentValue = fieldValue("templateId", "").toLowerCase()
-        versionChoice.options = versionsForTemplate(templateChoice.currentValue)
-        versionChoice.currentValue = fieldValue("version", "")
+        templateChoice.value = fieldValue("templateId", "").toLowerCase()
+        versionChoice.options = versionsForTemplate(templateChoice.value)
+        versionChoice.value = fieldValue("version", "")
         customVersion.text = ""
         validationMessage = ""
     }
@@ -68,8 +68,8 @@ PopupFrame {
             return
         }
         var version = selectedTemplate.allowsNewer && customVersion.text.trim().length
-                ? customVersion.text.trim() : versionChoice.currentValue
-        if (!templateChoice.currentValue.length || !version.length || !selectedTemplate.valid) {
+                ? customVersion.text.trim() : versionChoice.value
+        if (!templateChoice.value.length || !version.length || !selectedTemplate.valid) {
             validationMessage = "请选择构建模板和目标版本"
             return
         }
@@ -77,7 +77,7 @@ PopupFrame {
             validationMessage = "模板与项目数据版本不匹配，不能仅通过改写版本号迁移项目"
             return
         }
-        if (BuildKits.versionSupport(templateChoice.currentValue, version) < 0) {
+        if (BuildKits.versionSupport(templateChoice.value, version) < 0) {
             validationMessage = "该模板不支持输入的目标版本"
             return
         }
@@ -90,7 +90,7 @@ PopupFrame {
             "name": name,
             "namespace": namespaceName,
             "generatePath": outputPath,
-            "templateId": templateChoice.currentValue,
+            "templateId": templateChoice.value,
             "version": version
         })
     }
@@ -134,13 +134,15 @@ PopupFrame {
 
         FormField {
             label: "构建模板"
-            GlobalChoiceBox {
+            XCComboBox {
                 id: templateChoice
+                objectName: "projectTemplateChoice"
                 anchors.fill: parent
                 options: root.templateOptions
                 onValueActivated: function(value) {
+                    templateChoice.value = value
                     versionChoice.options = root.versionsForTemplate(value)
-                    versionChoice.currentValue = versionChoice.options.length
+                    versionChoice.value = versionChoice.options.length
                             ? String(versionChoice.options[0].value) : ""
                     customVersion.text = ""
                     root.validationMessage = ""
@@ -150,10 +152,11 @@ PopupFrame {
 
         FormField {
             label: "目标版本"
-            GlobalChoiceBox {
+            XCComboBox {
                 id: versionChoice
+                objectName: "projectVersionChoice"
                 anchors.fill: parent
-                onValueActivated: { customVersion.text = ""; root.validationMessage = "" }
+                onValueActivated: function(value) { versionChoice.value = value; customVersion.text = ""; root.validationMessage = "" }
             }
         }
     }

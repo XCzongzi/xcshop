@@ -69,7 +69,7 @@ qt_add_qml_module(appxcshop
 
 
         qml/components/base/ActionButton.qml
-        qml/components/base/ChoiceBox.qml
+        qml/components/base/XCComboBox.qml
         qml/components/base/ElementSelectionBase.qml
         qml/components/base/ElementConnectionRow.qml
         qml/components/base/XCScrollBar.qml
@@ -119,7 +119,6 @@ qt_add_qml_module(appxcshop
         qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
-        qml/components/base/ComboBox.qml
         qml/components/base/BranchBar.qml
         qml/components/base/VariableTextField.qml
         qml/components/base/VariableTextArea.qml
@@ -152,7 +151,6 @@ qt_add_qml_module(appxcshop
         qml/pages/Controls/_Display/MinecraftTooltipPreview.qml
         qml/pages/Controls/_Display/DisplayPairEditor.qml
         qml/pages/Controls/_Display/DisplayTextEditor.qml
-        qml/pages/Controls/_Global/GlobalChoiceBox.qml
         qml/pages/Controls/_Global/ProjectBar.qml
         qml/pages/Controls/_Global/ShopBar.qml
         qml/pages/Controls/_Global/BuildBar.qml
@@ -274,7 +272,14 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
     set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml)
+    target_sources(appxcshop PRIVATE tests/UiTestInput.h)
+    target_link_libraries(appxcshop PRIVATE Qt6::Test)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml)
+    add_test(NAME dropdown_ui_smoke COMMAND appxcshop --dropdown-ui-smoke)
+    set_tests_properties(dropdown_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        FAIL_REGULAR_EXPRESSION "DROPDOWN_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 25)
     add_test(NAME shared_ui_smoke COMMAND appxcshop --shared-ui-smoke)
     set_tests_properties(shared_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"

@@ -24,8 +24,8 @@ Item {
         var filter = modelData.mode.filter || {
             kind: "none"
         };
-        filterKind.selected = Math.max(0, ["none", "quantity", "slot"].indexOf(filter.kind));
-        quantityMode.selected = Math.max(0, ["all", "less_than_all", "custom"].indexOf(filter.mode));
+        filterKind.value = ["none", "quantity", "slot"].indexOf(filter.kind) >= 0 ? filter.kind : "none";
+        quantityMode.value = ["all", "less_than_all", "custom"].indexOf(filter.mode) >= 0 ? filter.mode : "all";
         executeKind.selected = Math.max(0, ["grant_item", "command", "function"].indexOf(modelData.execute.kind));
         loadExecutionValue();
         revision++;
@@ -50,7 +50,7 @@ Item {
                     kind: "drop_item",
                     quantity: "single"
                 };
-                filterKind.selected = 0;
+                filterKind.value = "none";
                 dropQuantity.selected = 0;
                 root.changed();
             }
@@ -70,40 +70,44 @@ Item {
             width: parent.width
             spacing: 8
             z: 3
-            ComboBox {
+            XCComboBox {
                 id: filterKind
-                options: ["无筛选", "数量筛选", "栏位筛选"]
-                onClicked: {
-                    root.modelData.mode.filter = selected === 1 ? {
+                height: 32
+                options: [{value: "none", label: "无筛选"}, {value: "quantity", label: "数量筛选"}, {value: "slot", label: "栏位筛选"}]
+                onValueActivated: function(value) {
+                    filterKind.value = value;
+                    root.modelData.mode.filter = value === "quantity" ? {
                         kind: "quantity",
                         mode: "all"
-                    } : selected === 2 ? {
+                    } : value === "slot" ? {
                         kind: "slot",
                         slot: "0"
                     } : {
                         kind: "none"
                     };
-                    quantityMode.selected = 0;
+                    quantityMode.value = "all";
                     root.changed();
                 }
             }
-            ComboBox {
+            XCComboBox {
                 id: quantityMode
-                visible: filterKind.selected === 1
-                options: ["全部（左键）", "少于全部（右键）", "自定义"]
-                onClicked: {
+                height: 32
+                visible: filterKind.value === "quantity"
+                options: [{value: "all", label: "全部（左键）"}, {value: "less_than_all", label: "少于全部（右键）"}, {value: "custom", label: "自定义"}]
+                onValueActivated: function(value) {
+                    quantityMode.value = value;
                     root.modelData.mode.filter = {
                         kind: "quantity",
-                        mode: ["all", "less_than_all", "custom"][selected]
+                        mode: value
                     };
-                    if (selected === 2)
+                    if (value === "custom")
                         root.modelData.mode.filter.amount = "1";
                     root.changed();
                 }
             }
             XCTextField {
                 objectName: "triggerAmount"
-                visible: filterKind.selected === 1 && quantityMode.selected === 2
+                visible: filterKind.value === "quantity" && quantityMode.value === "custom"
                 width: Math.min(160, fields.width)
                 highlightMacros: true
                 placeholderText: "数量或 {{宏}}"
@@ -118,7 +122,7 @@ Item {
             }
             XCTextField {
                 objectName: "triggerSlot"
-                visible: filterKind.selected === 2
+                visible: filterKind.value === "slot"
                 width: Math.min(160, fields.width)
                 placeholderText: "栏位编号"
                 text: {
