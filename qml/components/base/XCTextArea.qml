@@ -2,13 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import xcshop
 
-
-
 TextArea{
     id: root
     height: 32
 
-    signal accepted()
+    signal accepted
     property bool highlightMacros: false
 
     wrapMode: TextEdit.Wrap
@@ -21,29 +19,11 @@ TextArea{
     bottomPadding: 8
     placeholderTextColor: Colors.changeA(Colors.banned, 0.78)
 
-    background: Rectangle {
-        color: root.activeFocus ? Colors.changeA(Colors.background, 0.72)
-                                : Colors.changeA(Colors.background, 0.50)
-        radius: 7
-        clip: true
-        border.width: 1
-        border.color: root.activeFocus ? Colors.changeA(Colors.border, 0.82)
-                                       : Colors.changeA(Colors.text, 0.10)
-
-        Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-        Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-
-        Rectangle{
-            visible: root.activeFocus
-            width: parent.width - 14
-            height: 2
-            x: 7
-            y: parent.height - height - 3
-            radius: 1
-            color: Colors.border
-        }
+    background: InputBackground {
+        focused: root.activeFocus
+        idleOpacity: 0.50
     }
-    
+
     font.family: "微软雅黑"
     font.pixelSize: 16
 
@@ -51,7 +31,6 @@ TextArea{
         target: root
         highlightMacros: root.highlightMacros
     }
-
 
     Keys.onPressed:event=>{
         if(event.key === Qt.Key_Return || event.key === Qt.Key_Enter){   //检测是否按下Enter

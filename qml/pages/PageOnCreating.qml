@@ -446,26 +446,15 @@ BasePage {
                     anchors.rightMargin: 18
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
-                    TextButton {
+                    ActionButton {
                         text: "取消"
-                        height: 34
-                        radius: 7
-                        textSize: 13
-                        widthBorderSize: 12
-                        buttonColor: Colors.changeA(Colors.pressed, 0.82)
                         onClicked: root.goBack()
                     }
-                    TextButton {
+                    ActionButton {
+                        primary: true
+
                         text: "创建项目"
                         enabled: root.canCreate
-                        height: 34
-                        radius: 7
-                        textSize: 13
-                        widthBorderSize: 12
-                        buttonColor: Colors.changeA(Colors.border, 0.72)
-                        firedColor: Colors.changeA(Colors.border, 0.90)
-                        pressedColor: Colors.border
-                        textColor: root.canCreate ? "#1b1b1b" : Colors.text
                         onClicked: root.createProject()
                     }
                 }

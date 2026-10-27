@@ -7,6 +7,11 @@ QtObject {
     property real offset: 0
     readonly property bool running: movement.running
     signal finished(int row)
+    function cancel() {
+        movement.stop()
+        index = -1
+        offset = 0
+    }
     function begin(row, extent) {
         if (running)
             return;

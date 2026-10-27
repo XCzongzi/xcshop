@@ -33,9 +33,9 @@ Rectangle{
 
     Rectangle{
         id: scroller
-        color: Colors.foreground
+        color: mouseArea.pressed ? Colors.border : Colors.changeA(Colors.banned, mouseArea.containsMouse ? 0.8 : 0.45)
         width: 8
-        //radius: 2
+        radius: 3
         height:Math.max(30,root.height/(root.content_height/root.height))
 
         MouseArea{
@@ -46,19 +46,6 @@ Rectangle{
             drag.minimumY: 0
             drag.maximumY: root.height - scroller.height
             hoverEnabled: true
-            onEntered: {
-                scroller.color = Qt.darker("white",1.2)
-            }
-            onExited: {
-                scroller.color = pressed ? "white" : Colors.foreground
-            }
-            onPressed: {
-                scroller.color = "white"
-            }
-            onReleased: {
-                scroller.color = containsMouse? Qt.darker("white",1.2) : Colors.foreground
-            }
-            onCanceled: scroller.color = Colors.foreground
         }
         Behavior on color {
             ColorAnimation {

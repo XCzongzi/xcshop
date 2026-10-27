@@ -9,7 +9,7 @@ ContentBar {
     property string projectLocation: ""
     property var templateOptions: []
 
-    signal editRequested()
+    signal editRequested
     signal revealRequested(string path)
 
     title: "当前项目"
@@ -46,33 +46,6 @@ ContentBar {
             columns: 5
             columnSpacing: 12
             rowSpacing: 6
-
-            component SummaryField: Item {
-                property alias label: labelText.xcText
-                property alias value: valueText.xcText
-                width: (summaryGrid.width - summaryGrid.columnSpacing * (summaryGrid.columns - 1)) / summaryGrid.columns
-                height: 39
-
-                XCText {
-                    id: labelText
-                    width: parent.width
-                    xcFontSize: 10
-                    boldFont: false
-                    onCenter: false
-                    textColor: Colors.changeA(Colors.text, 0.62)
-                }
-
-                XCText {
-                    id: valueText
-                    y: 16
-                    width: parent.width
-                    xcFontSize: 12
-                    boldFont: false
-                    onCenter: false
-                    elide: Text.ElideRight
-                    textColor: valueText.xcText === "未设置" ? Colors.banned : Colors.text
-                }
-            }
 
             SummaryField {
                 label: "项目名称"
@@ -140,18 +113,44 @@ ContentBar {
                 onClicked: root.revealRequested(root.projectLocation)
             }
 
-            TextButton {
+            ActionButton {
+                primary: true
+
                 text: "项目设置"
                 height: parent.height
                 radius: 6
                 textSize: 10
                 widthBorderSize: 9
-                buttonColor: Colors.changeA(Colors.border, 0.72)
-                firedColor: Colors.changeA(Colors.border, 0.90)
-                pressedColor: Colors.border
-                textColor: "#1b1b1b"
+
                 onClicked: root.editRequested()
             }
+        }
+    }
+
+    component SummaryField: Item {
+        property alias label: labelText.xcText
+        property alias value: valueText.xcText
+        width: (summaryGrid.width - summaryGrid.columnSpacing * (summaryGrid.columns - 1)) / summaryGrid.columns
+        height: 39
+
+        XCText {
+            id: labelText
+            width: parent.width
+            xcFontSize: 10
+            boldFont: false
+            onCenter: false
+            textColor: Colors.changeA(Colors.text, 0.62)
+        }
+
+        XCText {
+            id: valueText
+            y: 16
+            width: parent.width
+            xcFontSize: 12
+            boldFont: false
+            onCenter: false
+            elide: Text.ElideRight
+            textColor: valueText.xcText === "未设置" ? Colors.banned : Colors.text
         }
     }
 }

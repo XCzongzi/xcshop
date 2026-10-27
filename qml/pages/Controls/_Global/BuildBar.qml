@@ -17,8 +17,8 @@ ContentBar {
     property string consoleText: ""
     property var problems: []
 
-    signal startRequested()
-    signal cancelRequested()
+    signal startRequested
+    signal cancelRequested
     signal problemActivated(var problem)
 
     title: "构建"
@@ -98,24 +98,18 @@ ContentBar {
                 }
             }
 
-            TextButton {
+            ActionButton {
                 id: actionButton
+                primary: !root.building
+                destructive: root.building
                 anchors.right: parent.right
                 anchors.top: parent.top
                 width: 104
                 height: 36
-                radius: 7
                 text: root.building ? "取消构建" : "开始构建"
                 textSize: 12
                 enabled: root.building || (root.builderAvailable && root.canBuild)
-                buttonColor: root.building
-                             ? Colors.changeA(Colors.error, 0.18)
-                             : Colors.changeA(Colors.border, 0.72)
-                firedColor: root.building
-                            ? Colors.changeA(Colors.error, 0.28)
-                            : Colors.changeA(Colors.border, 0.90)
-                pressedColor: root.building ? Colors.changeA(Colors.error, 0.38) : Colors.border
-                textColor: root.building ? Colors.text : "#1b1b1b"
+
                 onClicked: {
                     if (root.building)
                         root.cancelRequested()
@@ -184,26 +178,15 @@ ContentBar {
                         rightPadding: consoleScrollBar.width + 16
                     }
 
-                    Controls.ScrollBar.vertical: Controls.ScrollBar {
+                    Controls.ScrollBar.vertical: XCScrollBar {
                         id: consoleScrollBar
                         objectName: "buildConsoleScrollBar"
                         x: consoleViewport.width - width - 4
                         y: 4
                         width: 8
                         height: Math.max(0, consoleViewport.height - 8)
-                        padding: 0
                         hoverEnabled: true
-                        policy: Controls.ScrollBar.AsNeeded
                         visible: consoleViewport.height > 0 && consoleViewport.contentHeight > consoleViewport.height
-                        minimumSize: height > 0 ? Math.min(1, 30 / height) : 1
-                        contentItem: Rectangle {
-                            implicitWidth: 8
-                            radius: 4
-                            color: consoleScrollBar.pressed ? Colors.border
-                                   : Colors.changeA(Colors.banned, consoleScrollBar.hovered ? 0.8 : 0.45)
-                            Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-                        }
-                        background: Item {}
                     }
 
                     WheelHandler {

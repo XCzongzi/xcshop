@@ -21,7 +21,17 @@ Item {
     height: parent ? parent.height - 16 : 0
     y: 16
 
+    property bool connectionDeleting: false
+    property string removalGroupId: ""
     ListModel { id: connectionModel }
+    AnimatedListRemoval {
+        id: connectionRemoval
+        onFinished: function (row) {
+            if (root.uiPage && root.groupId === root.removalGroupId)
+                root.uiPage.removeNestedGroupLayoutInputConnection(root.removalGroupId, row)
+            root.connectionDeleting = false
+        }
+    }
 
     function inputData() {
         return root.hasSelectedGroup ? root.selectedGroup.layoutInput : null
@@ -48,6 +58,9 @@ Item {
     }
 
     function refresh() {
+        // Refresh can destroy the sliding row before it emits deleteClicked.
+        connectionRemoval.cancel()
+        connectionDeleting = false
         root.rebuildModel()
         Qt.callLater(root.syncEditors)
     }
@@ -79,6 +92,8 @@ Item {
 
         Column {
             id: inputColumn
+            enabled: !root.connectionDeleting
+            height: implicitHeight - connectionRemoval.offset
             width: inputFlickable.width
             spacing: 10
 
@@ -231,6 +246,7 @@ Item {
 
                 delegate: LayoutInputConnection {
                     required property var model
+                    objectName: "layoutConnectionRow" + index
 
                     width: inputColumn.width
                     index: model.index
@@ -238,26 +254,15 @@ Item {
                     modelData: {
                         var input = root.inputData()
                         return input && Array.isArray(input.connections)
-                                && model.index < input.connections.length
+                                && model.index >= 0 && model.index < input.connections.length
                                 ? input.connections[model.index] : ({})
                     }
-                    onDeleteClicked: {
-                        if (model.index < connectionModel.count - 1) {
-                            connectionRepeater.itemAt(model.index + 1).nearest = true
-                            for (var index = model.index + 1;
-                                 index < connectionModel.count; ++index) {
-                                connectionRepeater.itemAt(index).afterDeleting(height,
-                                                                             model.index)
-                            }
-                        } else {
-                            root.uiPage.removeNestedGroupLayoutInputConnection(
-                                        root.groupId, model.index)
-                        }
+                    listShift: connectionRemoval.shiftFor(index)
+                    onDeletionStarted: {
+                        root.removalGroupId = root.groupId
+                        root.connectionDeleting = true
                     }
-                    onDeleteAnimFinished: function(currentIndex) {
-                        root.uiPage.removeNestedGroupLayoutInputConnection(
-                                    root.groupId, currentIndex)
-                    }
+                    onDeleteClicked: connectionRemoval.begin(index, height + inputColumn.spacing)
                     onUpdateData: {
                         root.uiPage.updateNestedGroupLayoutInputConnection(
                                     root.groupId, model.index, modelData.element,
@@ -271,6 +276,9 @@ Item {
                 width: parent.width
                 height: 40
                 radius: 8
+                transform: Translate {
+                    y: -connectionRemoval.offset
+                }
                 text: "＋ 新增匹配"
                 textSize: 13
                 boldFont: false

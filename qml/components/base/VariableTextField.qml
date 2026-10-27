@@ -5,8 +5,9 @@ import "../../../js/syntax/ItemSyntaxParser.js" as ItemSyntaxParser
 import "../../../js/syntax/mode-1.js" as SyntaxMode1
 import "../../../js/syntax/mode-2.js" as SyntaxMode2
 
-Item {
+ResizableEditor {
     id: root
+    input: textField
 
     // 0: 禁用语法高亮, 1: 旧版本, 2: 新版堆叠组件
     property int syntaxHighlightMode: 0
@@ -15,12 +16,8 @@ Item {
         2: SyntaxMode2
     })
     property int syntaxHighlighterRevision: 0
-    property bool highlightMacros: false
     property string placeholderText
-    property string content
-    readonly property string inputContent: textField.text
     readonly property bool syntaxError: isSyntaxError(textField.text)
-    readonly property bool resizing: resizeAnimation.running
 
     // 语法覆盖层独立适配浅/深背景：浅色使用更深的墨色，深色使用高亮但不过曝的粉彩。
     readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126
@@ -35,27 +32,6 @@ Item {
     readonly property string punctuationColor: lightSyntaxTheme ? "#4b5b6a" : "#e2e8f0"
     readonly property string booleanColor: lightSyntaxTheme ? "#08745f" : "#99f6e4"
     readonly property string invalidColor: lightSyntaxTheme ? "#bd1f2d" : "#ff8a93"
-
-    signal accepted()
-
-    Behavior on height {
-        NumberAnimation {
-            id: resizeAnimation
-            duration: 120 / Global.animationSpeed
-            easing.type: Easing.InOutQuad
-        }
-    }
-
-    function getContent() {
-        return textField.text
-    }
-
-    // Lets popup editors update both the public value and the actual input
-    // immediately, including when the field has not lost focus yet.
-    function setContent(value) {
-        content = value === undefined || value === null ? "" : String(value)
-        textField.text = content
-    }
 
     function syntaxPalette() {
         return {
@@ -103,8 +79,6 @@ Item {
         }
     }
 
-    onContentChanged: textField.text = content
-
     Text {
         id: syntaxOverlay
         visible: root.syntaxHighlightMode !== 0 && textField.text.length > 0
@@ -138,36 +112,14 @@ Item {
         z: 0
         isWrap: true
         width: parent.width
-        height: parent.height - 35
+        height: root.inputHeight
         placeholderText: root.placeholderText
         color: root.syntaxHighlightMode === 0 ? Colors.text : Colors.transparent
-        onEditingFinished: {
-            root.content = text
-            root.accepted()
-        }
+        onEditingFinished: root.commit()
     }
 
     MacroTextOverlay {
         target: textField
         highlightMacros: root.highlightMacros
-    }
-
-    Row {
-        y: textField.height + 3
-        x: parent.width - width
-        ImageButton {
-            btnSize: 32
-            imgSize: 24
-            btnRadius: 3
-            imageSource: "qrc:/assets/gui/controls/expand_up.png"
-            onClicked: root.height = Math.max(root.height - 128, 128)
-        }
-        ImageButton {
-            btnSize: 32
-            imgSize: 24
-            btnRadius: 3
-            imageSource: "qrc:/assets/gui/controls/expand_down.png"
-            onClicked: root.height = root.height + 128
-        }
     }
 }

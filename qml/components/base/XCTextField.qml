@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import xcshop
 
-
-
 TextField{
     id: root
     height: 32
@@ -22,29 +20,11 @@ TextField{
     bottomPadding: root.isWrap ? 8 : 0
     placeholderTextColor: Colors.changeA(Colors.banned, 0.78)
 
-    background: Rectangle {
-        color: root.activeFocus ? Colors.changeA(Colors.background, 0.72)
-                                : Colors.changeA(Colors.background, root.isWrap ? 0.50 : 0.36)
-        radius: 7
-        clip: true
-        border.width: 1
-        border.color: root.activeFocus ? Colors.changeA(Colors.border, 0.82)
-                                       : Colors.changeA(Colors.text, 0.10)
-
-        Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-        Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
-
-        Rectangle{
-            visible: root.activeFocus
-            width: parent.width - 14
-            height: 2
-            x: 7
-            y: parent.height - height - 3
-            radius: 1
-            color: Colors.border
-        }
+    background: InputBackground {
+        focused: root.activeFocus
+        idleOpacity: root.isWrap ? 0.50 : 0.36
     }
-    
+
     font.family: "Consolas"
     font.pixelSize: 16
 

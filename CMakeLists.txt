@@ -45,6 +45,8 @@ set_source_files_properties(appxcshop
 
 set_source_files_properties(
     js/syntax/ItemSyntaxHighlighter.js
+    js/ThemeCatalog.js
+    js/MinecraftTextColors.js
     js/WorkspaceSchema.js
     js/DisplayFormatting.js
     js/syntax/MacroHighlighter.js
@@ -65,6 +67,17 @@ qt_add_qml_module(appxcshop
         qml/Global.qml
         qml/SignalBus.qml
 
+
+        qml/components/base/ActionButton.qml
+        qml/components/base/ChoiceBox.qml
+        qml/components/base/ElementSelectionBase.qml
+        qml/components/base/ElementConnectionRow.qml
+        qml/components/base/XCScrollBar.qml
+        qml/components/base/XCScrollView.qml
+        qml/components/base/reusable/InputBackground.qml
+        qml/components/base/reusable/ResizableEditor.qml
+        qml/components/popup/PopupFrame.qml
+        qml/components/settings/SettingsSection.qml
 
         qml/components/TitleBar.qml
         qml/components/Border.qml
@@ -180,6 +193,8 @@ qt_add_qml_module(appxcshop
 
         assets/js/request.js
         js/syntax/ItemSyntaxHighlighter.js
+        js/ThemeCatalog.js
+        js/MinecraftTextColors.js
         js/WorkspaceSchema.js
         js/DisplayFormatting.js
         js/syntax/MacroHighlighter.js
@@ -259,7 +274,12 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
     set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml)
+    add_test(NAME shared_ui_smoke COMMAND appxcshop --shared-ui-smoke)
+    set_tests_properties(shared_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        FAIL_REGULAR_EXPRESSION "SHARED_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 20)
     add_test(NAME operations_ui_smoke COMMAND appxcshop --operations-ui-smoke)
     set_tests_properties(operations_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"

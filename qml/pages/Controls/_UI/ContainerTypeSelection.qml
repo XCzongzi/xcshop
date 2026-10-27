@@ -11,7 +11,7 @@ Item {
     property string selectedContainerType: ""
 
     signal confirmed(string containerTypeName)
-    signal canceled()
+    signal canceled
 
     ContentSurface {
         anchors.fill: parent
@@ -48,18 +48,16 @@ Item {
                 onClicked: root.canceled()
             }
 
-            TextButton {
+            ActionButton {
                 id: confirmButton
+                primary: true
                 enabled: root.selectedContainerType.length > 0
                 height: 38
                 radius: 8
                 text: "选择该界面"
                 textSize: 14
                 widthBorderSize: 16
-                buttonColor: Colors.changeA(Colors.border, 0.72)
-                firedColor: Colors.changeA(Colors.border, 0.88)
-                pressedColor: Colors.border
-                textColor: "#1b1b1b"
+
                 onClicked: root.confirmed(root.selectedContainerType)
             }
         }

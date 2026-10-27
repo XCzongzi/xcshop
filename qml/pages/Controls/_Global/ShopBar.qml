@@ -202,15 +202,15 @@ ContentBar {
                         onClicked: root.editRequested(shopRow.index)
                     }
 
-                    TextButton {
+                    ActionButton {
+                        destructive: true
+
                         width: 43
                         height: 28
                         radius: 6
                         text: "删除"
                         textSize: 10
-                        buttonColor: Colors.changeA(Colors.error, 0.14)
-                        firedColor: Colors.changeA(Colors.error, 0.25)
-                        pressedColor: Colors.changeA(Colors.error, 0.36)
+
                         onClicked: root.deleteRequested(shopRow.index)
                     }
                 }
@@ -287,17 +287,14 @@ ContentBar {
                     onValueActivated: root.feedbackMessage = ""
                 }
 
-                TextButton {
+                ActionButton {
                     id: addButton
+                    primary: true
                     width: 48
                     height: parent.height
-                    radius: 7
                     text: "注册"
                     textSize: 10
-                    buttonColor: Colors.changeA(Colors.border, 0.72)
-                    firedColor: Colors.changeA(Colors.border, 0.90)
-                    pressedColor: Colors.border
-                    textColor: "#1b1b1b"
+
                     onClicked: root.submitNewShop()
                 }
             }

@@ -92,7 +92,9 @@ QtObject{
         { "value": "chest", "label": "箱子（27 格）", "layoutId": "generic_9x3" },
         { "value": "trapped_chest", "label": "陷阱箱（27 格）", "layoutId": "generic_9x3" },
         { "value": "ender_chest", "label": "末影箱（27 格）", "layoutId": "generic_9x3" },
-    ].concat(shulkerBoxOptions, [
+    ].concat(shulkerBoxOptions.map(function(option) {
+        return Object.assign({}, option, { "groupLabel": "潜影盒（27 格）" })
+    }), [
         { "value": "dispenser", "label": "发射器（9 格）", "layoutId": "generic_3x3" },
         { "value": "dropper", "label": "投掷器（9 格）", "layoutId": "generic_3x3" },
         { "value": "hopper", "label": "漏斗（5 格）", "layoutId": "hopper_5" },

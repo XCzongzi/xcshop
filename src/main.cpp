@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 #ifdef XCSHOP_UI_TESTS
     std::unique_ptr<QTemporaryDir> smokeDirectory;
     if (app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
-        || app.arguments().contains("--operations-ui-smoke")) {
+        || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")) {
 #ifdef Q_OS_WIN
         // The offscreen platform does not enumerate Windows system fonts.
         for (const auto &name : {"msyh.ttc", "segoeui.ttf", "consola.ttf"})
@@ -57,7 +57,9 @@ int main(int argc, char *argv[])
         smokeDirectory = std::make_unique<QTemporaryDir>(appDir + "/ui-smoke-XXXXXX");
         engine.rootContext()->setContextProperty("SMOKE_DIR", smokeDirectory->path());
         engine.rootContext()->setContextProperty("SMOKE_OUTPUT_DIR", appDir);
-        if (app.arguments().contains("--operations-ui-smoke")) {
+        if (app.arguments().contains("--shared-ui-smoke")) {
+            engine.load(QUrl("qrc:/tests/SharedUiSmoke.qml"));
+        } else if (app.arguments().contains("--operations-ui-smoke")) {
             engine.load(QUrl("qrc:/tests/OperationsUiSmoke.qml"));
         } else if (app.arguments().contains("--minecraft-ui-smoke")) {
             engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());

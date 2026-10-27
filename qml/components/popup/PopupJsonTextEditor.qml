@@ -2,42 +2,23 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import xcshop
+import "../../../js/MinecraftTextColors.js" as MinecraftTextColors
 
 // Visual editor for Minecraft JSON text components. It intentionally exports
 // ordinary { text, color, ... , extra } components so the result can be used
 // directly in tellraw/title style fields.
-Item {
+PopupFrame {
     id: root
-    anchors.fill: parent
 
-    property string title: "编辑 JSON 文本"
+    title: "编辑 JSON 文本"
     property string jsonText: ""
     property string parseError: ""
-    property var colorOptions: [
-        { "name": "黑", "value": "black", "preview": "#000000" },
-        { "name": "深蓝", "value": "dark_blue", "preview": "#0000aa" },
-        { "name": "深绿", "value": "dark_green", "preview": "#00aa00" },
-        { "name": "深青", "value": "dark_aqua", "preview": "#00aaaa" },
-        { "name": "深红", "value": "dark_red", "preview": "#aa0000" },
-        { "name": "深紫", "value": "dark_purple", "preview": "#aa00aa" },
-        { "name": "金", "value": "gold", "preview": "#ffaa00" },
-        { "name": "灰", "value": "gray", "preview": "#aaaaaa" },
-        { "name": "深灰", "value": "dark_gray", "preview": "#555555" },
-        { "name": "蓝", "value": "blue", "preview": "#5555ff" },
-        { "name": "绿", "value": "green", "preview": "#55ff55" },
-        { "name": "青", "value": "aqua", "preview": "#55ffff" },
-        { "name": "红", "value": "red", "preview": "#ff5555" },
-        { "name": "浅紫", "value": "light_purple", "preview": "#ff55ff" },
-        { "name": "黄", "value": "yellow", "preview": "#ffff55" },
-        { "name": "白", "value": "white", "preview": "#ffffff" }
-    ]
-
-    signal closed(var result)
+    readonly property var colorOptions: MinecraftTextColors.colors
 
     ListModel { id: segmentModel }
 
-    readonly property int dialogWidth: Math.min(1040, Math.max(660, width - 48))
-    readonly property int dialogHeight: Math.min(720, Math.max(520, height - 48))
+    dialogWidth: 1040
+    dialogHeight: 720
 
     function defaultSegment(text) {
         return {
@@ -279,224 +260,137 @@ Item {
         return result
     }
 
-    function open() {
-        scrim.opacity = 0
-        dialog.opacity = 0
-        dialog.scale = 0.97
+    onAboutToOpen: {
         loadJson(jsonText)
-        openAnimation.restart()
-    }
-
-    function close(result) {
-        if (closeAnimation.running)
-            return
-        root.closeResult = result
-        closeAnimation.restart()
-    }
-
-    property var closeResult: null
-
-    Rectangle {
-        id: scrim
-        anchors.fill: parent
-        color: "#000000"
-        opacity: 0
-        MouseArea { anchors.fill: parent; hoverEnabled: true }
     }
 
     Rectangle {
-        id: dialog
-        width: root.dialogWidth
-        height: root.dialogHeight
-        anchors.centerIn: parent
-        radius: 15
-        color: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, 0.99)
-        border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.14)
-        transformOrigin: Item.Center
-        opacity: 0
+        x: 24; y: 74; width: parent.width * 0.61 - 34; height: parent.height - 144
+        radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
+        border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
 
-        layer.enabled: true
-        layer.effect: XCShadow { shadowColor: "#a8000000"; shadowBlur: 0.85; shadowVerticalOffset: 10 }
+        XCText { x: 14; y: 12; xcText: "文本片段"; onCenter: false; xcFontSize: 15 }
+        TextButton {
+            anchors.right: parent.right; anchors.rightMargin: 10; y: 8
+            text: "+ 添加片段"; height: 27; radius: 6; textSize: 12; boldFont: false; widthBorderSize: 8
+            buttonColor: Colors.changeA(Colors.border, 0.24); firedColor: Colors.changeA(Colors.border, 0.40); pressedColor: Colors.changeA(Colors.border, 0.55)
+            onClicked: root.addSegment(segmentModel.count - 1)
+        }
+        XCText {
+            x: 14; y: 37; width: parent.width - 28; xcText: root.parseError
+            visible: root.parseError.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 11; boldFont: false; textColor: Colors.error
+        }
 
-        Rectangle { width: parent.width; height: 5; radius: 15; color: Colors.border }
+        ListView {
+            id: segmentList
+            x: 8; y: root.parseError.length ? 72 : 48
+            width: parent.width - 34; height: parent.height - y - 8
+            clip: true; spacing: 8; model: segmentModel
+            Controls.ScrollBar.vertical: XCScrollBar {}
+            delegate: Rectangle {
+                id: segmentCard
+                required property int index
+                required property var model
+                width: segmentList.width
+                height: 166
+                radius: 8
+                color: Colors.changeA(Colors.background, 0.42)
+                border.width: 1
+                border.color: Colors.changeA(Colors.text, 0.10)
 
-        XCText { x: 24; y: 22; xcText: root.title; onCenter: false; xcFontSize: 21 }
-        Rectangle { x: 24; y: 58; width: parent.width - 48; height: 1; color: Colors.changeA(Colors.text, 0.10) }
+                XCText { x: 10; y: 9; xcText: "片段 " + (segmentCard.index + 1); onCenter: false; xcFontSize: 12; textColor: Colors.banned; boldFont: false }
+                ActionButton {
+                    destructive: true
 
-        Rectangle {
-            x: 24; y: 74; width: parent.width * 0.61 - 34; height: parent.height - 144
-            radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
-            border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
+                    x: parent.width - width - 8; y: 6; height: 24; radius: 5; text: "删除"; textSize: 11; boldFont: false; widthBorderSize: 7
+                    enabled: segmentModel.count > 1
+                    onClicked: root.removeSegment(segmentCard.index)
+                }
 
-            XCText { x: 14; y: 12; xcText: "文本片段"; onCenter: false; xcFontSize: 15 }
-            TextButton {
-                anchors.right: parent.right; anchors.rightMargin: 10; y: 8
-                text: "+ 添加片段"; height: 27; radius: 6; textSize: 12; boldFont: false; widthBorderSize: 8
-                buttonColor: Colors.changeA(Colors.border, 0.24); firedColor: Colors.changeA(Colors.border, 0.40); pressedColor: Colors.changeA(Colors.border, 0.55)
-                onClicked: root.addSegment(segmentModel.count - 1)
-            }
-            XCText {
-                x: 14; y: 37; width: parent.width - 28; xcText: root.parseError
-                visible: root.parseError.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 11; boldFont: false; textColor: Colors.error
-            }
+                XCTextField {
+                    id: segmentTextInput
+                    x: 10; y: 34; width: parent.width - 20; height: 32
+                    text: root.textForEditor(segmentCard.model.text)
+                    placeholderText: "输入文字"
+                    onTextEdited: root.updateSegment(segmentCard.index, "text", root.textFromEditor(text))
+                }
 
-            ListView {
-                id: segmentList
-                x: 8; y: root.parseError.length ? 72 : 48
-                width: parent.width - 34; height: parent.height - y - 8
-                clip: true; spacing: 8; model: segmentModel
-                delegate: Rectangle {
-                    id: segmentCard
-                    required property int index
-                    required property var model
-                    width: segmentList.width
-                    height: 166
-                    radius: 8
-                    color: Colors.changeA(Colors.background, 0.42)
-                    border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.10)
-
-                    XCText { x: 10; y: 9; xcText: "片段 " + (segmentCard.index + 1); onCenter: false; xcFontSize: 12; textColor: Colors.banned; boldFont: false }
-                    TextButton {
-                        x: parent.width - width - 8; y: 6; height: 24; radius: 5; text: "删除"; textSize: 11; boldFont: false; widthBorderSize: 7
-                        enabled: segmentModel.count > 1; buttonColor: Colors.changeA(Colors.error, 0.18); firedColor: Colors.changeA(Colors.error, 0.32); pressedColor: Colors.changeA(Colors.error, 0.48)
-                        onClicked: root.removeSegment(segmentCard.index)
-                    }
-
-                    XCTextField {
-                        id: segmentTextInput
-                        x: 10; y: 34; width: parent.width - 20; height: 32
-                        text: root.textForEditor(segmentCard.model.text)
-                        placeholderText: "输入文字"
-                        onTextEdited: root.updateSegment(segmentCard.index, "text", root.textFromEditor(text))
-                    }
-
-                    TextStyleEditor {
-                        id: segmentStyleEditor
-                        x: 10
-                        y: 76
-                        colorOptions: root.colorOptions
-                        color: segmentCard.model.color
-                        bold: !!segmentCard.model.bold
-                        italic: !!segmentCard.model.italic
-                        underlined: !!segmentCard.model.underlined
-                        strikethrough: !!segmentCard.model.strikethrough
-                        obfuscated: !!segmentCard.model.obfuscated
-                        onPropertyEdited: {
-                            root.updateSegment(segmentCard.index, "color", segmentStyleEditor.color)
-                            root.updateSegment(segmentCard.index, "bold", segmentStyleEditor.bold)
-                            root.updateSegment(segmentCard.index, "italic", segmentStyleEditor.italic)
-                            root.updateSegment(segmentCard.index, "underlined", segmentStyleEditor.underlined)
-                            root.updateSegment(segmentCard.index, "strikethrough", segmentStyleEditor.strikethrough)
-                            root.updateSegment(segmentCard.index, "obfuscated", segmentStyleEditor.obfuscated)
-                        }
-                    }
-                    Row {
-                        anchors.right: parent.right; anchors.rightMargin: 9; y: 134; spacing: 4
-                        TextButton { text: "↑"; height: 23; radius: 5; textSize: 12; widthBorderSize: 7; enabled: segmentCard.index > 0; buttonColor: Colors.pressed; onClicked: root.moveSegment(segmentCard.index, -1) }
-                        TextButton { text: "↓"; height: 23; radius: 5; textSize: 12; widthBorderSize: 7; enabled: segmentCard.index < segmentModel.count - 1; buttonColor: Colors.pressed; onClicked: root.moveSegment(segmentCard.index, 1) }
-                        TextButton { text: "+"; height: 23; radius: 5; textSize: 13; widthBorderSize: 7; buttonColor: Colors.pressed; onClicked: root.addSegment(segmentCard.index) }
+                TextStyleEditor {
+                    id: segmentStyleEditor
+                    x: 10
+                    y: 76
+                    colorOptions: root.colorOptions
+                    color: segmentCard.model.color
+                    bold: !!segmentCard.model.bold
+                    italic: !!segmentCard.model.italic
+                    underlined: !!segmentCard.model.underlined
+                    strikethrough: !!segmentCard.model.strikethrough
+                    obfuscated: !!segmentCard.model.obfuscated
+                    onPropertyEdited: {
+                        root.updateSegment(segmentCard.index, "color", segmentStyleEditor.color)
+                        root.updateSegment(segmentCard.index, "bold", segmentStyleEditor.bold)
+                        root.updateSegment(segmentCard.index, "italic", segmentStyleEditor.italic)
+                        root.updateSegment(segmentCard.index, "underlined", segmentStyleEditor.underlined)
+                        root.updateSegment(segmentCard.index, "strikethrough", segmentStyleEditor.strikethrough)
+                        root.updateSegment(segmentCard.index, "obfuscated", segmentStyleEditor.obfuscated)
                     }
                 }
-            }
-            ScrollBar {
-                id: segmentScrollBar
-                x: segmentList.x + segmentList.width + 8
-                y: segmentList.y
-                height: segmentList.height
-                content_height: segmentList.contentHeight
-                layout_determines: segmentModel.count
-                animatePosition: false
-                z: 5
-                onHeight_outputChanged: {
-                    if (Math.abs(segmentList.contentY - height_output) > 0.5)
-                        segmentList.contentY = height_output
-                }
-            }
-            Connections {
-                target: segmentList
-                function onContentYChanged() {
-                    segmentScrollBar.setContentOffset(segmentList.contentY)
+                Row {
+                    anchors.right: parent.right; anchors.rightMargin: 9; y: 134; spacing: 4
+                    TextButton { text: "↑"; height: 23; radius: 5; textSize: 12; widthBorderSize: 7; enabled: segmentCard.index > 0; buttonColor: Colors.pressed; onClicked: root.moveSegment(segmentCard.index, -1) }
+                    TextButton { text: "↓"; height: 23; radius: 5; textSize: 12; widthBorderSize: 7; enabled: segmentCard.index < segmentModel.count - 1; buttonColor: Colors.pressed; onClicked: root.moveSegment(segmentCard.index, 1) }
+                    TextButton { text: "+"; height: 23; radius: 5; textSize: 13; widthBorderSize: 7; buttonColor: Colors.pressed; onClicked: root.addSegment(segmentCard.index) }
                 }
             }
         }
+    }
 
+    Rectangle {
+        x: parent.width * 0.61; y: 74; width: parent.width * 0.39 - 24; height: parent.height - 144
+        radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
+        border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
+
+        XCText { x: 14; y: 12; xcText: "效果预览"; onCenter: false; xcFontSize: 15 }
         Rectangle {
-            x: parent.width * 0.61; y: 74; width: parent.width * 0.39 - 24; height: parent.height - 144
-            radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
-            border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
-
-            XCText { x: 14; y: 12; xcText: "效果预览"; onCenter: false; xcFontSize: 15 }
-            Rectangle {
-                x: 12; y: 42; width: parent.width - 24; height: 112; radius: 7
-                color: "#24262e"; border.width: 1; border.color: Colors.changeA(Colors.text, 0.12)
-                Flickable {
-                    id: previewFlickable
-                    anchors.fill: parent; anchors.margins: 10
-                    contentWidth: width; contentHeight: previewText.height
-                    clip: true
-                    Text {
-                        id: previewText
-                        width: previewFlickable.width
-                        text: root.previewRichText()
-                        textFormat: Text.RichText
-                        wrapMode: Text.Wrap
-                        color: "#ffffff"
-                        font.pixelSize: 16
-                        font.family: "Microsoft YaHei"
-                    }
+            x: 12; y: 42; width: parent.width - 24; height: 112; radius: 7
+            color: "#24262e"; border.width: 1; border.color: Colors.changeA(Colors.text, 0.12)
+            Flickable {
+                id: previewFlickable
+                anchors.fill: parent; anchors.margins: 10
+                contentWidth: width; contentHeight: previewText.height
+                clip: true
+                Text {
+                    id: previewText
+                    width: previewFlickable.width
+                    text: root.previewRichText()
+                    textFormat: Text.RichText
+                    wrapMode: Text.Wrap
+                    color: "#ffffff"
+                    font.pixelSize: 16
+                    font.family: "Microsoft YaHei"
                 }
             }
-            XCText { x: 14; y: 170; xcText: "导出的 JSON"; onCenter: false; xcFontSize: 14 }
-            Controls.TextArea {
+        }
+        XCText { x: 14; y: 170; xcText: "导出的 JSON"; onCenter: false; xcFontSize: 14 }
+        XCScrollView {
+            id: jsonPreviewViewport
+            x: 12; y: 198; width: parent.width - 24
+            height: Math.max(0, parent.height - y - 12)
+            XCTextArea {
                 id: jsonPreview
-                x: 12; y: 198; width: parent.width - 38; height: parent.height - y - 12
+                height: Math.max(jsonPreviewViewport.availableHeight, implicitHeight)
                 readOnly: true; selectByMouse: true; wrapMode: TextEdit.WrapAnywhere
                 text: root.exportedJson()
-                color: Colors.text; font.family: "Consolas"; font.pixelSize: 12
-                background: Rectangle { radius: 7; color: Colors.changeA(Colors.background, 0.55); border.width: 1; border.color: Colors.changeA(Colors.text, 0.10) }
-            }
-            ScrollBar {
-                id: jsonPreviewScrollBar
-                x: jsonPreview.x + jsonPreview.width + 8
-                y: jsonPreview.y + 3
-                height: jsonPreview.height - 6
-                content_height: jsonPreview.contentHeight
-                layout_determines: segmentModel.count
-                animatePosition: false
-                z: 3
-                onHeight_outputChanged: {
-                    if (Math.abs(jsonPreview.contentY - height_output) > 0.5)
-                        jsonPreview.contentY = height_output
-                }
-            }
-            Connections {
-                target: jsonPreview
-                function onContentYChanged() {
-                    jsonPreviewScrollBar.setContentOffset(jsonPreview.contentY)
-                }
+                font.family: "Consolas"; font.pixelSize: 12
             }
         }
-
-        Row {
-            anchors.right: parent.right; anchors.rightMargin: 22; anchors.bottom: parent.bottom; anchors.bottomMargin: 17; spacing: 8
-            TextButton { text: "取消"; height: 34; radius: 7; textSize: 13; widthBorderSize: 12; buttonColor: Colors.pressed; onClicked: root.close(null) }
-            TextButton { text: "应用到文本框"; height: 34; radius: 7; textSize: 13; widthBorderSize: 12; buttonColor: Colors.changeA(Colors.border, 0.72); firedColor: Colors.changeA(Colors.border, 0.88); pressedColor: Colors.border; textColor: "#1b1b1b"; onClicked: root.close({ "jsonText": root.exportedJson() }) }
-        }
     }
-
-    ParallelAnimation {
-        id: openAnimation
-        PropertyAnimation { target: scrim; property: "opacity"; to: 0.46; duration: 180 / Global.animationSpeed; easing.type: Easing.OutCubic }
-        PropertyAnimation { target: dialog; property: "opacity"; to: 1; duration: 180 / Global.animationSpeed; easing.type: Easing.OutCubic }
-        PropertyAnimation { target: dialog; property: "scale"; to: 1; duration: 220 / Global.animationSpeed; easing.type: Easing.OutBack }
-    }
-    ParallelAnimation {
-        id: closeAnimation
-        PropertyAnimation { target: scrim; property: "opacity"; to: 0; duration: 150 / Global.animationSpeed; easing.type: Easing.InCubic }
-        PropertyAnimation { target: dialog; property: "opacity"; to: 0; duration: 130 / Global.animationSpeed; easing.type: Easing.InCubic }
-        PropertyAnimation { target: dialog; property: "scale"; to: 0.97; duration: 150 / Global.animationSpeed; easing.type: Easing.InCubic }
-        onFinished: root.closed(root.closeResult)
-    }
+    actions: [
+        ActionButton { text: "取消"; widthBorderSize: 12
+            onClicked: root.close(null) },
+        ActionButton {
+            primary: true
+            text: "应用到文本框"; widthBorderSize: 12
+            onClicked: root.close({ "jsonText": root.exportedJson() }) }
+    ]
 }
