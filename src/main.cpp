@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("UiInput", &uiTestInput);
     if (app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
         || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")
-        || app.arguments().contains("--dropdown-ui-smoke")) {
+        || app.arguments().contains("--dropdown-ui-smoke") || app.arguments().contains("--light-theme-ui-smoke")) {
 #ifdef Q_OS_WIN
         // The offscreen platform does not enumerate Windows system fonts.
         for (const auto &name : {"msyh.ttc", "segoeui.ttf", "consola.ttf"})
@@ -61,7 +61,11 @@ int main(int argc, char *argv[])
         smokeDirectory = std::make_unique<QTemporaryDir>(appDir + "/ui-smoke-XXXXXX");
         engine.rootContext()->setContextProperty("SMOKE_DIR", smokeDirectory->path());
         engine.rootContext()->setContextProperty("SMOKE_OUTPUT_DIR", appDir);
-        if (app.arguments().contains("--dropdown-ui-smoke")) {
+        if (app.arguments().contains("--light-theme-ui-smoke")) {
+            const auto testFile = qEnvironmentVariable("XCSHOP_THEME_TEST_FILE");
+            engine.load(testFile.isEmpty() ? QUrl("qrc:/tests/LightThemeUiSmoke.qml")
+                                          : QUrl::fromLocalFile(testFile));
+        } else if (app.arguments().contains("--dropdown-ui-smoke")) {
             engine.load(QUrl("qrc:/tests/DropdownUiSmoke.qml"));
         } else if (app.arguments().contains("--shared-ui-smoke")) {
             engine.load(QUrl("qrc:/tests/SharedUiSmoke.qml"));

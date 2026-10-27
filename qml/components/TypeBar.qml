@@ -6,7 +6,7 @@ Rectangle {
     id: typeBar
     height: parent.height
     width: Constants.typeBarWidth
-    color: Colors.foreground
+    color: Colors.panel
     opacity: 0
     enabled: isEnabled
 
@@ -115,7 +115,7 @@ Rectangle {
         width: parent.width
         y: Constants.typeBarWidth
         height: 2
-        color: Colors.gui_theme == "dark" ? "black" : "white"
+        color: Colors.isLight ? Colors.outline : "white"
     }
 
     Column{

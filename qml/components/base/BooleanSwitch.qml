@@ -17,7 +17,7 @@ Rectangle {
     radius: 5
     color: checked ? Colors.changeA(Colors.border, 0.66) : Colors.changeA(Colors.pressed, 0.66)
     border.width: 1
-    border.color: checked ? Colors.border : Colors.changeA(Colors.text, 0.12)
+    border.color: checked ? Colors.border : Colors.changeA(Colors.outline, 0.12)
 
     Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
     Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }
@@ -26,7 +26,7 @@ Rectangle {
         anchors.centerIn: parent
         xcText: root.label
         xcFontSize: 11
-        textColor: root.checked ? Colors.background_n : Colors.text
+        textColor: root.checked ? Colors.selectionContent : Colors.text
     }
 
     MouseArea {

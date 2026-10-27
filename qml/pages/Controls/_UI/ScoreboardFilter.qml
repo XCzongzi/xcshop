@@ -24,7 +24,7 @@ Rectangle {
     radius: 8
     color: compact ? Colors.transparent : Colors.changeA(Colors.background, 0.28)
     border.width: compact ? 0 : 1
-    border.color: Colors.changeA(Colors.text, 0.10)
+    border.color: Colors.changeA(Colors.outline, 0.10)
 
     function setValues(scoreboardName, targetName, scoreRange) {
         scoreboardInput.text = scoreboardName || ""

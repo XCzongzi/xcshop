@@ -99,9 +99,9 @@ BasePage {
                     width: parent.width
                     height: 138
                     radius: 14
-                    color: Colors.changeA(Colors.foreground, 0.88)
+                    color: Colors.changeA(Colors.card, 0.88)
                     border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.11)
+                    border.color: Colors.changeA(Colors.outline, 0.11)
 
                     Column {
                         anchors.left: parent.left
@@ -139,7 +139,7 @@ BasePage {
                                     anchors.centerIn: parent
                                     xcText: "v" + root.version
                                     xcFontSize: 11
-                                    textColor: Colors.border
+                                    textColor: Colors.accentText
                                 }
                             }
                             XCText {
@@ -158,9 +158,9 @@ BasePage {
                     width: parent.width
                     height: projectColumn.height + 36
                     radius: 12
-                    color: Colors.changeA(Colors.foreground, 0.70)
+                    color: Colors.changeA(Colors.card, 0.70)
                     border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.09)
+                    border.color: Colors.changeA(Colors.outline, 0.09)
 
                     Column {
                         id: projectColumn
@@ -214,7 +214,7 @@ BasePage {
             textSize: 13
             widthBorderSize: 10
             buttonColor: Colors.changeA(Colors.background, 0.68)
-            firedColor: Colors.changeA(Colors.foreground, 0.92)
+            firedColor: Colors.changeA(Colors.card, 0.92)
             onClicked: root.pageEvent("About.back", {})
         }
     }

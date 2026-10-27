@@ -12,13 +12,14 @@ TextField{
     verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
 
     color: Colors.text
-    selectionColor: Colors.fired
+    selectionColor: Colors.selection
+    selectedTextColor: Colors.isLight ? Colors.text : palette.highlightedText
     autoScroll: true
     leftPadding: 10
     rightPadding: 10
     topPadding: root.isWrap ? 8 : 0
     bottomPadding: root.isWrap ? 8 : 0
-    placeholderTextColor: Colors.changeA(Colors.banned, 0.78)
+    placeholderTextColor: Colors.changeA(Colors.placeholder, 0.78)
 
     background: InputBackground {
         focused: root.activeFocus

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.impl as Impl
 import xcshop
 
 
@@ -24,7 +25,7 @@ Item{
     Rectangle{
         id: buttonSurface
         radius: 8 * root.scale
-        color: Colors.foreground
+        color: Colors.card
         width: root.width;height: root.height
 
         border.width: 1
@@ -71,18 +72,19 @@ Item{
             lightSource_x: mouseArea.mouseX
             lightSource_r: 50 * root.scale
             blur:2*root.scale
-            lightColor: Colors.border
+            lightColor: Colors.ambientAccent
         }
 
         Column{
             y: (parent.height - height) / 2 - 4
             x: parent.height - y - height - 12
             spacing: 2
-            Image{
+            Impl.IconImage {
                 id: icon
                 height: 64 * root.scale
                 width: height
                 source: root.icon
+                color: Colors.isLight ? Colors.text : Colors.transparent
                 smooth: true
                 antialiasing: true
                 mipmap: true

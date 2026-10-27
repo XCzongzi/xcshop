@@ -26,7 +26,7 @@ Item {
             radius: 8
             color: Colors.changeA(Colors.background, 0.42)
             border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.10)
+            border.color: Colors.changeA(Colors.outline, 0.10)
 
             XCText {
                 id: containerTypeLabel
@@ -51,7 +51,7 @@ Item {
                 textSize: 12
                 widthBorderSize: 9
                 enabled: root.uiPage && root.uiPage.dataLoaded
-                buttonColor: Colors.changeA(Colors.foreground, 0.55)
+                buttonColor: Colors.changeA(Colors.card, 0.55)
                 firedColor: Colors.changeA(Colors.fired, 0.55)
                 pressedColor: Colors.changeA(Colors.border, 0.68)
                 onClicked: root.uiPage.beginContainerTypeChange()

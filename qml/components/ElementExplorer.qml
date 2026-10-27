@@ -13,7 +13,7 @@ Rectangle{
     width: isShowing ? barWidth : 0
     height: parent.height
     x: Constants.typeBarWidth
-    color: Colors.foreground
+    color: Colors.panel
     clip: true
     enabled: isShowing
 
@@ -129,7 +129,7 @@ Rectangle{
         y: 32
         width: root.width - 9
         height: 1
-        color: Qt.lighter("gray",1.5)
+        color: Colors.isLight ? Colors.outline : Qt.lighter("gray",1.5)
     }
 
     XCText{
@@ -141,7 +141,7 @@ Rectangle{
         onCenter:false
         width: parent.width - x - 3
         elide: Text.ElideLeft
-        textColor: Qt.lighter("gray",1.5)
+        textColor: Colors.isLight ? Colors.banned : Qt.lighter("gray",1.5)
         opacity: root.contentOpacity
     }
     

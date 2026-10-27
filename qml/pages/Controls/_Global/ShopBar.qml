@@ -108,7 +108,7 @@ ContentBar {
                 color: rowHover.hovered
                        ? Colors.changeA(Colors.fired, 0.26)
                        : (index % 2 ? Colors.changeA(Colors.background, 0.22)
-                                    : Colors.changeA(Colors.foreground, 0.22))
+                                    : Colors.changeA(Colors.card, 0.22))
 
                 Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
@@ -172,7 +172,7 @@ ContentBar {
                         xcFontSize: 10
                         boldFont: false
                         underlineFont: uiHover.hovered
-                        textColor: uiHover.hovered ? Colors.border : Colors.banned
+                        textColor: uiHover.hovered ? Colors.accentText : Colors.banned
                         elide: Text.ElideMiddle
                     }
 
@@ -237,7 +237,7 @@ ContentBar {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Colors.changeA(Colors.text, 0.09)
+                color: Colors.changeA(Colors.outline, 0.09)
             }
 
             XCText {
@@ -308,7 +308,7 @@ ContentBar {
                 onCenter: false
                 xcFontSize: 9
                 boldFont: false
-                textColor: root.feedbackIsError ? Colors.error : Colors.border
+                textColor: root.feedbackIsError ? Colors.error : Colors.accentText
                 elide: Text.ElideRight
             }
         }

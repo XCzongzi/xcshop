@@ -26,7 +26,7 @@ Rectangle {
     color: dropHovered ? Colors.changeA(Colors.border, 0.34)
                        : operationMode && operationSelected
                          ? Colors.changeA(Colors.border, 0.28)
-                       : !operationMode && opened ? Colors.banned
+                       : !operationMode && opened ? Colors.selectedRow
                                   : pointer.containsMouse ? Colors.fired : Colors.transparent
     border.width: activeFocus || dropHovered ? 1 : 0
     border.color: dropHovered ? Colors.border : Colors.changeA(Colors.border, 0.82)

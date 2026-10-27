@@ -367,7 +367,7 @@ Item {
                         XCText {
                             x: Math.max(120, parent.width - 188); anchors.verticalCenter: parent.verticalCenter; width: 102
                             xcText: root.statusLabel(row.modelData.iconStatus); onCenter: false; xcFontSize: 12; boldFont: false
-                            textColor: row.modelData.iconStatus === "missing" ? Colors.error : row.modelData.iconStatus === "approximate" ? Colors.banned : Colors.border
+                            textColor: row.modelData.iconStatus === "missing" ? Colors.error : row.modelData.iconStatus === "approximate" ? Colors.banned : Colors.accentText
                         }
                         MouseArea {
                             id: tooltipArea; anchors.fill: parent; acceptedButtons: Qt.NoButton; hoverEnabled: true

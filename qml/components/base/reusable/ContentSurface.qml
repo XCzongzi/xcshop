@@ -15,9 +15,9 @@ Rectangle {
     property real hoverProgress: hovered ? 1 : 0
 
     radius: 9
-    color: Colors.changeA(Colors.foreground, backgroundOpacity)
+    color: Colors.changeA(Colors.card, backgroundOpacity)
     border.width: 1
-    border.color: Colors.changeA(Colors.text, 0.08)
+    border.color: Colors.changeA(Colors.outline, 0.08)
 
     Behavior on hoverProgress {
         NumberAnimation {

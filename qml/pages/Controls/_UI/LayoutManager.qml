@@ -154,7 +154,7 @@ ContentSurface {
             xcText: "基本"
             xcFontSize: 12
             boldFont: false
-            textColor: !root.nestedPreview ? Colors.border : Colors.text
+            textColor: !root.nestedPreview ? Colors.accentText : Colors.text
         }
 
         MouseArea {
@@ -171,7 +171,7 @@ ContentSurface {
         y: 13
         width: 1
         height: 20
-        color: Colors.changeA(Colors.text, 0.18)
+        color: Colors.changeA(Colors.outline, 0.18)
     }
 
     Flickable {
@@ -268,7 +268,7 @@ ContentSurface {
                             xcFontSize: 12
                             boldFont: false
                             elide: Text.ElideRight
-                            textColor: groupTabDelegate.selected ? Colors.border : Colors.text
+                            textColor: groupTabDelegate.selected ? Colors.accentText : Colors.text
                         }
 
                         MouseArea {
@@ -376,7 +376,7 @@ ContentSurface {
         text: "‹"
         textSize: 18
         boldFont: false
-        buttonColor: Colors.changeA(Colors.foreground, 0.96)
+        buttonColor: Colors.changeA(Colors.card, 0.96)
         firedColor: Colors.changeA(Colors.border, 0.20)
         pressedColor: Colors.changeA(Colors.border, 0.34)
         onClicked: tabFlickable.scrollPage(-1)
@@ -395,7 +395,7 @@ ContentSurface {
         text: "›"
         textSize: 18
         boldFont: false
-        buttonColor: Colors.changeA(Colors.foreground, 0.96)
+        buttonColor: Colors.changeA(Colors.card, 0.96)
         firedColor: Colors.changeA(Colors.border, 0.20)
         pressedColor: Colors.changeA(Colors.border, 0.34)
         onClicked: tabFlickable.scrollPage(1)
@@ -412,7 +412,7 @@ ContentSurface {
         text: "+"
         textSize: 20
         boldFont: false
-        textColor: Colors.border
+        textColor: Colors.accentText
         buttonColor: Colors.changeA(Colors.background, 0.25)
         firedColor: Colors.changeA(Colors.border, 0.20)
         pressedColor: Colors.changeA(Colors.border, 0.34)
@@ -424,7 +424,7 @@ ContentSurface {
         y: 47
         width: parent.width - 24
         height: 1
-        color: Colors.changeA(Colors.text, 0.09)
+        color: Colors.changeA(Colors.outline, 0.09)
     }
 
     Flickable {
@@ -546,9 +546,9 @@ ContentSurface {
                 width: nestedSelection.width
                 height: nestedSelection.height
                 radius: nestedSelection.radius
-                color: Colors.changeA(Colors.foreground, 0.88)
+                color: Colors.changeA(Colors.card, 0.88)
                 border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.12)
+                border.color: Colors.changeA(Colors.outline, 0.12)
 
                 XCText {
                     anchors.centerIn: parent

@@ -886,9 +886,9 @@ BaseIOPage {
             width: layoutBar.width
             height: Math.max(0, parent.height - y - root.pageMargin)
             radius: 10
-            color: Colors.changeA(Colors.foreground, 0.18)
+            color: Colors.changeA(Colors.card, 0.18)
             border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.07)
+            border.color: Colors.changeA(Colors.outline, 0.07)
 
             ContainerBox {
                 anchors.fill: parent

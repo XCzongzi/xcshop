@@ -75,9 +75,9 @@ Rectangle {
     width: 380
     height: 44
     radius: 8
-    color: highlighted ? Colors.changeA(Colors.border, 0.12) : Colors.changeA(Colors.background, 0.30)
+    color: highlighted ? Colors.changeA(Colors.border, 0.12) : Colors.changeA(Colors.input, 0.30)
     border.width: 1
-    border.color: highlighted ? Colors.changeA(Colors.border, 0.82) : Colors.changeA(Colors.text, 0.11)
+    border.color: highlighted ? Colors.changeA(Colors.border, 0.82) : Colors.changeA(Colors.outline, 0.11)
 
     Behavior on border.color {
         ColorAnimation {

@@ -39,12 +39,12 @@ Item {
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
-                    color: Colors.changeA(Qt.darker(Colors.border, 1.35),
+                    color: Colors.changeA(Qt.darker(Colors.ambientAccent, 1.35),
                                           Global.backgroundMode === "color" ? 0.34 : 0.20)
                 }
                 GradientStop {
                     position: 0.24
-                    color: Colors.changeA(Colors.border,
+                    color: Colors.changeA(Colors.ambientAccent,
                                           Global.backgroundMode === "color" ? 0.22 : 0.14)
                 }
                 GradientStop {
@@ -53,12 +53,12 @@ Item {
                 }
                 GradientStop {
                     position: 0.78
-                    color: Colors.changeA(Qt.lighter(Colors.foreground, 1.35),
+                    color: Colors.changeA(Qt.lighter(Colors.card, 1.35),
                                           Global.backgroundMode === "color" ? 0.28 : 0.16)
                 }
                 GradientStop {
                     position: 1.0
-                    color: Colors.changeA(Qt.lighter(Colors.border, 1.22),
+                    color: Colors.changeA(Qt.lighter(Colors.ambientAccent, 1.22),
                                           Global.backgroundMode === "color" ? 0.18 : 0.10)
                 }
             }
@@ -74,17 +74,17 @@ Item {
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
-                    color: Colors.changeA(Qt.lighter(Colors.border, 1.45),
+                    color: Colors.changeA(Qt.lighter(Colors.ambientAccent, 1.45),
                                           Global.backgroundMode === "color" ? 0.30 : 0.18)
                 }
                 GradientStop {
                     position: 0.34
-                    color: Colors.changeA(Colors.border,
+                    color: Colors.changeA(Colors.ambientAccent,
                                           Global.backgroundMode === "color" ? 0.20 : 0.12)
                 }
                 GradientStop {
                     position: 0.68
-                    color: Colors.changeA(Qt.lighter(Colors.foreground, 1.18),
+                    color: Colors.changeA(Qt.lighter(Colors.card, 1.18),
                                           Global.backgroundMode === "color" ? 0.08 : 0.05)
                 }
                 GradientStop {

@@ -117,7 +117,7 @@ Item {
                             boldFont: false
                             widthBorderSize: 8
                             btnSelected: root.selectedContainerType === option.type
-                            buttonColor: Colors.changeA(Colors.foreground, 0.44)
+                            buttonColor: Colors.changeA(Colors.card, 0.44)
                             firedColor: Colors.changeA(Colors.fired, 0.58)
                             pressedColor: Colors.changeA(Colors.border, 0.68)
                             onClicked: root.selectedContainerType = option.type

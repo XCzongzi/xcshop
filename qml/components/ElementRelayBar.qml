@@ -53,7 +53,7 @@ Rectangle {
     visible: workspaceActive && (supportedWorkspace || globalSelectionVisible)
              && Global.project_location.length > 0
     height: visible ? Math.max(minPanelHeight, Math.min(maxPanelHeight, panelHeight)) : 0
-    color: Colors.changeA(Colors.foreground, 0.98)
+    color: Colors.changeA(Colors.card, 0.98)
     border.width: 1
     border.color: selectionMode ? Colors.changeA(Colors.border, 0.82)
                                 : Colors.changeA(Colors.text, 0.12)
@@ -568,7 +568,7 @@ Rectangle {
             xcFontSize: 14
             boldFont: false
             onCenter: false
-            textColor: root.selectionMode ? Colors.border : Colors.text
+            textColor: root.selectionMode ? Colors.accentText : Colors.text
         }
 
         Row {
@@ -676,7 +676,7 @@ Rectangle {
             text: "‹"
             textSize: 18
             boldFont: false
-            buttonColor: Colors.changeA(Colors.foreground, 0.96)
+            buttonColor: Colors.changeA(Colors.card, 0.96)
             firedColor: Colors.changeA(Colors.border, 0.20)
             pressedColor: Colors.changeA(Colors.border, 0.34)
             onClicked: tabScroller.scrollPage(-1)
@@ -695,7 +695,7 @@ Rectangle {
             text: "›"
             textSize: 18
             boldFont: false
-            buttonColor: Colors.changeA(Colors.foreground, 0.96)
+            buttonColor: Colors.changeA(Colors.card, 0.96)
             firedColor: Colors.changeA(Colors.border, 0.20)
             pressedColor: Colors.changeA(Colors.border, 0.34)
             onClicked: tabScroller.scrollPage(1)
@@ -736,7 +736,7 @@ Rectangle {
                 xcText: "请选择" + RelayState.typeLabel(root.selectionType) + "元素"
                 xcFontSize: 11
                 boldFont: false
-                textColor: Colors.border
+                textColor: Colors.accentText
             }
         }
 
@@ -749,7 +749,7 @@ Rectangle {
             width: 224
             height: 34
             radius: 8
-            color: Colors.foreground
+            color: Colors.card
             border.width: 1
             border.color: Colors.changeA(Colors.border, 0.64)
 

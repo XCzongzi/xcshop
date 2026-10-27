@@ -22,6 +22,11 @@ public:
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
     }
     Q_INVOKABLE void settle(int milliseconds = 180) { QTest::qWait(milliseconds); }
+    Q_INVOKABLE QColor imageColor(const QString &path, int x, int y) {
+        const QImage image(path);
+        if (image.isNull() || !image.rect().contains(x, y)) return {};
+        return image.pixelColor(x, y);
+    }
     Q_INVOKABLE int brightnessAt(QQuickItem *item, qreal x, qreal y) {
         if (!item || !item->window()) return -1;
         const auto frame = item->window()->grabWindow();

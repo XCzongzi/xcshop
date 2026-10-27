@@ -139,7 +139,7 @@ Item {
         Rectangle {
             width: parent.width
             height: 1
-            color: Colors.changeA(Colors.text, 0.08)
+            color: Colors.changeA(Colors.outline, 0.08)
         }
         RadioGroup {
             id: executeKind

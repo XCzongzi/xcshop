@@ -48,7 +48,7 @@ ElementSelectionBase {
         height: 126
         radius: 10
         color: root.highlighted ? Colors.changeA(Colors.border, 0.09)
-                                : Colors.changeA(Colors.background, 0.24)
+                                : Colors.changeA(Colors.input, 0.24)
 
         Behavior on color { ColorAnimation { duration: 160 / Global.animationSpeed } }
 
@@ -116,7 +116,7 @@ ElementSelectionBase {
                 onCenter: false
                 underlineFont: root.hasSelection && root.connectedElementHovered
                 textColor: root.hasSelection && root.connectedElementHovered
-                           ? Colors.border : Colors.text
+                           ? Colors.accentText : Colors.text
             }
             XCText {
                 id: selectedPath
@@ -132,8 +132,8 @@ ElementSelectionBase {
                 elide: Text.ElideLeft
                 underlineFont: root.hasSelection && root.connectedElementHovered
                 textColor: root.hasSelection && root.connectedElementHovered
-                           ? Colors.changeA(Colors.border, 0.86)
-                           : (root.highlighted ? Colors.changeA(Colors.border, 0.86) : Colors.banned)
+                           ? Colors.changeA(Colors.accentText, 0.86)
+                           : (root.highlighted ? Colors.changeA(Colors.accentText, 0.86) : Colors.banned)
             }
 
             HoverHandler {

@@ -195,13 +195,13 @@ BasePage {
                     GradientStop {
                         position: 0.0
                         color: Colors.changeA(
-                                   Qt.tint(Colors.foreground,
+                                   Qt.tint(Colors.panel,
                                            Colors.changeA(Colors.border, 0.18)),
                                    Global.backgroundMode === "color" ? 0.48 : 0.62)
                     }
                     GradientStop {
                         position: 0.46
-                        color: Colors.changeA(Colors.foreground,
+                        color: Colors.changeA(Colors.panel,
                                               Global.backgroundMode === "color" ? 0.34 : 0.48)
                     }
                     GradientStop {

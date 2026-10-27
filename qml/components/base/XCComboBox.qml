@@ -101,10 +101,10 @@ T.ComboBox {
     }
     background: Rectangle {
         radius: 7
-        color: Colors.changeA(Colors.background, 0.36)
+        color: Colors.changeA(Colors.input, 0.36)
         border.width: 1
         border.color: root.popup.visible || root.visualFocus ? Colors.changeA(Colors.border, 0.82)
-                                                             : Colors.changeA(Colors.text, 0.10)
+                                                             : Colors.changeA(Colors.outline, 0.10)
         opacity: root.enabled ? 1 : 0.6
         Behavior on border.color { ColorAnimation { duration: 160 / Global.animationSpeed } }
         ButtonStateOverlay {
@@ -173,7 +173,7 @@ T.ComboBox {
             x: 28; y: entry.headingHeight + (entry.height - entry.headingHeight - height) / 2
             width: 12; height: 12; radius: 3
             color: entry.modelData.swatch || Colors.transparent
-            border.width: 1; border.color: Colors.changeA(Colors.text, 0.20)
+            border.width: 1; border.color: Colors.changeA(Colors.outline, 0.20)
         }
         Item {
             visible: entry.startsGroup

@@ -11,14 +11,17 @@ QtObject {
     property color glass_highlight: '#4bffffff'
     property color fired: "#aa92949c"
     property color pressed: "#aa6b6c74"
-    property color text: "#ffffff"
+    property color paletteText: "#ffffff"
+    property color text: imageMode ? surfaceColor("imageText", paletteText) : paletteText
     // 设置页可修改，全局控件会随之更新。
     property color border: "#2f8cff"
-    property color banned: "#bbbbbb"
+    property color paletteMutedText: "#bbbbbb"
+    property color banned: imageMode ? surfaceColor("imageMuted", paletteMutedText) : paletteMutedText
 
     property string gui_theme: "dark"
 
-    readonly property color error: "#FF0000"
+    readonly property color error: isLight ? (imageMode ? "#4f0b17" : "#961c2e") : "#FF0000"
+    readonly property color warning: isLight ? (imageMode ? "#3d2005" : "#6d400c") : "#e0a33b"
 
     readonly property color transparent: "transparent"
     readonly property color nest_light: "#10ffffff"
@@ -31,6 +34,42 @@ QtObject {
     property string colorScheme: "midnight"
 
     readonly property var colorSchemes: ThemeCatalog.choices()
+
+    // gui_theme names the icon variant, so "dark" there means dark icons on a
+    // light surface. Derive the UI mode from the palette instead.
+    readonly property bool isLight: !!ThemeCatalog.lightSurfaces[colorScheme]
+    readonly property bool imageMode: isLight && Global.backgroundMode === "image"
+    readonly property var lightPalette: ThemeCatalog.lightSurfaces[colorScheme] || ({})
+    readonly property color panel: isLight ? changeA(foreground, 0.62) : foreground
+    readonly property color card: surfaceColor("card", foreground)
+    readonly property color input: surfaceColor("input", background)
+    readonly property color popup: surfaceColor("popup", background_n)
+    readonly property color control: surfaceColor("control", pressed)
+    readonly property color disabledSurface: surfaceColor("control", banned)
+    readonly property color outline: surfaceColor("outline", text)
+    readonly property color placeholder: surfaceColor(imageMode ? "imagePlaceholder" : "placeholder", banned)
+    readonly property color selection: surfaceColor("selection", fired)
+    readonly property color selectedRow: surfaceColor("selection", banned)
+    readonly property color ambientAccent: surfaceColor("ambient", border)
+    readonly property color accentText: {
+        if (!isLight) return border
+        var backgrounds = [background_n, panel, Qt.color(lightPalette.input || background_n),
+                           Qt.color(lightPalette.selection || background_n)]
+        if (imageMode) backgrounds.push(Qt.color("#8c8c8c"))
+        var ink = ThemeCatalog.readableAccent(border, backgrounds)
+        return Qt.rgba(ink.r, ink.g, ink.b, border.a)
+    }
+    readonly property color accentFill: isLight ? accentText : border
+    readonly property color accentContent: contrastingText(accentFill)
+    readonly property color selectionContent: isLight
+            ? contrastingText(Qt.tint(Qt.tint(background_n, changeA(card, 0.38)), changeA(border, 0.78)))
+            : background_n
+
+    function surfaceColor(role, fallback) {
+        if (!isLight || !lightPalette[role]) return fallback
+        var rgb = Qt.color(lightPalette[role])
+        return Qt.rgba(rgb.r, rgb.g, rgb.b, fallback.a)
+    }
 
     function contrastingText(color) {
         function linear(value) {
@@ -81,8 +120,8 @@ QtObject {
         foreground = palette.foreground
         fired = palette.fired
         pressed = palette.pressed
-        text = palette.text
-        banned = palette.banned
+        paletteText = palette.text
+        paletteMutedText = palette.banned
         glass_highlight = palette.highlight
         gui_theme = palette.gui_theme
 

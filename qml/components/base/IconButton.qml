@@ -1,9 +1,10 @@
 import QtQuick
+import QtQuick.Controls.impl as Impl
 import xcshop
 
 Rectangle{
     id: root
-    color: Colors.foreground
+    color: Colors.card
     height: 36
     width: text.x + text.width + 16
     radius: 8
@@ -45,9 +46,10 @@ Rectangle{
         onReleased: root.pressed = false
     }
 
-    Image{
+    Impl.IconImage {
         id:img
         source: root.icon
+        color: Colors.isLight ? Colors.text : Colors.transparent
         height: root.height - 16
         width: height
         x: 16

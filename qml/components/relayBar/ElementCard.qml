@@ -152,7 +152,7 @@ Item {
             radius: 7
             text: root.relayBar.isFavorite(root.path) ? "★" : "☆"
             textSize: 17
-            textColor: root.relayBar.isFavorite(root.path) ? Colors.border : Colors.banned
+            textColor: root.relayBar.isFavorite(root.path) ? Colors.accentText : Colors.banned
             buttonColor: Colors.transparent
             firedColor: Colors.changeA(Colors.border, 0.16)
             pressedColor: Colors.changeA(Colors.border, 0.28)

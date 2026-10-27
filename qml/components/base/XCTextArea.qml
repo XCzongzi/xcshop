@@ -12,12 +12,13 @@ TextArea{
     wrapMode: TextEdit.Wrap
 
     color: Colors.text
-    selectionColor: Colors.fired
+    selectionColor: Colors.selection
+    selectedTextColor: Colors.isLight ? Colors.text : palette.highlightedText
     leftPadding: 10
     rightPadding: 10
     topPadding: 8
     bottomPadding: 8
-    placeholderTextColor: Colors.changeA(Colors.banned, 0.78)
+    placeholderTextColor: Colors.changeA(Colors.placeholder, 0.78)
 
     background: InputBackground {
         focused: root.activeFocus

@@ -4,7 +4,7 @@ import xcshop
 Rectangle{
     id: root
     // 颜色完全由状态计算；不要在鼠标事件中直接修改 color，否则会破坏绑定。
-    color: !enabled ? Colors.banned : buttonColor
+    color: !enabled ? Colors.disabledSurface : buttonColor
 
     property string text:""
     property bool btnSelected: false

@@ -226,7 +226,7 @@ Item {
                          + root.verticalPadding * 2, Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
         border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.12)
+        border.color: Colors.changeA(Colors.outline, 0.12)
         onWidthChanged: if (root.opened) repositionTimer.restart()
         onHeightChanged: if (root.opened) repositionTimer.restart()
 
@@ -284,7 +284,7 @@ Item {
                             x: 5
                             height: 1
                             visible: menuRow.entry.separator === true
-                            color: Colors.changeA(Colors.text, 0.12)
+                            color: Colors.changeA(Colors.outline, 0.12)
                         }
 
                         Item {
@@ -404,7 +404,7 @@ Item {
                          Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
         border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.12)
+        border.color: Colors.changeA(Colors.outline, 0.12)
         onWidthChanged: if (root.opened) repositionTimer.restart()
         onHeightChanged: if (root.opened) repositionTimer.restart()
 
@@ -450,7 +450,7 @@ Item {
                             x: 5
                             height: 1
                             visible: submenuRow.entry.separator === true
-                            color: Colors.changeA(Colors.text, 0.12)
+                            color: Colors.changeA(Colors.outline, 0.12)
                         }
 
                         Item {

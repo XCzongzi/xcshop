@@ -266,8 +266,8 @@ PopupFrame {
 
     Rectangle {
         x: 24; y: 74; width: parent.width * 0.61 - 34; height: parent.height - 144
-        radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
-        border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
+        radius: 10; color: Colors.changeA(Colors.card, 0.50)
+        border.width: 1; border.color: Colors.changeA(Colors.outline, 0.08)
 
         XCText { x: 14; y: 12; xcText: "文本片段"; onCenter: false; xcFontSize: 15 }
         TextButton {
@@ -296,7 +296,7 @@ PopupFrame {
                 radius: 8
                 color: Colors.changeA(Colors.background, 0.42)
                 border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.10)
+                border.color: Colors.changeA(Colors.outline, 0.10)
 
                 XCText { x: 10; y: 9; xcText: "片段 " + (segmentCard.index + 1); onCenter: false; xcFontSize: 12; textColor: Colors.banned; boldFont: false }
                 ActionButton {
@@ -347,13 +347,13 @@ PopupFrame {
 
     Rectangle {
         x: parent.width * 0.61; y: 74; width: parent.width * 0.39 - 24; height: parent.height - 144
-        radius: 10; color: Colors.changeA(Colors.foreground, 0.50)
-        border.width: 1; border.color: Colors.changeA(Colors.text, 0.08)
+        radius: 10; color: Colors.changeA(Colors.card, 0.50)
+        border.width: 1; border.color: Colors.changeA(Colors.outline, 0.08)
 
         XCText { x: 14; y: 12; xcText: "效果预览"; onCenter: false; xcFontSize: 15 }
         Rectangle {
             x: 12; y: 42; width: parent.width - 24; height: 112; radius: 7
-            color: "#24262e"; border.width: 1; border.color: Colors.changeA(Colors.text, 0.12)
+            color: "#24262e"; border.width: 1; border.color: Colors.changeA(Colors.outline, 0.12)
             Flickable {
                 id: previewFlickable
                 anchors.fill: parent; anchors.margins: 10

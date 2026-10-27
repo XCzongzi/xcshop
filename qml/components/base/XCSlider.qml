@@ -10,7 +10,7 @@ Slider {
 
     property int trackHeight: 6
     property int handleDiameter: 18
-    property color trackColor: Colors.changeA(Colors.background, 0.56)
+    property color trackColor: Colors.changeA(Colors.input, 0.56)
     property color fillColor: Colors.changeA(Colors.border, enabled ? 0.94 : 0.38)
     property color handleColor: !enabled ? Colors.changeA(Colors.banned, 0.62)
                                          : (pressed ? Colors.border
@@ -36,7 +36,7 @@ Slider {
             radius: height / 2
             color: root.trackColor
             border.width: 1
-            border.color: Colors.changeA(Colors.text, root.enabled ? 0.10 : 0.06)
+            border.color: Colors.changeA(Colors.outline, root.enabled ? 0.10 : 0.06)
 
             Behavior on color { ColorAnimation { duration: 130 / Global.animationSpeed } }
             Behavior on border.color { ColorAnimation { duration: 130 / Global.animationSpeed } }

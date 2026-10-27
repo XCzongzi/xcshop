@@ -150,7 +150,7 @@ Item {
         anchors.right: parent.right
         y: root.headerHeight - 1
         height: 1
-        color: Colors.changeA(Colors.text, 0.13)
+        color: Colors.changeA(Colors.outline, 0.13)
     }
 
     Item {

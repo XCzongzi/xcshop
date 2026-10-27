@@ -88,7 +88,7 @@ Item {
                                     visible: parent.modelData.length
                                     anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: parent.modelData
                                     border.width: parent.selected ? 2 : 1
-                                    border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.text, 0.32)
+                                    border.color: parent.selected ? Colors.changeA(Colors.background, 0.88) : Colors.changeA(Colors.outline, 0.32)
                                     scale: parent.pressed ? 0.90 : (parent.hovered && !parent.selected ? 1.10 : 1.0)
                                     Behavior on scale { NumberAnimation { duration: 120 / Global.animationSpeed } }
                                 }
@@ -225,7 +225,7 @@ Item {
                 y: 0
                 spacing: 14
                 XCText { xcText: "当前速度"; onCenter: false; xcFontSize: 14; width: 92 }
-                XCText { xcText: Global.animationSpeed.toFixed(2) + "×"; onCenter: false; xcFontSize: 16; textColor: Colors.border }
+                XCText { xcText: Global.animationSpeed.toFixed(2) + "×"; onCenter: false; xcFontSize: 16; textColor: Colors.accentText }
             }
             XCSlider {
                 id: animationSlider

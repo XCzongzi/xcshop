@@ -10,7 +10,7 @@ Rectangle{
     property int lightSource_y: height / 2
     property int lightSource_r: 50
     property double blur: 50
-    property color lightColor: Colors.border
+    property color lightColor: Colors.ambientAccent
 
 
     radius: parent.radius

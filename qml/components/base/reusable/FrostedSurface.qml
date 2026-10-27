@@ -17,14 +17,14 @@ Rectangle {
         }
         return pageBackdrop
     }
-    property color tint: Colors.background_n
+    property color tint: Colors.popup
     readonly property bool blurEnabled: GraphicsInfo.api !== GraphicsInfo.Software
             && backdropSource !== null
 
     radius: 7
     color: Colors.changeA(tint, blurEnabled ? 0.68 : 0.90)
     border.width: 1
-    border.color: Colors.changeA(Colors.text, 0.14)
+    border.color: Colors.changeA(Colors.outline, 0.14)
     // Fade the finished material as one image, including its translucent tint.
     layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
 

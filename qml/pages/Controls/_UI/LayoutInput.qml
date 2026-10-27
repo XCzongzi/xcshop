@@ -133,7 +133,7 @@ Item {
                 radius: 8
                 color: Colors.changeA(Colors.background, 0.28)
                 border.width: 1
-                border.color: Colors.changeA(Colors.text, 0.10)
+                border.color: Colors.changeA(Colors.outline, 0.10)
 
                 Column {
                     id: resultContent

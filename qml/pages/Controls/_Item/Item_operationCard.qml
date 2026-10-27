@@ -80,7 +80,7 @@ Item {
             radius: 9
             color: Colors.changeA(Colors.background, 0.38)
             border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.07)
+            border.color: Colors.changeA(Colors.outline, 0.07)
             Rectangle {
                 x: 1
                 y: 4
@@ -126,7 +126,7 @@ Item {
         Rectangle {
             id: ctrlBar
             z: 3
-            color: Colors.changeA(Colors.foreground, 0.94)
+            color: Colors.changeA(Colors.card, 0.94)
             width: 32 + 16 + ctrlBarText.width
             height: 32
             x: parent.width - width
@@ -136,7 +136,7 @@ Item {
             bottomLeftRadius: radius
             bottomRightRadius: 0
             border.width: 1
-            border.color: Colors.changeA(Colors.text, 0.10)
+            border.color: Colors.changeA(Colors.outline, 0.10)
             ImageButton {
                 objectName: "removeOperationButton"
                 btnSize: 32

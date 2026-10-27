@@ -77,7 +77,7 @@ ContentBar {
                 width: parent.width - actionButton.width - 18
                 height: 5
                 radius: 3
-                color: Colors.changeA(Colors.text, 0.10)
+                color: Colors.changeA(Colors.outline, 0.10)
 
                 Rectangle {
                     id: progressFill
@@ -247,7 +247,7 @@ ContentBar {
                                 height: parent.height - 14
                                 radius: 2
                                 color: String(problemRow.problem.severity).toLowerCase() === "error"
-                                       ? Colors.error : "#e0a33b"
+                                       ? Colors.error : Colors.warning
                             }
                             XCText {
                                 x: 14

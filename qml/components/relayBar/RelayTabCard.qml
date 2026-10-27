@@ -44,7 +44,7 @@ Rectangle {
         xcText: root.modelData.label
         xcFontSize: 11
         boldFont: false
-        textColor: root.selected ? Colors.border : Colors.text
+        textColor: root.selected ? Colors.accentText : Colors.text
     }
 
     Item {

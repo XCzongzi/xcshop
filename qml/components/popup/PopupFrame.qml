@@ -105,7 +105,7 @@ Item {
         bottomLeftRadius: 15
         bottomRightRadius: 15
         border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.12)
+        border.color: Colors.changeA(Colors.outline, 0.12)
         opacity: 0
         MouseArea {
             anchors.fill: parent
@@ -136,7 +136,7 @@ Item {
             y: 65
             width: parent.width - 48
             height: 1
-            color: Colors.changeA(Colors.text, 0.10)
+            color: Colors.changeA(Colors.outline, 0.10)
         }
         Item {
             id: contentHost

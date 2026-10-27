@@ -4,7 +4,7 @@ Rectangle {
     id: root
     width: parent.width - x
     height: 30
-    color: Colors.foreground
+    color: Colors.panel
 
     function currentRelativeFilePath(){
         if(!Global.project_location.length || !Global.get_fileName().length)

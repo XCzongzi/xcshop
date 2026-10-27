@@ -33,6 +33,10 @@ Item {
     }
 
     onCheckedChanged: checkMark.requestPaint()
+    Connections {
+        target: Colors
+        function onSelectionContentChanged() { checkMark.requestPaint() }
+    }
 
     Rectangle {
         id: indicator
@@ -42,7 +46,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         radius: 5
         color: root.checked ? Colors.changeA(Colors.border, root.pressed ? 0.72 : 0.90)
-                            : Colors.changeA(Colors.background, root.hovered ? 0.70 : 0.48)
+                            : Colors.changeA(Colors.input, root.hovered ? 0.70 : 0.48)
         border.width: 1
         border.color: root.checked ? Colors.changeA(Colors.border, 0.95)
                                    : Colors.changeA(Colors.text, root.hovered ? 0.32 : 0.16)
@@ -60,7 +64,7 @@ Item {
                 var context = getContext("2d")
                 context.reset()
                 context.clearRect(0, 0, width, height)
-                context.strokeStyle = Colors.background_n
+                context.strokeStyle = Colors.selectionContent
                 context.lineWidth = 2
                 context.lineCap = "round"
                 context.lineJoin = "round"

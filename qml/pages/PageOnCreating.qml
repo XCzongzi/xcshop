@@ -323,7 +323,7 @@ BasePage {
                     radius: 9
                     color: Colors.changeA(Colors.background, 0.28)
                     border.width: 1
-                    border.color: Colors.changeA(Colors.text, 0.07)
+                    border.color: Colors.changeA(Colors.outline, 0.07)
 
                     Row {
                         id: selectionRow
@@ -361,7 +361,7 @@ BasePage {
                             }
                         }
 
-                        Rectangle { width: 1; height: parent.height; color: Colors.changeA(Colors.text, 0.09) }
+                        Rectangle { width: 1; height: parent.height; color: Colors.changeA(Colors.outline, 0.09) }
 
                         Column {
                             width: selectionRow.columnUnit * 2
@@ -379,7 +379,7 @@ BasePage {
                             }
                         }
 
-                        Rectangle { width: 1; height: parent.height; color: Colors.changeA(Colors.text, 0.09) }
+                        Rectangle { width: 1; height: parent.height; color: Colors.changeA(Colors.outline, 0.09) }
 
                         Column {
                             width: selectionRow.columnUnit
@@ -473,7 +473,7 @@ BasePage {
         textSize: 13
         widthBorderSize: 10
         buttonColor: Colors.changeA(Colors.background, 0.70)
-        firedColor: Colors.changeA(Colors.foreground, 0.92)
+        firedColor: Colors.changeA(Colors.card, 0.92)
         opacity: root.controlsOpacity
         onClicked: root.goBack()
     }

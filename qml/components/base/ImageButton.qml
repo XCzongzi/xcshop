@@ -1,10 +1,15 @@
 import QtQuick
+import QtQuick.Controls.impl as Impl
 import xcshop
 
 Rectangle {
     id: root
 
     property alias imageSource: img.source
+    property bool tintIcon: true
+    property color imageColor: btnbackground.a > 0
+            ? Colors.contrastingText(Qt.tint(Colors.card, pressed ? btnpressed : hovered ? btnfired : btnbackground))
+            : Colors.text
     property int btnSize: 32
     property int imgSize: 30
     property color btnbackground: Colors.transparent
@@ -39,11 +44,12 @@ Rectangle {
         topRightRadius: root.topRightRadius
     }
 
-    Image {
+    Impl.IconImage {
         id: img
         anchors.centerIn: parent
         sourceSize.width: root.btnSelected ? root.imgSize - 3 : root.imgSize_
         sourceSize.height: root.btnSelected ? root.imgSize - 3 : root.imgSize_
+        color: root.tintIcon && Colors.isLight ? root.imageColor : Colors.transparent
     }
 
     Behavior on imgSize_ {

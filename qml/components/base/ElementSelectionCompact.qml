@@ -42,7 +42,7 @@ ElementSelectionBase {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: 1
-        color: Colors.changeA(Colors.text, 0.14)
+        color: Colors.changeA(Colors.outline, 0.14)
     }
 
     Item {
@@ -63,7 +63,7 @@ ElementSelectionBase {
             boldFont: false
             onCenter: false
             onVCenter: true
-            textColor: root.highlighted ? Colors.changeA(Colors.border, 0.92) : Colors.banned
+            textColor: root.highlighted ? Colors.changeA(Colors.accentText, 0.92) : Colors.banned
         }
 
         XCText {
@@ -76,7 +76,7 @@ ElementSelectionBase {
             xcFontSize: 12
             onCenter: false
             underlineFont: root.connectedElementHovered
-            textColor: root.connectedElementHovered ? Colors.border : Colors.text
+            textColor: root.connectedElementHovered ? Colors.accentText : Colors.text
         }
 
         XCText {
@@ -105,7 +105,7 @@ ElementSelectionBase {
             onCenter: false
             elide: Text.ElideLeft
             underlineFont: root.connectedElementHovered
-            textColor: root.connectedElementHovered ? Colors.changeA(Colors.border, 0.86)
+            textColor: root.connectedElementHovered ? Colors.changeA(Colors.accentText, 0.86)
                                                 : Colors.banned
         }
 

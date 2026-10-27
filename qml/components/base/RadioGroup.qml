@@ -15,9 +15,9 @@ Rectangle {
     height: 44
     width: optionSurface.x + optionSurface.width + 4
     radius: 10
-    color: Colors.changeA(Colors.background, 0.48)
+    color: Colors.changeA(Colors.input, 0.48)
     border.width: 1
-    border.color: Colors.changeA(Colors.text, 0.10)
+    border.color: Colors.changeA(Colors.outline, 0.10)
 
     XCText {
         id: labelText
@@ -36,9 +36,9 @@ Rectangle {
         width: optionRow.width + 8
         height: 34
         radius: 8
-        color: Colors.changeA(Colors.foreground, 0.58)
+        color: Colors.changeA(Colors.card, 0.58)
         border.width: 1
-        border.color: Colors.changeA(Colors.text, 0.07)
+        border.color: Colors.changeA(Colors.outline, 0.07)
 
         Rectangle {
             id: selectedHighlight
