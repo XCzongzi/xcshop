@@ -85,13 +85,13 @@ ElementSelectionBase {
             }
         }
 
-        Image {
+        ThemedIcon {
             id: elementMark
             x: 18
             anchors.verticalCenter: parent.verticalCenter
             width: 46
             height: 46
-            source: root.elementIconSource
+            iconSource: root.elementIconSource
             fillMode: Image.PreserveAspectFit
             smooth: false
             mipmap: false

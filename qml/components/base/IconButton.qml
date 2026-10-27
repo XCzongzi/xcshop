@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls.impl as Impl
 import xcshop
 
 Rectangle{
@@ -46,10 +45,9 @@ Rectangle{
         onReleased: root.pressed = false
     }
 
-    Impl.IconImage {
+    ThemedIcon {
         id:img
-        source: root.icon
-        color: Colors.isLight ? Colors.text : Colors.transparent
+        iconSource: root.icon
         height: root.height - 16
         width: height
         x: 16

@@ -83,6 +83,15 @@ QtObject {
         return Qt.rgba(color.r,color.g,color.b,a)
     }
 
+    function isMonochromeUiIcon(source) {
+        return /^qrc:\/assets\/gui\/(?:typeBar\/(?:(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)|Total|UI|Item|Cost|Display)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)(?:_(?:dark|light))?\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
+    }
+
+    function whiteUiIconSource(source) {
+        var path = String(source)
+        return isMonochromeUiIcon(path) ? path.replace(/_dark\.png$/, "_light.png") : path
+    }
+
     function setThemeColor(color) {
         themeColor = color
         border = color

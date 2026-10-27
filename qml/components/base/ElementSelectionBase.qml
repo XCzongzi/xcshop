@@ -27,7 +27,7 @@ Rectangle {
         case "display":
             return "qrc:/assets/gui/element/Display.png"
         default:
-            return "qrc:/assets/gui/element/File_" + Colors.gui_theme + ".png"
+            return "qrc:/assets/gui/element/File_light.png"
         }
     }
     readonly property string selectionTypeName: {

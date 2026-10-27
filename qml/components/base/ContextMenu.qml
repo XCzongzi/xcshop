@@ -323,14 +323,14 @@ Item {
                             Behavior on height { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
                         }
 
-                        Image {
+                        ThemedIcon {
                             id: itemIcon
                             x: 10
                             anchors.verticalCenter: parent.verticalCenter
                             width: 16
                             height: 16
                             visible: !menuRow.entry.separator && menuRow.entry.icon !== undefined
-                            source: visible ? menuRow.entry.icon : ""
+                            iconSource: visible ? menuRow.entry.icon : ""
                             opacity: menuRow.entry.enabled === false ? 0.42 : 0.85
                             mipmap: true
                         }

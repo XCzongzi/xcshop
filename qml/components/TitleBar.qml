@@ -99,7 +99,6 @@ Rectangle {
             topRightRadius: root.mainWindow.visibility === Window.Maximized ? 2 : Constants.window_radius - 2
             btnfired: "#FF0000"
             btnpressed: "#a00c0c"
-            imageColor: hovered || pressed ? "#ffffff" : Colors.text
             //关闭按钮
             imageSource: "qrc:/assets/gui/titleBar/close.png"
             onClicked: root.closeClicked()

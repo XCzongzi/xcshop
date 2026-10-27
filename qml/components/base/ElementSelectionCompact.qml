@@ -11,13 +11,13 @@ ElementSelectionBase {
         width: typeIcon.width + 7 + typeText.width + 10
         height: parent.height
 
-        Image {
+        ThemedIcon {
             id: typeIcon
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             width: 24
             height: 24
-            source: root.elementIconSource
+            iconSource: root.elementIconSource
             fillMode: Image.PreserveAspectFit
             smooth: false
             mipmap: false

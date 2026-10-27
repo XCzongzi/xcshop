@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls.impl as Impl
 import xcshop
 
 
@@ -79,12 +78,11 @@ Item{
             y: (parent.height - height) / 2 - 4
             x: parent.height - y - height - 12
             spacing: 2
-            Impl.IconImage {
+            ThemedIcon {
                 id: icon
                 height: 64 * root.scale
                 width: height
-                source: root.icon
-                color: Colors.isLight ? Colors.text : Colors.transparent
+                iconSource: root.icon
                 smooth: true
                 antialiasing: true
                 mipmap: true

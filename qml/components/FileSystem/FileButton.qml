@@ -46,12 +46,12 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed } }
     }
 
-    Image {
+    ThemedIcon {
         x: 4
         anchors.verticalCenter: parent.verticalCenter
         width: root.highlighted || pointer.containsMouse ? 22 : 18
         height: width
-        source: "qrc:/assets/gui/element/" + root.icon + ".png"
+        iconSource: "qrc:/assets/gui/element/" + root.icon + ".png"
         sourceSize.width: width
         sourceSize.height: height
 
@@ -80,12 +80,12 @@ Rectangle {
         Drag.keys: ["xcshop-element-paths"]
         Drag.hotSpot.x: width / 2
         Drag.hotSpot.y: height / 2
-        Drag.imageSource: "qrc:/assets/gui/element/" + root.icon + ".png"
+        Drag.imageSource: Colors.whiteUiIconSource("qrc:/assets/gui/element/" + root.icon + ".png")
 
-        Image {
+        ThemedIcon {
             visible: dragProxy.Drag.active
             anchors.fill: parent
-            source: dragProxy.Drag.imageSource
+            iconSource: dragProxy.Drag.imageSource
             sourceSize.width: width
             sourceSize.height: height
         }

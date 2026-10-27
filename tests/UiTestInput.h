@@ -1,10 +1,13 @@
 #pragma once
 #include <QObject>
+#include <QColor>
 #include <QImage>
+#include <QRect>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTest>
 #include <QWindow>
+#include <QVariantMap>
 
 // Send actual window events so smoke tests exercise native control behavior.
 class UiTestInput : public QObject {
@@ -26,6 +29,31 @@ public:
         const QImage image(path);
         if (image.isNull() || !image.rect().contains(x, y)) return {};
         return image.pixelColor(x, y);
+    }
+    Q_INVOKABLE QVariantMap iconPixelDifference(const QString &path, const QRect &actual,
+                                                const QRect &reference, const QColor &tint,
+                                                bool tinted) {
+        const QImage image(path);
+        if (image.isNull() || actual.size() != reference.size()
+            || !image.rect().contains(actual) || !image.rect().contains(reference))
+            return {{"error", 256}, {"samples", 0}};
+        int error = 0, samples = 0;
+        for (int y = 0; y < actual.height(); ++y) {
+            for (int x = 0; x < actual.width(); ++x) {
+                const QColor expected = image.pixelColor(reference.x() + x, reference.y() + y);
+                // Opaque white interiors avoid antialiasing and filtering noise.
+                // Dark mode and colored images compare the entire original image.
+                if (tinted && (expected.red() < 252 || expected.green() < 252 || expected.blue() < 252))
+                    continue;
+                const QColor pixel = image.pixelColor(actual.x() + x, actual.y() + y);
+                const QColor target = tinted ? tint : expected;
+                error = qMax(error, qAbs(pixel.red() - target.red()));
+                error = qMax(error, qAbs(pixel.green() - target.green()));
+                error = qMax(error, qAbs(pixel.blue() - target.blue()));
+                ++samples;
+            }
+        }
+        return {{"error", error}, {"samples", samples}};
     }
     Q_INVOKABLE int brightnessAt(QQuickItem *item, qreal x, qreal y) {
         if (!item || !item->window()) return -1;

@@ -99,6 +99,7 @@ qt_add_qml_module(appxcshop
 
         qml/components/base/XCWindow.qml
         qml/components/base/ImageButton.qml
+        qml/components/base/ThemedIcon.qml
         qml/components/base/TextButton.qml
         qml/components/base/XCText.qml
         qml/components/base/XCTextField.qml
@@ -275,7 +276,12 @@ if(XCSHOP_BUILD_TESTS)
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
     target_sources(appxcshop PRIVATE tests/UiTestInput.h)
     target_link_libraries(appxcshop PRIVATE Qt6::Test)
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml)
+    add_test(NAME themed_icon_ui_smoke COMMAND appxcshop --themed-icon-ui-smoke)
+    set_tests_properties(themed_icon_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        FAIL_REGULAR_EXPRESSION "THEMED_ICON_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 30)
     add_test(NAME light_theme_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     set_tests_properties(light_theme_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"

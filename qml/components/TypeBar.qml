@@ -75,7 +75,7 @@ Rectangle {
         btnSize: Constants.typeBarWidth
         imgSize: Constants.typeBarWidth * 3/4
         btnRadius: 4
-        imageSource: "qrc:/assets/gui/typeBar/" + typeValue + "_" + Colors.gui_theme + ".png"
+        imageSource: "qrc:/assets/gui/typeBar/" + typeValue + "_light.png"
         btnSelected:(typeBar.currentType == z) ? true : false
         onClicked: {
             if (typeValue == "更多") return
@@ -152,7 +152,7 @@ Rectangle {
         freeze: false
         z: 12
         y: parent.height - height
-        imageSource: "qrc:/assets/gui/typeBar/Extra_" + Colors.gui_theme + ".png"
+        imageSource: "qrc:/assets/gui/typeBar/Extra_light.png"
         typeValue: "更多"
 
         onClicked:{
