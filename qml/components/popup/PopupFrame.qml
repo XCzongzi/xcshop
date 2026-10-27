@@ -100,6 +100,8 @@ Item {
         width: Math.min(root.dialogWidth, Math.max(0, root.width - 48))
         height: Math.min(root.dialogHeight, Math.max(0, root.height - 48))
         radius: 0
+        topLeftRadius: 6
+        topRightRadius: 6
         bottomLeftRadius: 15
         bottomRightRadius: 15
         border.width: 1
@@ -109,10 +111,17 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
         }
-        Rectangle {
+        Item {
             width: parent.width
             height: 5
-            color: Colors.border
+            clip: true
+            Rectangle {
+                width: parent.width
+                height: Math.max(parent.height, panel.topLeftRadius * 2)
+                topLeftRadius: panel.topLeftRadius
+                topRightRadius: panel.topRightRadius
+                color: Colors.border
+            }
         }
         XCText {
             x: 24

@@ -257,9 +257,9 @@ Window {
                 case 4:
                     root.check(root.find("popupPanel").width === 520, "Notice shell geometry changed")
                     var panel = root.find("popupPanel")
-                    root.check(panel.topLeftRadius === 0 && panel.topRightRadius === 0
+                    root.check(panel.topLeftRadius === 6 && panel.topRightRadius === 6
                                && panel.bottomLeftRadius === 15 && panel.bottomRightRadius === 15,
-                               "Popup must have square top corners and rounded bottom corners")
+                               "Popup must have small top corners and larger bottom corners")
                     root.page.close(1)
                     break
                 case 5:
