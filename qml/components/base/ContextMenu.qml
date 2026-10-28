@@ -19,7 +19,7 @@ Item {
     property int horizontalPadding: 6
     property int verticalPadding: 6
     property int edgeMargin: 8
-    readonly property int animationDuration: 500 / Global.animationSpeed
+    readonly property int animationDuration: 350 / Global.animationSpeed
     property bool opened: false
     property bool closing: false
 
@@ -220,8 +220,9 @@ Item {
         opacity: root.opened ? 1 : 0
         scale: root.opened ? 1 : 0.96
         transformOrigin: Item.TopLeft
-        width: Math.max(root.minimumWidth, root.customContentWidth + root.horizontalPadding * 2,
-                        menuColumn.implicitWidth + root.horizontalPadding * 2)
+        width: Math.min(Math.max(root.minimumWidth, root.customContentWidth + root.horizontalPadding * 2,
+                                menuColumn.naturalWidth + root.horizontalPadding * 2),
+                        Math.max(0, root.width - root.edgeMargin * 2))
         height: Math.min(Math.max(root.customContentHeight, menuColumn.implicitHeight)
                          + root.verticalPadding * 2, Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
@@ -258,6 +259,14 @@ Item {
 
             Column {
                 id: menuColumn
+                // Column's implicit width follows the rows' assigned width.
+                // Measure their natural widths independently of the viewport.
+                readonly property real naturalWidth: {
+                    var maximum = 0
+                    for (var child of children)
+                        maximum = Math.max(maximum, child.implicitWidth)
+                    return maximum
+                }
                 width: parent.width
                 spacing: 1
 
@@ -275,8 +284,8 @@ Item {
 
                         width: menuColumn.width
                         height: entry.separator ? 7 : root.itemHeight
-                        implicitWidth: entry.separator ? 0 : menuLabel.implicitWidth
-                                       + (itemIcon.visible ? 44 : 22)
+                        implicitWidth: entry.separator ? 0 : menuLabel.x + menuLabel.implicitWidth
+                                       + (hasChildren ? 28 : 11)
 
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
@@ -302,7 +311,7 @@ Item {
                                 hovered: menuRow.hovered
                                 pressed: menuRow.pressed
                                 stateEnabled: menuRow.entry.enabled !== false
-                                duration: 500
+                                duration: 350
                                 cornerRadius: 6
                             }
                         }
@@ -399,7 +408,8 @@ Item {
         opacity: visible ? 1 : 0
         scale: visible ? 1 : 0.97
         transformOrigin: Item.TopLeft
-        width: Math.max(root.minimumWidth, submenuColumn.implicitWidth + root.horizontalPadding * 2)
+        width: Math.min(Math.max(root.minimumWidth, submenuColumn.naturalWidth + root.horizontalPadding * 2),
+                        Math.max(0, root.width - root.edgeMargin * 2))
         height: Math.min(submenuColumn.implicitHeight + root.verticalPadding * 2,
                          Math.max(0, root.height - root.edgeMargin * 2))
         radius: 10
@@ -426,6 +436,12 @@ Item {
 
             Column {
                 id: submenuColumn
+                readonly property real naturalWidth: {
+                    var maximum = 0
+                    for (var child of children)
+                        maximum = Math.max(maximum, child.implicitWidth)
+                    return maximum
+                }
                 width: parent.width
                 spacing: 1
 
@@ -468,7 +484,7 @@ Item {
                                 hovered: submenuRow.hovered
                                 pressed: submenuRow.pressed
                                 stateEnabled: submenuRow.entry.enabled !== false
-                                duration: 500
+                                duration: 350
                                 cornerRadius: 6
                             }
                         }

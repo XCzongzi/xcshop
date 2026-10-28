@@ -21,6 +21,7 @@ Window {
     Component { id: projectDialog; PopupProjectSettings {} }
     Component { id: shopDialog; PopupShopSettings {} }
     Component { id: fadeDialog; PopupFrame {} }
+    XCFileTreeBar { id: explorer; visible: false }
     Rectangle { id: flatBackdrop; width: root.width; height: root.height; color: "#202020"; visible: false }
     ContextMenu {
         id: menu
@@ -89,6 +90,24 @@ Window {
         console.log("DROPDOWN_FADE_PEAK " + label + ": " + peak)
         check(peak < 60, label + " flashed over a dark backdrop: " + peak)
     }
+    function checkMenuLabels(item) {
+        if (item.visible && item.xcText !== undefined)
+            check(!item.truncated, "Context menu label was truncated: " + item.xcText)
+        for (var child of item.children || []) checkMenuLabels(child)
+    }
+    function checkMenuExterior(path) {
+        var panel = find(menu, "contextMenuSurface")
+        var points = [Qt.point(1, 1), Qt.point(panel.width - 2, 1),
+                      Qt.point(1, panel.height - 2), Qt.point(panel.width - 2, panel.height - 2),
+                      Qt.point(panel.width / 2, -4), Qt.point(panel.width / 2, panel.height + 12)]
+        for (var point of points) {
+            var scene = panel.mapToItem(root.contentItem, point)
+            var pixel = UiInput.imageColor(path, Math.round(scene.x * Screen.devicePixelRatio),
+                                          Math.round(scene.y * Screen.devicePixelRatio))
+            check(Math.max(pixel.r, pixel.g, pixel.b) * 255 <= 67,
+                  "Solid menu material escaped the rounded panel at " + point)
+        }
+    }
     function checkDialogFades() {
         Global.mainWindow_popupBackdrop = flatBackdrop
         for (var cycle = 0; cycle < 2; ++cycle) {
@@ -115,7 +134,7 @@ Window {
         contentItem.grabToImage(function(result) {
             check(result.saveToFile(SMOKE_OUTPUT_DIR + "/ui-dropdown-" + name + ".png"), "Save screenshot")
             root.capturing = false
-            if (done) done()
+            if (done) done(SMOKE_OUTPUT_DIR + "/ui-dropdown-" + name + ".png")
         })
     }
     function openDialog(component, properties) {
@@ -265,7 +284,31 @@ Window {
                     break
                 case 16:
                     menu.close()
-                    console.log("DROPDOWN_UI_SMOKE_PASSED: mouse, keyboard, focus, stable values, grouped headers/colors, dialogs, resize, upward placement, scroll anchoring, empty states, frosted surfaces")
+                    UiInput.settle(600)
+                    frame.visible = false
+                    flatBackdrop.visible = true
+                    flatBackdrop.color = "#404040"
+                    Global.mainWindow_popupBackdrop = flatBackdrop
+                    menu.menuItems = explorer.contextMenuItems(["/sample.xcseItem"])
+                    menu.openAt(100, 70)
+                    break
+                case 17:
+                    UiInput.settle(250)
+                    root.checkMenuLabels(root.find(menu, "menuViewport"))
+                    root.screenshot("file-menu-shape", root.checkMenuExterior)
+                    break
+                case 18:
+                    menu.menuItems = explorer.directoryContextMenuItems("/sample")
+                    menu.openAt(100, 70)
+                    break
+                case 19:
+                    UiInput.settle(250)
+                    root.checkMenuLabels(root.find(menu, "menuViewport"))
+                    root.screenshot("directory-menu-shape", root.checkMenuExterior)
+                    break
+                case 20:
+                    menu.close()
+                    console.log("DROPDOWN_UI_SMOKE_PASSED: mouse, keyboard, focus, stable values, grouped headers/colors, dialogs, resize, upward placement, scroll anchoring, empty states, frosted surfaces, file/folder menu labels and rounded shadows")
                     Qt.exit(0)
                 }
             } catch (error) { console.error("DROPDOWN_UI_SMOKE_FAILED step " + root.step + ": " + error); Qt.exit(1) }

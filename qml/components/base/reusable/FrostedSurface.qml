@@ -54,16 +54,18 @@ Rectangle {
         rotation: root.rotation
         transformOrigin: root.transformOrigin
         active: root.visible && GraphicsInfo.api !== GraphicsInfo.Software
-        sourceComponent: MultiEffect {
-            shadowEnabled: true
-            shadowHorizontalOffset: 0
-            shadowVerticalOffset: 6
-            shadowBlur: 0.65
-            shadowColor: Colors.changeA(Colors.shadow, 0.40)
+        // Render only the shadow; MultiEffect also paints its solid source.
+        sourceComponent: DropShadow {
+            horizontalOffset: 0
+            verticalOffset: 6
+            radius: 16
+            samples: 33
+            color: Colors.changeA(Colors.shadow, 0.40)
+            transparentBorder: true
             source: Rectangle {
                 width: root.width; height: root.height
                 visible: false
-                color: root.tint
+                color: "black"
                 topLeftRadius: root.topLeftRadius
                 topRightRadius: root.topRightRadius
                 bottomLeftRadius: root.bottomLeftRadius
