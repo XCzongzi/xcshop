@@ -14,7 +14,15 @@ T.ComboBox {
     property string emptyText: "暂无可用选项"
     property bool compact: false
     property int selectionRevision: 0
+    readonly property int animationDuration: 280 / Global.animationSpeed
     signal valueActivated(string value)
+
+    // Keep reveal state outside the deferred native popup and its transitions.
+    QtObject {
+        id: popupState
+        property bool expanded: false
+        property real progress: 0
+    }
 
     implicitWidth: 200
     implicitHeight: compact ? 30 : 36
@@ -64,7 +72,7 @@ T.ComboBox {
     }
     readonly property real windowWidth: Window.width
     readonly property real windowHeight: Window.height
-    FontMetrics { id: metrics; font: root.font }
+    FontMetrics { id: metrics; font.family: root.font.family; font.pixelSize: 13 }
     readonly property real listWidth: {
         var measured = root.width
         for (var i = 0; i < options.length; ++i)
@@ -86,8 +94,7 @@ T.ComboBox {
         width: 12; height: 8
         property color strokeColor: root.enabled ? Colors.text : Colors.banned
         onStrokeColorChanged: requestPaint()
-        rotation: root.popup.visible ? 180 : 0
-        Behavior on rotation { NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic } }
+        rotation: popupState.progress * 180
         onPaint: {
             var ctx = getContext("2d")
             ctx.reset()
@@ -100,20 +107,21 @@ T.ComboBox {
         }
     }
     background: Rectangle {
-        radius: 7
+        radius: 10
         color: Colors.changeA(Colors.input, 0.36)
         border.width: 1
-        border.color: root.popup.visible || root.visualFocus ? Colors.changeA(Colors.border, 0.82)
+        border.color: popupState.expanded || root.visualFocus ? Colors.changeA(Colors.border, 0.82)
                                                              : Colors.changeA(Colors.outline, 0.10)
         opacity: root.enabled ? 1 : 0.6
-        Behavior on border.color { ColorAnimation { duration: 160 / Global.animationSpeed } }
+        Behavior on border.color { ColorAnimation { duration: root.animationDuration } }
         ButtonStateOverlay {
             hovered: root.hovered
-            pressed: root.down
+            pressed: root.pressed || popupState.expanded
             stateEnabled: root.enabled
-            hoverColor: Colors.changeA(Colors.fired, 0.12)
-            pressedColor: Colors.changeA(Colors.pressed, 0.24)
-            cornerRadius: 7
+            hoverColor: Colors.changeA(Colors.fired, 0.44)
+            pressedColor: Colors.changeA(Colors.pressed, 0.78)
+            duration: 280
+            cornerRadius: 10
         }
     }
 
@@ -125,52 +133,62 @@ T.ComboBox {
                 && (index === 0 || modelData.group !== root.options[index - 1].group)
         readonly property real headingHeight: startsGroup ? 26 : 0
         readonly property bool selected: root.currentIndex === index
+        readonly property bool active: hovered || highlighted
+        readonly property real rowHeight: height - headingHeight
         width: choices.width
-        height: headingHeight + (root.compact ? 30 : 34)
+        height: headingHeight + 30
         enabled: modelData.enabled !== false
         hoverEnabled: true
         highlighted: root.highlightedIndex === index
         text: String(modelData.label)
-        leftPadding: 28 + (swatch.visible ? 20 : 0)
-        rightPadding: 10
+        leftPadding: 11 + (swatch.visible ? 20 : 0)
+        rightPadding: 11
         topPadding: headingHeight
         bottomPadding: 0
-        font: root.font
+        font.family: root.font.family
+        font.pixelSize: 13
         contentItem: XCText {
             xcText: entry.text
-            xcFontSize: root.font.pixelSize
+            xcFontSize: entry.font.pixelSize
             boldFont: false
             onCenter: false
             verticalAlignment: Text.AlignVCenter
-            textColor: entry.enabled ? Colors.text : Colors.banned
+            textColor: entry.enabled ? Colors.text : Colors.changeA(Colors.banned, 0.62)
         }
         background: Item {
             Rectangle {
                 y: entry.headingHeight
                 width: parent.width
-                height: parent.height - y
-                radius: 5
+                height: entry.rowHeight
+                radius: 6
                 color: entry.selected ? Colors.changeA(Colors.border, 0.14) : Colors.transparent
+                scale: entry.down ? 0.985 : 1
+                Behavior on scale { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
                 ButtonStateOverlay {
-                    hovered: entry.hovered || entry.highlighted
+                    hovered: entry.active
                     pressed: entry.down
                     stateEnabled: entry.enabled
-                    hoverColor: Colors.changeA(Colors.fired, 0.18)
-                    pressedColor: Colors.changeA(Colors.pressed, 0.36)
-                    cornerRadius: 5
+                    hoverColor: Colors.changeA(Colors.fired, 0.44)
+                    pressedColor: Colors.changeA(Colors.pressed, 0.78)
+                    duration: 280
+                    cornerRadius: 6
                 }
             }
         }
         Rectangle {
-            visible: entry.selected
-            x: 11; y: entry.headingHeight + (entry.height - entry.headingHeight - height) / 2
-            width: 6; height: 6; radius: 3
+            x: 0; y: entry.headingHeight + (entry.rowHeight - height) / 2
+            width: 2
+            height: Math.max(0, entry.rowHeight - (entry.down ? 8 : 14))
+            radius: width / 2
             color: Colors.border
+            opacity: !entry.enabled ? 0 : entry.down || entry.selected ? 1 : entry.active ? 0.78 : 0
+            Behavior on opacity { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
+            Behavior on height { NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic } }
         }
         Rectangle {
             id: swatch
             visible: !!entry.modelData.swatch
-            x: 28; y: entry.headingHeight + (entry.height - entry.headingHeight - height) / 2
+            x: 11; y: entry.headingHeight + (entry.rowHeight - height) / 2
             width: 12; height: 12; radius: 3
             color: entry.modelData.swatch || Colors.transparent
             border.width: 1; border.color: Colors.changeA(Colors.outline, 0.20)
@@ -190,72 +208,126 @@ T.ComboBox {
     popup: T.Popup {
         id: optionsPopup
         objectName: "comboPopup"
+        // visible stays true throughout exit; the field follows the requested state.
+        property alias expanded: popupState.expanded
+        property alias revealProgress: popupState.progress
         readonly property real below: Math.max(0, root.windowHeight - root.anchorPosition.y - root.height - 12)
         readonly property real above: Math.max(0, root.anchorPosition.y - 12)
+        readonly property real fullHeight: Math.min(choices.contentHeight + padding * 2, 300, Math.max(above, below))
+        readonly property bool opensAbove: below < fullHeight && below < above
         width: Math.min(root.listWidth, Math.max(0, root.windowWidth - 16))
-        height: Math.min(choices.contentHeight + padding * 2, 300, Math.max(above, below))
+        // Keep native popup geometry stable; reveal only its material and viewport.
+        height: fullHeight
         x: Math.max(8 - root.anchorPosition.x, Math.min(0, root.windowWidth - 8 - root.anchorPosition.x - width))
-        y: below >= height || below >= above ? root.height + 4 : -height - 4
-        padding: 5
+        y: opensAbove ? -fullHeight - 4 : root.height + 4
+        padding: 6
         modal: false
         dim: false
         margins: 8
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent
-        exit: Transition { NumberAnimation { property: "opacity"; to: 0; duration: 120 / Global.animationSpeed } }
-        contentItem: ListView {
-            id: choices
-            objectName: "comboOptions"
-            clip: true
-            model: root.delegateModel
-            currentIndex: root.highlightedIndex
-            highlightMoveDuration: 0
-            boundsBehavior: Flickable.StopAtBounds
-            onDraggingChanged: if (dragging) wheelMotion.stop()
-            NumberAnimation {
-                id: wheelMotion
-                target: choices
-                property: "contentY"
-                duration: 120 / Global.animationSpeed
-                easing.type: Easing.OutCubic
-            }
-            WheelHandler {
-                target: null
-                onWheel: function(event) {
-                    var delta = event.pixelDelta.y || event.angleDelta.y
-                    if (!delta) {
-                        event.accepted = false
-                        return
-                    }
-                    // Accumulate wheel steps; reversing direction responds immediately.
-                    var start = wheelMotion.running && (wheelMotion.to - choices.contentY) * delta < 0
-                            ? wheelMotion.to : choices.contentY
-                    wheelMotion.stop()
-                    choices.cancelFlick()
-                    var destination = Math.max(choices.originY, Math.min(start - delta,
-                            choices.originY + Math.max(0, choices.contentHeight - choices.height)))
-                    if (event.pixelDelta.y) {
-                        // Touchpads already provide smooth motion and momentum.
-                        choices.contentY = destination
-                    } else {
-                        wheelMotion.from = choices.contentY
-                        wheelMotion.to = destination
-                        wheelMotion.start()
-                    }
-                    event.accepted = true
-                }
-            }
-            Controls.ScrollBar.vertical: XCScrollBar {
-                onPressedChanged: if (pressed) wheelMotion.stop()
-            }
-            onCurrentIndexChanged: {
-                wheelMotion.stop()
-                if (currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: popupState.progress; to: 1; duration: root.animationDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { target: popupState; property: "progress"; to: 1; duration: root.animationDuration; easing.type: Easing.OutCubic }
             }
         }
-        onAboutToHide: wheelMotion.stop()
-        onOpened: choices.positionViewAtIndex(Math.max(0, root.highlightedIndex), ListView.Contain)
+        exit: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; to: 0; duration: root.animationDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { target: popupState; property: "progress"; to: 0; duration: root.animationDuration; easing.type: Easing.OutCubic }
+            }
+        }
+        contentItem: Item {
+            clip: true
+            // Keep the list at its final size while the viewport reveals it.
+            // Text and scroll position remain stable throughout the animation.
+            Item {
+                id: revealViewport
+                objectName: "comboRevealViewport"
+                width: parent.width
+                height: Math.max(0, optionsPopup.fullHeight * popupState.progress - optionsPopup.padding * 2)
+                y: optionsPopup.opensAbove ? parent.height - height : 0
+                clip: true
+                ListView {
+                    id: choices
+                    objectName: "comboOptions"
+                    width: parent.width
+                    height: Math.max(0, optionsPopup.fullHeight - optionsPopup.padding * 2)
+                    y: optionsPopup.opensAbove ? parent.height - height : 0
+                    onHeightChanged: if (popupState.expanded) Qt.callLater(optionsPopup.positionHighlightedOption)
+                    clip: true
+                    model: root.delegateModel
+                    currentIndex: root.highlightedIndex
+                    highlightMoveDuration: 0
+                    spacing: 1
+                    boundsBehavior: Flickable.StopAtBounds
+                    onDraggingChanged: if (dragging) wheelMotion.stop()
+                    NumberAnimation {
+                        id: wheelMotion
+                        target: choices
+                        property: "contentY"
+                        duration: 120 / Global.animationSpeed
+                        easing.type: Easing.OutCubic
+                    }
+                    WheelHandler {
+                        target: null
+                        onWheel: function(event) {
+                            var delta = event.pixelDelta.y || event.angleDelta.y
+                            if (!delta) {
+                                event.accepted = false
+                                return
+                            }
+                            // Accumulate wheel steps; reversing direction responds immediately.
+                            var start = wheelMotion.running && (wheelMotion.to - choices.contentY) * delta < 0
+                                    ? wheelMotion.to : choices.contentY
+                            wheelMotion.stop()
+                            choices.cancelFlick()
+                            var destination = Math.max(choices.originY, Math.min(start - delta,
+                                    choices.originY + Math.max(0, choices.contentHeight - choices.height)))
+                            if (event.pixelDelta.y) {
+                                // Touchpads already provide smooth motion and momentum.
+                                choices.contentY = destination
+                            } else {
+                                wheelMotion.from = choices.contentY
+                                wheelMotion.to = destination
+                                wheelMotion.start()
+                            }
+                            event.accepted = true
+                        }
+                    }
+                    Controls.ScrollBar.vertical: XCScrollBar {
+                        onPressedChanged: if (pressed) wheelMotion.stop()
+                    }
+                    onCurrentIndexChanged: {
+                        wheelMotion.stop()
+                        if (currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                    }
+                }
+            }
+        }
+        function positionHighlightedOption() {
+            if (!popupState.expanded) return
+            choices.forceLayout()
+            if (root.highlightedIndex >= 0)
+                choices.positionViewAtIndex(root.highlightedIndex, ListView.Contain)
+            else
+                choices.positionViewAtBeginning()
+        }
+        onAboutToShow: {
+            popupState.expanded = true
+            // Resolve the selected row before the first revealed frame.
+            Qt.callLater(positionHighlightedOption)
+        }
+        onAboutToHide: {
+            popupState.expanded = false
+            wheelMotion.stop()
+        }
         background: FrostedSurface {
-            radius: 7
+            width: optionsPopup.width
+            height: optionsPopup.fullHeight * popupState.progress
+            y: optionsPopup.opensAbove ? optionsPopup.fullHeight - height : 0
+            radius: 10
+            border.color: Colors.changeA(Colors.outline, 0.12)
             backdropAnchor: root
         }
     }

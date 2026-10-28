@@ -73,16 +73,94 @@ Window {
         return null
     }
     function insideWindow(combo) {
-        var list = combo.popup.contentItem
+        var list = find(combo.popup.contentItem, "comboOptions")
         var point = list.mapToItem(null, 0, 0)
         check(point.x >= 0 && point.y >= 0 && point.x + list.width <= width + 1
               && point.y + list.height <= height + 1, "Popup escaped window bounds")
     }
-    function checkFade(panel, label, closing) {
+    function checkUpwardAnchor(combo) {
+        var panel = combo.popup.background
+        var bottom = panel.mapToItem(null, 0, panel.height).y
+        check(Math.abs(bottom - combo.mapToItem(null, 0, 0).y + 4) < 1,
+              "Upward popup detached from its field during animation")
+    }
+    function checkSelectedVisible(combo) {
+        var list = find(combo.popup.contentItem, "comboOptions")
+        var row = list.itemAtIndex(combo.currentIndex)
+        check(row && row.y >= list.contentY - 1 && row.y + row.height <= list.contentY + list.height + 1,
+              "Selected option was outside the final viewport")
+    }
+    function checkRevealAdaptation() {
+        var savedWidth = width, savedHeight = height
+        edge.value = "hopper_minecart"
+        UiInput.click(edge)
+        UiInput.settle(45)
+        var popup = edge.popup, list = find(popup.contentItem, "comboOptions")
+        check(popup.opensAbove && popup.background.height > 0 && popup.background.height < popup.fullHeight && list.y < 0,
+              "Bottom-edge popup did not reveal from bottom to top")
+        checkUpwardAnchor(edge)
+        checkSelectedVisible(edge)
+        var scrollPosition = list.contentY
+        var listTop = list.mapToItem(null, 0, 0).y
+        UiInput.settle(edge.animationDuration + 40)
+        checkUpwardAnchor(edge)
+        check(Math.abs(list.contentY - scrollPosition) < 1 && Math.abs(list.mapToItem(null, 0, 0).y - listTop) < 1,
+              "Selected option or list moved at the end of opening")
+
+        width = 720; height = 220
+        UiInput.settle(60)
+        insideWindow(edge)
+        checkUpwardAnchor(edge)
+        checkSelectedVisible(edge)
+        width = savedWidth; height = savedHeight
+        UiInput.settle(60)
+
+        popup.close()
+        UiInput.settle(45)
+        checkUpwardAnchor(edge)
+        check(popup.background.height > 0 && popup.background.height < popup.fullHeight,
+              "Upward popup did not collapse toward its field")
+        var opacity = popup.opacity, progress = popup.revealProgress
+        popup.open()
+        UiInput.settle(12)
+        check(popup.opacity >= opacity - 0.03 && popup.revealProgress >= progress - 0.03,
+              "Reopening a closing popup restarted its animation")
+        check(Math.abs(edge.indicator.rotation - popup.revealProgress * 180) < 0.1,
+              "Arrow and reveal progress diverged during rapid reopening")
+        UiInput.settle(edge.animationDuration + 40)
+        check(popup.opacity > 0.99 && popup.revealProgress > 0.99, "Rapid reopening did not finish")
+
+        popup.close()
+        UiInput.settle(edge.animationDuration + 40)
+        popup.open()
+        UiInput.settle(45)
+        list.positionViewAtBeginning()
+        scrollPosition = list.contentY
+        UiInput.settle(edge.animationDuration + 40)
+        check(Math.abs(list.contentY - scrollPosition) < 1, "Opening reset a user's scroll position")
+
+        Global.animationSpeed = 2
+        popup.close()
+        UiInput.settle(edge.animationDuration + 40)
+        check(!popup.visible && Math.abs(edge.indicator.rotation) < 0.1,
+              "Animation speed scaling left the popup or arrow open")
+        popup.open()
+        UiInput.settle(25)
+        edge.visible = false
+        UiInput.settle(edge.animationDuration + 40)
+        check(!popup.visible && Math.abs(edge.indicator.rotation) < 0.1,
+              "Hiding a field during entry left its popup open")
+        edge.visible = true
+        Global.animationSpeed = 1
+        edge.value = "barrel"
+        UiInput.click(edge)
+    }
+    function checkFade(panel, label, closing, sampleY) {
         var peak = 0
-        for (var sample = 0; sample < 18; ++sample) {
+        for (var sample = 0; sample < 32; ++sample) {
             UiInput.settle(12)
-            var brightness = UiInput.brightnessAt(panel, panel.width / 2, panel.height / 2)
+            var brightness = UiInput.brightnessAt(panel, panel.width / 2,
+                                                sampleY === undefined ? panel.height / 2 : sampleY)
             if (brightness < 0 && closing) break // Popup detached after its exit transition.
             check(brightness >= 0, "Could not capture an animation frame")
             peak = Math.max(peak, brightness)
@@ -123,14 +201,30 @@ Window {
         modal.destroy(); modal = null
         UiInput.click(plain)
         check(plain.popup.visible, "Fade fixture dropdown did not open")
-        checkFade(plain.popup.background, "dropdown open")
+        UiInput.settle(40 / Global.animationSpeed)
+        var list = find(plain.popup.contentItem, "comboOptions")
+        var openingTop = plain.popup.background.mapToItem(null, 0, 0).y
+        check(plain.popup.background.height > 0 && plain.popup.background.height < plain.popup.fullHeight
+              && list.height > find(plain.popup.contentItem, "comboRevealViewport").height && plain.popup.scale === 1,
+              "Dropdown did not reveal its unscaled content vertically")
+        // Sample the material padding; the moving center crosses selected rows.
+        checkFade(plain.popup.background, "dropdown open", false, 3)
+        check(Math.abs(plain.popup.background.mapToItem(null, 0, 0).y - openingTop) < 1,
+              "Dropdown top moved during the vertical reveal")
         plain.popup.close()
-        checkFade(plain.popup.background, "dropdown close", true)
+        UiInput.settle(80 / Global.animationSpeed)
+        check(plain.popup.visible && plain.indicator.rotation > 0 && plain.indicator.rotation < 179,
+              "Dropdown arrow did not start collapsing during the popup exit")
+        check(plain.popup.background.height > 0 && plain.popup.background.height < plain.popup.fullHeight,
+              "Dropdown did not collapse vertically during exit")
+        checkFade(plain.popup.background, "dropdown close", true, 3)
+        check(!plain.popup.visible && Math.abs(plain.indicator.rotation) < 0.1,
+              "Dropdown arrow and popup did not finish closing together")
         Global.mainWindow_popupBackdrop = frame
     }
     function screenshot(name, done) {
         capturing = true
-        UiInput.settle()
+        UiInput.settle(400 / Global.animationSpeed)
         contentItem.grabToImage(function(result) {
             check(result.saveToFile(SMOKE_OUTPUT_DIR + "/ui-dropdown-" + name + ".png"), "Save screenshot")
             root.capturing = false
@@ -174,10 +268,10 @@ Window {
                     break
                 case 1:
                     UiInput.key(plain, Qt.Key_Return)
-                    UiInput.settle()
+                    UiInput.settle(plain.animationDuration + 50)
                     root.check(root.plainValue === "second" && !plain.popup.visible && plain.activeFocus, "Enter did not commit and restore focus: value=" + root.plainValue + " visible=" + plain.popup.visible + " focus=" + plain.activeFocus)
                     UiInput.click(plain); UiInput.key(plain, Qt.Key_Down); UiInput.key(plain, Qt.Key_Escape)
-                    UiInput.settle()
+                    UiInput.settle(plain.animationDuration + 50)
                     root.check(root.plainValue === "second" && !plain.popup.visible, "Escape committed a pending value")
                     plain.options = [root.simpleOptions[2], root.simpleOptions[0], root.simpleOptions[1]]
                     UiInput.settle()
@@ -189,21 +283,21 @@ Window {
                     UiInput.key(plain, Qt.Key_Space)
                     root.check(plain.popup.visible, "Space did not open the selector")
                     UiInput.click(before)
-                    UiInput.settle()
+                    UiInput.settle(plain.animationDuration + 50)
                     root.check(!plain.popup.visible && before.activeFocus, "Outside click did not close and focus its target")
                     UiInput.click(root.find(shops, "newShopContainerChoice"))
                     break
                 case 3:
                     var combo = root.find(shops, "newShopContainerChoice")
                     root.check(combo.popup.visible && root.contextRequests === 0, "Container selector still uses the global context menu")
-                    var list = combo.popup.contentItem
+                    var list = root.find(combo.popup.contentItem, "comboOptions")
                     UiInput.click(list.itemAtIndex(0), 20, 10)
                     root.check(combo.popup.visible, "Clicking a group header selected a container")
                     list.positionViewAtIndex(6, ListView.Center); list.forceLayout()
                     break
                 case 4:
                     var combo = root.find(shops, "newShopContainerChoice")
-                    var entry = combo.popup.contentItem.itemAtIndex(6)
+                    var entry = root.find(combo.popup.contentItem, "comboOptions").itemAtIndex(6)
                     root.check(entry && entry.modelData.swatch, "Shulker options lack color swatches")
                     root.insideWindow(combo)
                     root.screenshot("containers-dark", function() { UiInput.click(entry, 60, entry.headingHeight + 15) })
@@ -231,7 +325,7 @@ Window {
                     var combo = root.find(root.modal, "projectTemplateChoice")
                     root.insideWindow(combo)
                     UiInput.key(combo, Qt.Key_Escape)
-                    UiInput.settle()
+                    UiInput.settle(combo.animationDuration + 50)
                     root.check(root.modal.opened && !combo.popup.visible, "Escape closed the containing dialog")
                     root.modal.close(null)
                     break
@@ -255,7 +349,7 @@ Window {
                     root.width = 1100; root.height = 760
                     break
                 case 12:
-                    UiInput.click(edge)
+                    root.checkRevealAdaptation()
                     root.check(edge.popup.visible && edge.popup.y < 0, "Bottom-edge selector did not open upward")
                     root.insideWindow(edge)
                     root.screenshot("edge-light", function() { UiInput.key(edge, Qt.Key_Escape) })
