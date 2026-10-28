@@ -27,10 +27,11 @@ Rectangle {
                        : operationMode && operationSelected
                          ? Colors.changeA(Colors.border, 0.28)
                        : !operationMode && opened ? Colors.selectedRow
-                                  : pointer.containsMouse ? Colors.fired : Colors.transparent
+                                  : pointer.containsMouse ? Colors.fired : Colors.changeA(Colors.fired, 0)
     border.width: activeFocus || dropHovered ? 1 : 0
     border.color: dropHovered ? Colors.border : Colors.changeA(Colors.border, 0.82)
 
+    // Keep the hover RGB at zero alpha so the fade never interpolates through black.
     Behavior on color { ColorAnimation { duration: 120 / Global.animationSpeed } }
 
     Rectangle {
