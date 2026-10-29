@@ -14,6 +14,7 @@ Window {
     property var lastResult: null
     property int closedCount: 0
     property bool capturePending: false
+    property bool checkingFocus: false
     property string project: SMOKE_DIR + "/shared-ui"
     XCFile {
         id: file
@@ -108,6 +109,121 @@ Window {
             return item.objectName === name
         })
     }
+    function macroInput(index, valueField) {
+        return findWhere(page, function(item) {
+            return item.placeholderText === (valueField ? "值" : "参数名")
+                    && item.parent.index === index
+        })
+    }
+    function checkMacroFocus() {
+        var firstName = macroInput(0, false), firstValue = macroInput(0, true)
+        var secondName = macroInput(1, false)
+        check(firstName && firstValue && secondName, "Macro inputs were not created")
+        UiInput.click(firstName)
+        check(firstName.activeFocus, "Macro name did not focus on its first click")
+        UiInput.click(firstValue)
+        UiInput.settle(35)
+        check(firstValue === macroInput(0, true) && firstValue.activeFocus,
+              "Switching macro fields rebuilt the clicked input or lost focus")
+        UiInput.key(firstValue, Qt.Key_End)
+        UiInput.key(firstValue, Qt.Key_9)
+        UiInput.click(secondName)
+        UiInput.settle(35)
+        check(secondName === macroInput(1, false) && secondName.activeFocus,
+              "Saving a macro value lost the next row's focus")
+        check(page.slotItems(0)[0].macros[0].value === "19", "Macro value was not saved on focus change")
+        UiInput.click(firstName)
+        UiInput.key(firstName, Qt.Key_End)
+        UiInput.key(firstName, Qt.Key_2)
+        UiInput.click(firstValue)
+        UiInput.settle(35)
+        check(firstValue === macroInput(0, true) && firstValue.activeFocus,
+              "Saving a macro name lost the next field's focus")
+        check(page.slotItems(0)[0].macros[0].name === "price2", "Macro name was not saved")
+        UiInput.key(firstValue, Qt.Key_End)
+        UiInput.key(firstValue, Qt.Key_8)
+        page.notifySlotChanged(0)
+        UiInput.settle(35)
+        check(firstValue === macroInput(0, true) && firstValue.activeFocus && firstValue.text === "198",
+              "An unrelated slot refresh discarded focus or an uncommitted macro edit")
+        UiInput.click(secondName)
+        UiInput.settle(35)
+        var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
+        check(stored.slots[0].items[0].macros[0].name === "price2"
+              && stored.slots[0].items[0].macros[0].value === "198",
+              "Macro edits were not persisted")
+    }
+    function inspectorTabs() {
+        return findWhere(page, function(item) {
+            return item.options && item.options.indexOf && item.options.indexOf("当前栏位") >= 0
+        })
+    }
+    function checkWorkspaceNavigation() {
+        var tabs = inspectorTabs()
+        page.selectBasicLayout()
+        page.clearCurrentSlot()
+        check(tabs.selected === 0, "Empty basic layout kept an unrelated inspector")
+        page.setCurrentSlot(-1)
+        check(tabs.selected === 0, "Invalid slot changed the inspector")
+        page.setCurrentSlot(0)
+        check(tabs.selected === 1, "Selecting a slot did not open its editor")
+        tabs.selected = 0
+        page.setCurrentSlot(0)
+        check(tabs.selected === 1, "Reselecting a slot did not return to its editor")
+        page.selectNestedGroup("group")
+        check(tabs.selected === 2, "Enabled nested input did not open its editor")
+        tabs.selected = 0
+        page.selectNestedGroup("missing")
+        check(tabs.selected === 0 && page.selectedNestedGroupId === "group", "Invalid group changed the context")
+        page.selectNestedGroup("other")
+        check(tabs.selected === 0, "A disabled input overrode the chosen inspector")
+        page.setNestedGroupLayoutInputEnabled("other", true)
+        check(tabs.selected === 2, "Enabling the selected input did not open its editor")
+        page.setNestingDrawMode(true)
+        var slot = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 1 })
+        check(slot, "Canvas slot missing")
+        UiInput.click(slot)
+        check(tabs.selected === 2 && page.currentSlotIndex === 0
+              && page.selectedNestedGroup().slots.indexOf(1) >= 0,
+              "Drawing a nested slot switched away from the layout editor")
+        page.setNestingDrawMode(false)
+        UiInput.click(slot)
+        check(tabs.selected === 1 && page.currentSlotIndex === 1, "Clicking a canvas slot did not open its editor")
+        page.selectBasicLayout()
+        page.clearCurrentSlot()
+        check(tabs.selected === 0, "Clearing a slot left an empty slot editor")
+        page.selectNestedGroup("group")
+        UiInput.settle(35)
+        var defaultInput = findWhere(page, function(item) { return item.placeholderText === "必填整数" })
+        UiInput.click(defaultInput)
+        defaultInput.selectAll()
+        UiInput.key(defaultInput, Qt.Key_7)
+        page.selectNestedGroup("other")
+        check(page.nestedGroupLayoutInput("group").defaultValue === "7"
+              && page.nestedGroupLayoutInput("other").defaultValue === "0",
+              "Changing groups saved an edit into the wrong group: "
+              + page.nestedGroupLayoutInput("group").defaultValue + "/"
+              + page.nestedGroupLayoutInput("other").defaultValue)
+        page.selectNestedGroup("other")
+        check(tabs.selected === 0 && page.selectedNestedGroupId === "", "Leaving a group did not restore the inspector")
+        page.setCurrentSlot(0)
+        UiInput.settle(35)
+        var originalMacros = JSON.parse(JSON.stringify(page.slotItems(0)[0].macros))
+        var value = macroInput(0, true)
+        UiInput.click(value)
+        value.selectAll()
+        UiInput.key(value, Qt.Key_5)
+        page.setCurrentSlot(1)
+        check(page.slotItems(0)[0].macros[0].value === "5" && page.slotItems(1).length === 0,
+              "Changing slots discarded an edit or saved it into the wrong slot")
+        page.updateSaleItemMacros(0, 0, originalMacros)
+        page.setCurrentSlot(0)
+        page.selectNestedGroup("other")
+        page.removeNestedGroup("other")
+        check(page.selectedNestedGroupId === "" && tabs.selected === 1,
+              "Deleting the selected group left its layout editor open")
+        UiInput.settle(35)
+    }
     function show(component, properties) {
         if (page)
             page.destroy()
@@ -146,7 +262,8 @@ Window {
         Global.project_location = project
         file.writeAtomic(project + "/UI/source.xcseUI", JSON.stringify({
             containerType: "generic_9x3",
-            slots: [],
+            slots: [{index: 0, items: [{element: "", filter: {},
+                     macros: [{name: "price", value: "1"}, {name: "count", value: "2"}]}]}],
             nestedGroups: [
                 {
                     id: "group",
@@ -175,7 +292,8 @@ Window {
                             }
                         ]
                     }
-                }
+                },
+                { id: "other", name: "另一个组", slots: [], layoutInput: {enabled: false, defaultValue: "0"} }
             ]
         }))
         timer.start()
@@ -185,7 +303,7 @@ Window {
         interval: 300
         repeat: true
         onTriggered: {
-            if (root.capturePending)
+            if (root.capturePending || root.checkingFocus)
                 return
             try {
                 switch (root.step++) {
@@ -308,12 +426,12 @@ Window {
                     Global.current_element = "UI"
                     Global.set_file([], "source")
                     root.show(uiPage)
-                    root.page.selectedNestedGroupId = "group"
+                    root.page.selectNestedGroup("group")
                     var tabs = root.findWhere(root.page, function (item) {
                         return item.options && item.options.indexOf && item.options.indexOf("布局输入器") >= 0
                     })
                     root.check(tabs, "UI inspector tabs missing")
-                    tabs.selected = 2
+                    root.check(tabs.selected === 2, "Entering an enabled group did not select the layout inspector")
                     break
                 case 12:
                     root.check(root.find("layoutConnectionRow2"), "Layout input rows were not created")
@@ -368,7 +486,19 @@ Window {
                     break
                 case 19:
                     root.check(root.page.nestedGroupLayoutInput("group").connections.length === 1, "Removal after switching groups failed")
-                    console.log("SHARED_UI_SMOKE_PASSED: themes, actions, editors, choices, selection, settings, popup results/focus, layout row deletion")
+                    root.page.setCurrentSlot(0)
+                    var tabs = root.findWhere(root.page, function(item) {
+                        return item.options && item.options.indexOf && item.options.indexOf("当前栏位") >= 0
+                    })
+                    root.check(tabs.selected === 1, "Selecting a slot did not select the slot inspector")
+                    break
+                case 20:
+                    root.checkingFocus = true
+                    try {
+                        root.checkWorkspaceNavigation()
+                        root.checkMacroFocus()
+                    } finally { root.checkingFocus = false }
+                    console.log("SHARED_UI_SMOKE_PASSED: themes, actions, editors, choices, selection, settings, popup results/focus, layout row deletion, macro focus/persistence, workspace inspector navigation and edit commits")
                     Qt.exit(0)
                     break
                 }

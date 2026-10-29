@@ -4,6 +4,7 @@ import xcshop
 
 Item {
     id: root
+    property bool updatingModel: false
 
     signal macrosEdited(var macros)
 
@@ -11,17 +12,37 @@ Item {
     height: implicitHeight
 
     function setMacros(values) {
-        parameterModel.clear()
-        if (!Array.isArray(values))
-            return
-        for (var index = 0; index < values.length; ++index) {
-            var parameter = values[index]
+        var parameters = []
+        var source = Array.isArray(values) ? values : []
+        for (var index = 0; index < source.length; ++index) {
+            var parameter = source[index]
             if (!parameter || typeof parameter !== "object" || Array.isArray(parameter))
                 continue
-            parameterModel.append({
+            parameters.push({
                 "name": typeof parameter.name === "string" ? parameter.name : "",
                 "value": typeof parameter.value === "string" ? parameter.value : ""
             })
+        }
+        // Saving another field refreshes this editor too. Reuse its rows so
+        // the input receiving the click keeps its focus and unfinished text.
+        root.updatingModel = true
+        try {
+            for (var row = 0; row < parameters.length; ++row) {
+                var next = parameters[row]
+                if (row >= parameterModel.count) {
+                    parameterModel.append(next)
+                    continue
+                }
+                var current = parameterModel.get(row)
+                if (current.name !== next.name)
+                    parameterModel.setProperty(row, "name", next.name)
+                if (current.value !== next.value)
+                    parameterModel.setProperty(row, "value", next.value)
+            }
+            if (parameterModel.count > parameters.length)
+                parameterModel.remove(parameters.length, parameterModel.count - parameters.length)
+        } finally {
+            root.updatingModel = false
         }
     }
 
@@ -39,13 +60,25 @@ Item {
     }
 
     function updateMacro(index, name, value) {
+        if (root.updatingModel || index < 0 || index >= parameterModel.count)
+            return
+        var current = parameterModel.get(index)
+        if (current.name === name && current.value === value)
+            return
         parameterModel.setProperty(index, "name", name)
         parameterModel.setProperty(index, "value", value)
         commit()
     }
 
     function removeMacro(index) {
-        parameterModel.remove(index, 1)
+        if (index < 0 || index >= parameterModel.count)
+            return
+        root.updatingModel = true
+        try {
+            parameterModel.remove(index, 1)
+        } finally {
+            root.updatingModel = false
+        }
         commit()
     }
 

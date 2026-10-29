@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import xcshop
 
 ContentSurface {
@@ -9,11 +10,39 @@ ContentSurface {
     property int minimumWidth: 260
     property int maximumWidth: minimumWidth
     property var uiPage: null
+    property alias selectedSection: propertyEditor.selected
 
     signal widthRequested(int width)
     signal widthResizeFinished()
 
     width: Math.min(desiredWidth, maximumWidth)
+
+    function finishEditing() {
+        var item = root.Window.window ? root.Window.window.activeFocusItem : null
+        while (item) {
+            if (item === root) {
+                // Commit the old context before a slot or group is changed.
+                root.forceActiveFocus()
+                return
+            }
+            item = item.parent
+        }
+    }
+
+    function showSlotEditor() { propertyEditor.selectOption(1) }
+    function showLayoutEditor() { propertyEditor.selectOption(2) }
+
+    function leaveLayoutEditor() {
+        if (propertyEditor.selected === 2)
+            propertyEditor.selectOption(root.uiPage && root.uiPage.currentSlotIndex >= 0 ? 1 : 0)
+    }
+
+    function clearSlotEditor() {
+        if (propertyEditor.selected !== 1)
+            return
+        var group = root.uiPage ? root.uiPage.selectedNestedGroup() : null
+        propertyEditor.selectOption(group && root.uiPage.isNestedGroupLayoutInputEnabled(group.id) ? 2 : 0)
+    }
 
     XCText {
         x: 18

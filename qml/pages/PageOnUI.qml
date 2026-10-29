@@ -376,6 +376,7 @@ BaseIOPage {
     }
 
     function addNestedGroup() {
+        inspector.finishEditing()
         var groups = root.nestedGroups()
         var group = {
             "id": root.createNestedGroupId(groups.length),
@@ -399,17 +400,22 @@ BaseIOPage {
         }
         if (root.nestedGroupIndex(groupId) < 0)
             return
+        inspector.finishEditing()
         root.selectedNestedGroupId = groupId
         root.nestingDrawMode = false
         root.layoutRevision++
         root.layoutDataChanged()
+        if (root.isNestedGroupLayoutInputEnabled(groupId))
+            inspector.showLayoutEditor()
     }
 
     function selectBasicLayout() {
+        inspector.finishEditing()
         root.selectedNestedGroupId = ""
         root.nestingDrawMode = false
         root.layoutRevision++
         root.layoutDataChanged()
+        inspector.leaveLayoutEditor()
     }
 
     function renameNestedGroup(groupId, name) {
@@ -425,10 +431,12 @@ BaseIOPage {
         var index = root.nestedGroupIndex(groupId)
         if (index < 0)
             return
+        inspector.finishEditing()
         root.nestedGroups().splice(index, 1)
         if (root.selectedNestedGroupId === groupId) {
             root.selectedNestedGroupId = ""
             root.nestingDrawMode = false
+            inspector.leaveLayoutEditor()
         }
         root.saveLayoutChange(false)
     }
@@ -488,6 +496,8 @@ BaseIOPage {
             return
         root.nestedGroups()[index].layoutInput.enabled = enabled === true
         root.saveLayoutChange(false)
+        if (enabled === true && root.selectedNestedGroupId === groupId)
+            inspector.showLayoutEditor()
     }
 
     function setNestedGroupLayoutInputId(groupId, inputId) {
@@ -641,11 +651,15 @@ BaseIOPage {
     function setCurrentSlot(slotIndex) {
         if (slotIndex < 0 || slotIndex >= root.currentSlotCount)
             return
+        inspector.finishEditing()
         root.currentSlotIndex = slotIndex
+        inspector.showSlotEditor()
     }
 
     function clearCurrentSlot() {
+        inspector.finishEditing()
         root.currentSlotIndex = -1
+        inspector.clearSlotEditor()
     }
 
     function addSaleItem(slotIndex) {
