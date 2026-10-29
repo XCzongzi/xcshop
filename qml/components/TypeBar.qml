@@ -2,11 +2,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
 
-Rectangle {
+PanelSurface {
     id: typeBar
     height: parent.height
     width: Constants.typeBarWidth
-    color: Colors.panel
     opacity: 0
     enabled: isEnabled
 
@@ -160,12 +159,11 @@ Rectangle {
             typeBar.focus_on(typeBar.extraMenuOpened)
         }
     }
-    Rectangle{
+    PanelSurface{
         id:extraMenu
         z: 13
         visible: typeBar.extraMenuOpened
         opacity: visible ? 1 : 0
-        color: Colors.background
         radius: 8
         x: 64
         y: typeButtonExtra.y + typeButtonExtra.height - height

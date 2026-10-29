@@ -78,8 +78,10 @@ bool XCFile::folder(const QString& folderPath){
 bool XCFile::rename(const QString& oldPath, const QString& newPath){
     const QString source = localPath(oldPath);
     const QString destination = localPath(newPath);
-    return source != destination && !QFile::exists(destination)
-            && QFile::rename(source, destination);
+    if (source == destination || QFileInfo::exists(destination))
+        return false;
+    return QFileInfo(source).isDir() ? QDir().rename(source, destination)
+                                   : QFile::rename(source, destination);
 }
 
 bool XCFile::copy(const QString& sourcePath, const QString& destinationPath){

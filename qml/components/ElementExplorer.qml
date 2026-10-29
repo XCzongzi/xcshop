@@ -2,7 +2,7 @@ import QtQuick
 import xcshop
 
 
-Rectangle{
+PanelSurface{
     property int barWidth
     property bool isShowing: false
     property string pendingFolder: ""
@@ -10,10 +10,10 @@ Rectangle{
     // 当前元素类型是否已有选中的文件。保持绑定，避免在其它类型打开
     // 文件后，切到尚未选择文件的类型时沿用旧的 true 状态。
     readonly property bool started: Global.get_fileName().length > 0
+    readonly property bool canLocateCurrentElement: started && Global.parseElementPath(Global.get_filePath()) !== null
     width: isShowing ? barWidth : 0
     height: parent.height
     x: Constants.typeBarWidth
-    color: Colors.panel
     clip: true
     enabled: isShowing
 
@@ -31,15 +31,20 @@ Rectangle{
         timer.start()
     }
     function currentElementFolder(){
-        var typeRoot = Global.project_location + "/" + Global.current_element
-        var fileLocation = Global.get_fileLocation(false)
-        return fileLocation.indexOf(typeRoot) === 0
-                ? fileLocation.substring(typeRoot.length)
-                : ""
+        var element = Global.parseElementPath(Global.get_filePath())
+        return element ? element.folder : ""
+    }
+    function locateCurrentElement(){
+        if (!canLocateCurrentElement)
+            return
+        barShow()
+        openElementFolder(currentElementFolder())
     }
     function openElementFolder(folder){
+        timer.stop()
         pendingFolder = ""
         xcFileTree.currentFolder = folder || ""
+        xcFileTree.finishOperation()
         root.floderSwitch()
     }
 
@@ -113,10 +118,13 @@ Rectangle{
 
 
     FileCtrlBar{
+        id: fileCtrlBar
+        objectName: "explorerFileControls"
         z: 2
         height: 32
         width:root.width - 3
         onBackbtnClicked: xcFileTree.directionBack()
+        onCreationFinished: xcFileTree.finishOperation()
         onElementPathsDropped: function(paths) {
             xcFileTree.moveEntriesToParentDirectory(paths)
         }
@@ -134,6 +142,7 @@ Rectangle{
 
     XCText{
         id:xcPathText
+        objectName: "explorerDirectoryPath"
         x: 5
         y: 36
         xcText: "project:/" + Global.current_element + xcFileTree.currentFolder
@@ -143,14 +152,27 @@ Rectangle{
         elide: Text.ElideLeft
         textColor: Colors.isLight ? Colors.banned : Qt.lighter("gray",1.5)
         opacity: root.contentOpacity
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.RightButton
+            onClicked: function(mouse) {
+                SignalBus.contextMenuRequested(xcPathText, mouse.x, mouse.y, [
+                    { "text": "回到当前编辑的元素位置",
+                      "enabled": root.canLocateCurrentElement,
+                      "action": function() { root.locateCurrentElement() } }
+                ], null)
+            }
+        }
     }
     
     XCFileTreeBar{
         id:xcFileTree
+        objectName: "explorerFileTree"
         width: root.width - 3
         y:xcPathText.y + xcPathText.height + 2
         height: root.height - y - 2
         opacity: root.contentOpacity
+        onCreateEntryRequested: function(isFolder) { fileCtrlBar.requestCreate(isFolder) }
         onFloderSwitched:{
             root.floderSwitch()
         }

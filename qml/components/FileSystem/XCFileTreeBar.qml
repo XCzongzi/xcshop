@@ -18,9 +18,12 @@ Item {
     property bool operationMode: false
     property bool pendingOperation: false
     property bool contextMenuActive: false
+    property FolderListModel folderFileModel: null
+    property FolderListModel folderDirectoryModel: null
 
     signal floderSwitched()
     signal fileSwitched()
+    signal createEntryRequested(bool isFolder)
 
     focus: true
 
@@ -266,6 +269,73 @@ Item {
         SignalBus.elementFilesMoved([{ "oldPath": path, "newPath": destination }])
     }
 
+    function requestRenameDirectory(directoryPath) {
+        var path = Global.normalizeElementPath(directoryPath)
+        var parentDirectory = path.substring(0, path.lastIndexOf("/"))
+        var name = path.substring(path.lastIndexOf("/") + 1)
+        var validate = function(value) {
+            var error = Global.fileEntryNameError(value)
+            if (error.length || value.trim() === name)
+                return error
+            var destination = parentDirectory + "/" + value.trim()
+            return fileOperations.exists(destination) || fileOperations.isDirectory(destination)
+                    ? "此名称已存在，请使用其它名称。" : ""
+        }
+        pendingOperation = true
+        SignalBus.sendToMain("Popup.show", {
+            "component": Constants.popupTextInput,
+            "properties": {
+                "title": "重命名文件夹",
+                "content": "请输入新的文件夹名称",
+                "value": name,
+                "hintText": "所在目录：" + parentDirectory,
+                "confirmText": "重命名",
+                "validateValue": validate,
+                "submitValue": function(value) {
+                    var error = validate(value)
+                    return error.length ? error : root.renameDirectory(path, value.trim())
+                }
+            },
+            "callback": function() { root.finishOperation() }
+        })
+    }
+
+    function renameDirectory(path, name) {
+        var error = Global.fileEntryNameError(name)
+        if (error.length)
+            return error
+        var source = Global.normalizeElementPath(path)
+        var destination = source.substring(0, source.lastIndexOf("/") + 1) + name.trim()
+        if (destination === source)
+            return ""
+        var containedFiles = fileOperations.filesInDirectory(source)
+        if (!fileOperations.isDirectory(source) || !fileOperations.rename(source, destination))
+            return "重命名失败，名称可能已存在，或目录当前不可写。"
+
+        var activePath = Global.normalizeElementPath(Global.get_filePath())
+        if (activePath.indexOf(source + "/") === 0) {
+            var element = Global.parseElementPath(destination + activePath.substring(source.length))
+            if (element) {
+                Global.set_file(element.folder, element.name)
+                // Reopen the editor's ElementIO at the new path before further edits.
+                SignalBus.sendToMain("switched_file", {})
+            }
+        }
+        clipboardPaths = clipboardPaths.map(function(entry) {
+            var normalized = Global.normalizeElementPath(entry)
+            return normalized.indexOf(source + "/") === 0
+                    ? destination + normalized.substring(source.length) : entry
+        })
+        var moved = containedFiles.map(function(entry) {
+            var oldPath = Global.normalizeElementPath(entry)
+            return { "oldPath": oldPath, "newPath": destination + oldPath.substring(source.length) }
+        })
+        if (moved.length)
+            SignalBus.elementFilesMoved(moved)
+        fileSwitched()
+        return ""
+    }
+
     function requestDelete(paths) {
         var targets = (paths || selectedPaths).slice()
         if (!targets.length)
@@ -449,6 +519,8 @@ Item {
             { "text": "打开", "action": function() { root.enterDirectory(path) } },
             { "text": "粘贴", "enabled": clipboardPaths.length > 0,
               "action": function() { root.pasteFiles(path) } },
+            { "text": "重命名…", "shortcutKey": Qt.Key_F2,
+              "action": function() { root.requestRenameDirectory(path) } },
             { "text": "删除", "shortcutKey": Qt.Key_Delete,
               "action": function() { root.requestDeleteDirectory(path) } },
             { "separator": true },
@@ -503,11 +575,28 @@ Item {
     }
 
     onFilePathChanged: {
+        if (folderFileModel && folderDirectoryModel)
+            resetFolderModels()
         finishOperation()
     }
 
+    function resetFolderModels() {
+        // A model retains watchers for visited folders on Windows. Release the
+        // old models so those handles cannot prevent renaming a parent folder.
+        if (folderFileModel)
+            folderFileModel.destroy()
+        if (folderDirectoryModel)
+            folderDirectoryModel.destroy()
+        folderFileModel = fileModelFactory.createObject(root)
+        folderDirectoryModel = directoryModelFactory.createObject(root)
+    }
+    Component.onCompleted: resetFolderModels()
+
     Keys.onPressed: function(event) {
-        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_A) {
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_N) {
+            createEntryRequested(!!(event.modifiers & Qt.ShiftModifier))
+            event.accepted = true
+        } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_A) {
             selectAll()
             event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
@@ -531,9 +620,13 @@ Item {
             enterDirectory(selectedDirectoryPath)
             event.accepted = true
         } else if (event.key === Qt.Key_F2) {
-            var renameTargets = shortcutFileTargets()
-            if (renameTargets.length === 1)
-                requestRename(renameTargets[0])
+            if (selectedDirectoryPath.length) {
+                requestRenameDirectory(selectedDirectoryPath)
+            } else {
+                var renameTargets = shortcutFileTargets()
+                if (renameTargets.length === 1)
+                    requestRename(renameTargets[0])
+            }
             event.accepted = true
         } else if (event.key === Qt.Key_Escape) {
             finishOperation()
@@ -541,21 +634,25 @@ Item {
         }
     }
 
-    FolderListModel {
-        id: folderFileModel
-        folder: Qt.resolvedUrl(root.filePath)
-        showDirs: false
-        showFiles: true
-        showHidden: false
-        nameFilters: ["*.xcse" + Global.current_element]
+    Component {
+        id: fileModelFactory
+        FolderListModel {
+            folder: Qt.resolvedUrl(root.filePath)
+            showDirs: false
+            showFiles: true
+            showHidden: false
+            nameFilters: ["*.xcse" + Global.current_element]
+        }
     }
 
-    FolderListModel {
-        id: folderDirectoryModel
-        folder: Qt.resolvedUrl(root.filePath)
-        showDirs: true
-        showFiles: false
-        showHidden: false
+    Component {
+        id: directoryModelFactory
+        FolderListModel {
+            folder: Qt.resolvedUrl(root.filePath)
+            showDirs: true
+            showFiles: false
+            showHidden: false
+        }
     }
 
     Flickable {
@@ -607,7 +704,7 @@ Item {
                 readonly property string directoryPath: root.currentDirectory + "/" + model.fileName
                 width: directoryList.width
                 height: 26
-                text: model.fileBaseName
+                text: model.fileName
                 icon: "File_light"
                 acceptsElementDrop: true
                 operationSelected: root.selectedDirectoryPath === directoryPath

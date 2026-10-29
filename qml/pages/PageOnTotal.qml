@@ -240,52 +240,6 @@ BasePage {
         return parsed && parsed.type === "UI" && projectFile.exists(parsed.path)
     }
 
-    function collectProblems() {
-        var result = []
-        if (!projectData.name || !String(projectData.name).trim().length)
-            result.push({ "severity": "error", "code": "E_PROJECT_NAME", "message": "项目名称为空", "file": "xcshop.json" })
-        if (!projectData.namespace || !/^[a-z0-9_.-]+$/.test(String(projectData.namespace))
-                || projectData.namespace === "." || projectData.namespace === "..")
-            result.push({ "severity": "error", "code": "E_NAMESPACE", "message": "项目命名空间格式不正确", "file": "xcshop.json" })
-        if (!projectData.generatePath || !String(projectData.generatePath).trim().length)
-            result.push({ "severity": "error", "code": "E_OUTPUT_PATH", "message": "未设置数据包生成位置", "file": "xcshop.json" })
-        var manifest = Global.project_location + "/xcshop.json"
-        var template = BuildKits.findTemplate(String(projectData.templateId || ""))
-        if (!projectData.templateId)
-            result.push({ "severity": "error", "message": "未设置模板 ID；旧数字模板需在项目设置中重新选择", "file": manifest, "property": "$.templateId", "solution": "打开项目设置，选择本地可用模板。" })
-        else if (!template.valid || !BuildKits.identityValid)
-            result.push({ "severity": "error", "message": "所选模板不可用或套件目录存在身份冲突", "file": manifest, "property": "$.templateId", "solution": "在设置 → 构建套件中检查模板与依赖，或重新选择模板。" })
-        if (projectData.dataVersion !== BuildKits.dataVersion)
-            result.push({ "severity": "error", "message": "当前编辑器不支持该项目数据版本", "file": manifest, "property": "$.dataVersion", "solution": "使用支持该项目数据版本的编辑器；不要直接改写版本号。" })
-        if (template.valid && template.dataVersion !== projectData.dataVersion)
-            result.push({ "severity": "error", "message": "模板与项目的数据版本不一致", "file": manifest, "property": "$.dataVersion", "solution": "请选择数据版本匹配的模板。" })
-        if (template.valid && BuildKits.versionSupport(template.id, String(projectData.version || "")) < 0)
-            result.push({ "severity": "error", "message": "模板不支持项目的目标版本", "file": manifest, "property": "$.version", "solution": "在项目设置中选择模板支持的版本。" })
-        if (!projectData.version || !String(projectData.version).trim().length)
-            result.push({ "severity": "error", "code": "E_TARGET_VERSION", "message": "未设置目标版本", "file": "xcshop.json" })
-        if (registeredShops.length === 0)
-            result.push({ "severity": "warning", "code": "W_NO_SHOPS", "message": "项目尚未注册商店", "file": "xcshop.json" })
-
-        var names = []
-        for (var i = 0; i < registeredShops.length; ++i) {
-            var shop = registeredShops[i]
-            var displayFile = shop.element || "xcshop.json"
-            var name = String(shop.registrationName || "")
-            if (!/^[a-z0-9_.-]+$/.test(name))
-                result.push({ "severity": "error", "code": "E_SHOP_NAME", "message": "商店注册名格式不正确", "file": displayFile })
-            else if (names.indexOf(name) >= 0)
-                result.push({ "severity": "error", "code": "E_SHOP_NAME_DUPLICATE", "message": "商店注册名重复：" + name, "file": displayFile })
-            names.push(name)
-
-            var parsed = Global.parseElementPath(shop.element || "")
-            if (!parsed || parsed.type !== "UI" || !projectFile.exists(parsed.path))
-                result.push({ "severity": "error", "code": "E_REF_NOT_FOUND", "message": "商店连接的 UI 元素不存在", "file": displayFile })
-            if (!containerOptionExists(String(shop.containerType || "")))
-                result.push({ "severity": "error", "code": "E_CONTAINER_TYPE", "message": "商店容器类型不受支持", "file": displayFile })
-        }
-        return result
-    }
-
     function refreshStatistics() {
         elementCounts = {
             "UI": elementCount("UI"),
@@ -310,7 +264,7 @@ BasePage {
         }
         infoBar.validShopCount = validCount
         infoBar.referencedUiCount = referenced.length
-        preflightProblems = collectProblems()
+        preflightProblems = Global.collectBuildProblems(projectData, registeredShops)
     }
 
     function formatElapsed(milliseconds) {
@@ -321,12 +275,43 @@ BasePage {
     }
 
     function beginBuild() {
-        BuildKits.refresh()
-        Builder.recheckExecutable()
-        refreshStatistics()
-        if (!canBuild)
+        if (!manifestLoaded || building)
             return
-        Builder.start(Global.project_location, BuildKits.kitsPath)
+        Global.requestBuild()
+        refreshStatistics()
+    }
+
+    function showBuildProblem(problem) {
+        if (!problem)
+            return
+        var parsed = Global.parseElementPath(problem.file || "")
+        var canLocate = parsed !== null && projectFile.exists(parsed.path)
+        pageEvent("Popup.show", {
+            "component": Constants.popupNotice,
+            "properties": {
+                "title": String(problem.severity).toLowerCase() === "warning" ? "构建警告" : "构建错误",
+                "content": String(problem.reason || problem.message || "")
+                           + "\n\n文件：" + (problem.file || "—")
+                           + (problem.property ? "\n属性：" + problem.property : "")
+                           + (problem.solution ? "\n\n解决办法：" + problem.solution : "")
+                           + (canLocate ? "\n\n点击“确认”关闭详情，点击“定位到此元素”打开对应元素。"
+                              : parsed ? "\n\n元素文件不存在，无法定位。请检查文件路径或恢复该元素。"
+                              : "\n\n此问题未关联可定位的项目元素，请根据以上提示检查配置。"),
+                "doubleButton": true,
+                "cancelText": "确认",
+                "confirmText": "定位到此元素",
+                "confirmEnabled": canLocate,
+                "defaultResult": 0
+            },
+            "callback": function(result) {
+                if (result !== 1 || !canLocate)
+                    return
+                if (projectFile.exists(parsed.path))
+                    SignalBus.elementOpenRequested(parsed.path)
+                else
+                    root.showNotice("无法定位元素", "元素文件已不存在，请检查文件路径或恢复该元素。")
+            }
+        })
     }
 
     Connections {
@@ -407,26 +392,7 @@ BasePage {
             problems: root.buildProblems
             onStartRequested: root.beginBuild()
             onCancelRequested: Builder.cancel()
-            onProblemActivated: function(problem) {
-                if (!problem || !problem.file)
-                    return
-                var parsed = Global.parseElementPath(problem.file)
-                pageEvent("Popup.show", {
-                    "component": Constants.popupNotice,
-                    "properties": {
-                        "title": String(problem.severity) === "warning" ? "构建警告" : "构建错误",
-                        "content": String(problem.reason || problem.message || "")
-                                   + "\n\n文件：" + problem.file
-                                   + (problem.property ? "\n属性：" + problem.property : "")
-                                   + (problem.solution ? "\n\n解决办法：" + problem.solution : "")
-                                   + (parsed ? "\n\n确认后定位到此元素。" : "")
-                    },
-                    "callback": function(result) {
-                        if (result === 1 && parsed && projectFile.exists(parsed.path))
-                            SignalBus.elementOpenRequested(parsed.path)
-                    }
-                })
-            }
+            onProblemActivated: function(problem) { root.showBuildProblem(problem) }
         }
 
         InfoBar {

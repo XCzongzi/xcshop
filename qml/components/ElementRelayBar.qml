@@ -3,7 +3,7 @@ import QtQuick
 import xcshop
 import "../../js/ElementRelayState.js" as RelayState
 
-Rectangle {
+PanelSurface {
     id: root
 
     // ===== 容器配置与持久化状态 =====
@@ -53,7 +53,6 @@ Rectangle {
     visible: workspaceActive && (supportedWorkspace || globalSelectionVisible)
              && Global.project_location.length > 0
     height: visible ? Math.max(minPanelHeight, Math.min(maxPanelHeight, panelHeight)) : 0
-    color: Colors.changeA(Colors.card, 0.98)
     border.width: 1
     border.color: selectionMode ? Colors.changeA(Colors.border, 0.82)
                                 : Colors.changeA(Colors.text, 0.12)

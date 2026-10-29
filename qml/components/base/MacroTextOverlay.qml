@@ -22,7 +22,7 @@ Text {
             ? target.height - target.topPadding - target.bottomPadding
             : implicitHeight
     clip: true
-    text: MacroHighlighter.highlight(target ? target.text : "", macroColor)
+    text: highlightMacros && target ? MacroHighlighter.highlight(target.text, macroColor) : ""
     textFormat: Text.RichText
     wrapMode: multiline ? Text.WrapAnywhere : Text.NoWrap
     color: "transparent"

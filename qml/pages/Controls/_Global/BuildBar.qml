@@ -22,10 +22,61 @@ ContentBar {
     signal problemActivated(var problem)
 
     title: "构建"
-    subtitle: root.buildState
     contentHeight: 438
     expanded: true
     padding: 20
+
+    // 日志只保留当前构建；合并密集输出，避免每行日志都重新排版整个文本框。
+    function resetConsole() {
+        if (!consoleOutput)
+            return
+        consoleRefresh.stop()
+        consoleOutput.clear()
+        consoleOutput.deselect()
+        consoleOutput.cursorPosition = 0
+        consoleViewport.setScrollOffset(consoleViewport.originY)
+    }
+
+    function refreshConsole() {
+        if (!consoleOutput)
+            return
+        var previous = consoleOutput.text
+        var next = root.consoleText
+        if (previous === next)
+            return
+        if (previous.length && next.indexOf(previous) === 0)
+            consoleOutput.insert(consoleOutput.length, next.substring(previous.length))
+        else if (previous !== next)
+            consoleOutput.text = next
+    }
+
+    onBuildingChanged: {
+        if (building) {
+            resetConsole()
+            consoleRefresh.start()
+        } else {
+            consoleRefresh.stop()
+            refreshConsole()
+        }
+    }
+    onConsoleTextChanged: {
+        if (!consoleOutput)
+            return
+        if (!consoleText.length) {
+            resetConsole()
+        } else if (!building) {
+            consoleRefresh.stop()
+            refreshConsole()
+        } else if (!consoleRefresh.running) {
+            consoleRefresh.start()
+        }
+    }
+    Component.onCompleted: refreshConsole()
+    Timer {
+        id: consoleRefresh
+        interval: 80
+        onTriggered: root.refreshConsole()
+    }
 
     readonly property int errorCount: {
         var count = 0
@@ -44,7 +95,7 @@ ContentBar {
 
     Item {
         x: root.padding
-        y: 76
+        y: 54
         width: parent.width - root.padding * 2
         height: parent.height - y - 20
 
@@ -169,7 +220,8 @@ ContentBar {
                         objectName: "buildConsoleOutput"
                         readOnly: true
                         selectByMouse: true
-                        text: root.consoleText
+                        textFormat: TextEdit.PlainText
+                        BuildConsoleDocument { document: consoleOutput.textDocument }
                         placeholderText: "暂无构建输出"
                         font.pixelSize: 11
                         font.family: "Consolas"
@@ -223,6 +275,7 @@ ContentBar {
 
                     ListView {
                         id: problemList
+                        objectName: "buildProblemsList"
                         anchors.fill: parent
                         anchors.margins: 5
                         clip: true

@@ -226,6 +226,8 @@ XCWindow {
             parent: popupBlurSource
             visible: root.workspaceChromeVisible
             x: root.pageX
+            onLocateCurrentElementRequested: elementExplorer.locateCurrentElement()
+            onBuildDetailsRequested: root.typeSwitch("Global", true)
         }
 
         readonly property bool workspaceChromeVisible: typeBar.isEnabled && Global.project_location.length > 0

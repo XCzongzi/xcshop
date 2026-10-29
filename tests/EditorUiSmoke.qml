@@ -10,9 +10,14 @@ Window {
     height: 900
     color: Colors.background
     property int step: 0
+    property bool inStep: false
     property var page: null
     property string project: ""
     property string alpha: "89755dae-f798-440d-b3a9-342ee8a9070f"
+    property var validManifest: ({})
+    property var popupRequest: null
+    property string openedElement: ""
+    property int detailsRequests: 0
     XCFile { id: file }
     Rectangle {
         id: frame
@@ -20,6 +25,19 @@ Window {
         color: Colors.background
         // Keep the offscreen render loop active while asynchronous screenshots are read back.
         NumberAnimation on opacity { from: 0.999; to: 1; duration: 500; loops: Animation.Infinite }
+        FileControls {
+            id: fileControls
+            z: 100
+            onBuildDetailsRequested: ++root.detailsRequests
+        }
+    }
+    PopupLoader { id: problemPopup; anchors.fill: parent }
+    Connections {
+        target: SignalBus
+        function onSendToMain(kind, parameters) {
+            if (kind === "Popup.show") root.popupRequest = parameters
+        }
+        function onElementOpenRequested(path) { root.openedElement = path }
     }
     Component { id: creating; PageOnCreating { fullScreen: false } }
     Component { id: total; PageOnTotal {} }
@@ -52,13 +70,30 @@ Window {
         if (page) page.destroy()
         page = component.createObject(frame, Object.assign({width: frame.width, height: frame.height}, properties || {}))
         check(page, "Failed to create QML page: " + component.errorString())
+        if (page.pageEvent !== undefined)
+            page.pageEvent.connect(function(kind, parameters) {
+                if (kind === "Popup.show") root.popupRequest = parameters
+            })
         page.width = Qt.binding(function() { return frame.width })
         page.height = Qt.binding(function() { return frame.height })
     }
     function screenshot(name) {
-        frame.grabToImage(function(result) {
+        root.contentItem.grabToImage(function(result) {
             result.saveToFile(APP_DIRPATH + "/ui-" + name + ".png")
         })
+    }
+    function openProblem(path) {
+        var list = find(page, "buildProblemsList")
+        check(list, "Problem list missing")
+        list.model = [{severity: "error", message: "测试问题", file: path,
+                       property: "$.item", solution: "请修改元素配置"}]
+        UiInput.settle(40)
+        popupRequest = null
+        UiInput.click(list, 30, 20)
+        check(popupRequest && popupRequest.properties.title === "构建错误", "Problem row did not open details")
+        problemPopup.open(popupRequest.component, popupRequest.properties, popupRequest.callback)
+        UiInput.settle(80)
+        check(problemPopup.item, "Problem popup was not created")
     }
     Component.onCompleted: {
         Global.animationSpeed = 20
@@ -72,6 +107,8 @@ Window {
         interval: 350
         repeat: true
         onTriggered: {
+            if (root.inStep) return
+            root.inStep = true
             try {
                 switch (root.step++) {
                 case 0:
@@ -116,8 +153,10 @@ Window {
                     screenshot("dashboard")
                     break
                 case 4:
-                    page.beginBuild()
-                    check(Builder.running, "build button disconnected")
+                    UiInput.click(find(fileControls, "quickBuildButton"))
+                    check(Builder.running, "quick build button disconnected")
+                    check(!find(fileControls, "quickBuildButton").enabled, "quick build allowed duplicate requests")
+                    check(find(fileControls, "quickBuildStatus").text === "构建中…", "quick build has no running feedback")
                     show(settings) // Destroy dashboard while the build is running.
                     break
                 case 5:
@@ -139,6 +178,10 @@ Window {
                 case 9:
                     check(page.buildState === "构建成功", "build state lost after page change")
                     check(page.buildConsole.length > 0, "build console lost after page change")
+                    check(find(fileControls, "quickBuildButton").enabled, "quick build did not recover after completion")
+                    UiInput.click(find(fileControls, "quickBuildStatus"))
+                    check(root.detailsRequests === 1, "build status cannot open details")
+                    root.validManifest = JSON.parse(file.read(project + "/xcshop.json"))
                     screenshot("built")
                     break
                 case 10:
@@ -179,6 +222,9 @@ Window {
                     check(!page.manifestLoaded && !page.canBuild, "invalid manifest still allowed building")
                     page.saveProjectChanges({"name": "must-not-save"})
                     check(JSON.parse(file.read(project + "/xcshop.json")).shops.invalid, "invalid manifest was overwritten")
+                    root.popupRequest = null
+                    UiInput.click(find(fileControls, "quickBuildButton"))
+                    check(!Builder.running && root.popupRequest.properties.title === "无法开始构建", "quick build bypassed invalid manifest validation")
                     show(consoleTest)
                     var logs = []
                     for (var line = 0; line < 3000; ++line)
@@ -236,14 +282,87 @@ Window {
                 case 25:
                     check(!find(page,"buildConsoleScrollBar").visible,"empty console has a scrollbar")
                     screenshot("console-empty")
-                    console.log("UI_SMOKE_PASSED: creation, settings, real Alpha build, page lifecycle, project editing, invalid manifest protection, long/short/compact build console scrolling")
+                    for (var cycle = 0; cycle < 8; ++cycle) {
+                        var sample = find(page, "consoleSample")
+                        sample.building = true
+                        sample.consoleText = "<当前构建 " + cycle + ">\n仅保留本次输出"
+                        sample.building = false
+                        var output = find(page, "buildConsoleOutput")
+                        check(output.text === sample.consoleText, "repeated build " + cycle + " console mismatch: " + JSON.stringify(output.text) + " expected " + JSON.stringify(sample.consoleText))
+                        sample.consoleText += "\n追加日志"
+                        check(output.text === sample.consoleText, "console append was not synchronized")
+                        check(!output.canUndo && !output.canRedo, "read-only console accumulated undo history")
+                    }
+                    file.writeAtomic(project + "/xcshop.json", JSON.stringify(root.validManifest))
+                    show(total)
+                    break
+                case 26:
+                    root.openedElement = ""
+                    openProblem("Item/stone.xcseItem")
+                    check(find(problemPopup.item, "noticeDismissButton").text === "确认", "problem dismiss label incorrect")
+                    check(find(problemPopup.item, "noticeConfirmButton").text === "定位到此元素", "problem locate label incorrect")
+                    screenshot("build-problem")
+                    UiInput.click(find(problemPopup.item, "noticeDismissButton"))
+                    break
+                case 27:
+                    check(!problemPopup.item && !root.openedElement.length, "confirm did not close the popup without navigating")
+                    openProblem("Item/stone.xcseItem")
+                    UiInput.key(problemPopup.item, Qt.Key_Return)
+                    break
+                case 28:
+                    check(!problemPopup.item && !root.openedElement.length, "Enter did not close the popup without navigating")
+                    openProblem("Item/stone.xcseItem")
+                    UiInput.click(find(problemPopup.item, "noticeConfirmButton"))
+                    break
+                case 29:
+                    check(!problemPopup.item && root.openedElement === Global.normalizeElementPath(project + "/Item/stone.xcseItem"), "locate did not open the problem element")
+                    openProblem("xcshop.json")
+                    check(!find(problemPopup.item, "noticeConfirmButton").enabled, "manifest problem allowed element navigation")
+                    UiInput.key(problemPopup.item, Qt.Key_Return)
+                    break
+                case 30:
+                    check(!problemPopup.item, "manifest problem cannot be dismissed")
+                    openProblem("Item/missing.xcseItem")
+                    check(!find(problemPopup.item, "noticeConfirmButton").enabled, "missing element allowed navigation")
+                    UiInput.click(find(problemPopup.item, "noticeDismissButton"))
+                    break
+                case 31:
+                    check(!problemPopup.item, "missing element problem cannot be dismissed")
+                    Builder.executablePath = APP_DIRPATH + "/builder_protocol_fixture.exe"
+                    root.validManifest.fixtureMode = "slow"
+                    file.writeAtomic(project + "/xcshop.json", JSON.stringify(root.validManifest))
+                    UiInput.click(find(fileControls, "quickBuildButton"))
+                    check(Builder.running, "repeated quick build did not start")
+                    show(total) // Opening build details must also work during an active build.
+                    break
+                case 32:
+                    check(find(page, "buildConsoleOutput").text === Builder.consoleText, "new build console not synchronized")
+                    check(Builder.consoleText.indexOf("[编辑器] 构建成功") < 0, "new build retained previous result log")
+                    Builder.cancel()
+                    break
+                case 33:
+                    if (Builder.running) { --root.step; return }
+                    check(Builder.state === "已取消" && find(fileControls, "quickBuildButton").enabled, "cancelled quick build cannot be retried")
+                    root.validManifest.fixtureMode = "success"
+                    file.writeAtomic(project + "/xcshop.json", JSON.stringify(root.validManifest))
+                    UiInput.click(find(fileControls, "quickBuildButton"))
+                    check(Builder.running, "quick build retry failed")
+                    break
+                case 34:
+                    if (Builder.running) { --root.step; return }
+                    check(Builder.state === "构建成功", "quick build retry did not succeed")
+                    check(find(fileControls, "quickBuildStatus").text === "构建成功", "quick build result feedback incorrect")
+                    console.log("UI_SMOKE_PASSED: creation, settings, real Alpha build, quick build/retry/cancel, problem confirm/locate, page lifecycle, manifest validation, repeated build console and scrolling")
                     Qt.exit(0)
                     break
                 }
             } catch (error) {
+                timer.stop()
                 console.error("UI_SMOKE_FAILED step " + root.step + ": " + error)
                 file.writeAtomic(APP_DIRPATH + "/ui-smoke-failure.txt", String(error) + "\n" + Builder.consoleText)
                 Qt.exit(1)
+            } finally {
+                root.inStep = false
             }
         }
     }

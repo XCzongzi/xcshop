@@ -10,6 +10,10 @@ PopupFrame {
     title: "提示"
     property string content: ""
     property bool doubleButton: false
+    property string cancelText: "取消"
+    property string confirmText: "确认"
+    property bool confirmEnabled: true
+    property int defaultResult: 1
 
     dialogHeight: Math.max(194, messageArea.y + messageArea.height + root.actionHeight + 44)
 
@@ -18,8 +22,8 @@ PopupFrame {
     }
 
     Keys.onEscapePressed: close(0)
-    Keys.onReturnPressed: close(1)
-    Keys.onEnterPressed: close(1)
+    Keys.onReturnPressed: close(root.confirmEnabled ? root.defaultResult : 0)
+    Keys.onEnterPressed: close(root.confirmEnabled ? root.defaultResult : 0)
 
     XCScrollView {
         id: messageArea
@@ -43,14 +47,16 @@ PopupFrame {
     }
     actions: [
         ActionButton {
+            objectName: "noticeDismissButton"
             visible: root.doubleButton
-            text: "取消"
+            text: root.cancelText
             onClicked: root.close(0)
         },
         ActionButton {
+            objectName: "noticeConfirmButton"
             primary: true
-
-            text: "确认"
+            enabled: root.confirmEnabled
+            text: root.confirmText
             onClicked: root.close(1)
         }
     ]

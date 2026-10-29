@@ -15,6 +15,7 @@ Item {
     property var cancelResult: null
     property var result: null
     property bool opened: false
+    readonly property bool closing: closeAnimation.running
     property bool manageVisibility: false
     property real backdropBlur: 0.15
     readonly property real availableWidth: panel.width - 48

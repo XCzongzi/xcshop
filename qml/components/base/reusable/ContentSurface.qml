@@ -10,6 +10,7 @@ Rectangle {
     property bool hoverEffectsEnabled: false
     property Item hoverTarget: root
     property Item backdropSource: Global.mainWindow_backdrop
+    property real backdropBlur: 1.0
     readonly property bool hovered: hoverEffectsEnabled && hoverHandler.hovered
     readonly property real backgroundOpacity: Global.backgroundMode === "color" ? 0.38 : 0.44
     property real hoverProgress: hovered ? 1 : 0
@@ -38,7 +39,7 @@ Rectangle {
     Loader {
         anchors.fill: parent
         z: -1
-        active: root.hoverProgress > 0 && root.backdropSource !== null
+        active: root.visible && root.opacity > 0 && root.hoverProgress > 0 && root.backdropSource !== null
                 && root.width > 0 && root.height > 0
         opacity: root.hoverProgress
         sourceComponent: Item {
@@ -51,6 +52,10 @@ Rectangle {
                     width: root.width
                     height: root.height
                     radius: root.radius
+                    topLeftRadius: root.topLeftRadius
+                    topRightRadius: root.topRightRadius
+                    bottomLeftRadius: root.bottomLeftRadius
+                    bottomRightRadius: root.bottomRightRadius
                 }
             }
 
@@ -93,7 +98,7 @@ Rectangle {
                 blurEnabled: true
                 blurMax: 64
                 blurMultiplier: 2.5
-                blur: 1.0
+                blur: root.backdropBlur
                 autoPaddingEnabled: false
             }
         }

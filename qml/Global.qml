@@ -153,6 +153,21 @@ QtObject{
         current_fileName = names
     }
 
+    function fileEntryNameError(value){
+        var name = String(value).trim()
+        if (!name.length)
+            return "名称不能为空。"
+        if (name === "." || name === ".." || /[\\/:*?"<>|\x00-\x1f]/.test(name))
+            return "名称不能包含 \\ / : * ? \" < > | 或控制字符。"
+        if (/\.$/.test(name))
+            return "名称不能以句点结尾。"
+        if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name))
+            return "此名称为系统保留名称，请使用其它名称。"
+        if (name.length > 240)
+            return "名称过长，请控制在 240 个字符以内。"
+        return ""
+    }
+
     function normalizeElementPath(filePath){
         if (filePath === undefined || filePath === null)
             return ""
@@ -222,6 +237,86 @@ QtObject{
     function projectRelativeElementPath(filePath){
         var parsed = parseElementPath(filePath)
         return parsed ? parsed.relativePath : normalizeElementPath(filePath)
+    }
+
+    function collectBuildProblems(projectData, registeredShops) {
+        var result = []
+        if (!projectData.name || !String(projectData.name).trim().length)
+            result.push({ "severity": "error", "code": "E_PROJECT_NAME", "message": "项目名称为空", "file": "xcshop.json" })
+        if (!projectData.namespace || !/^[a-z0-9_.-]+$/.test(String(projectData.namespace))
+                || projectData.namespace === "." || projectData.namespace === "..")
+            result.push({ "severity": "error", "code": "E_NAMESPACE", "message": "项目命名空间格式不正确", "file": "xcshop.json" })
+        if (!projectData.generatePath || !String(projectData.generatePath).trim().length)
+            result.push({ "severity": "error", "code": "E_OUTPUT_PATH", "message": "未设置数据包生成位置", "file": "xcshop.json" })
+        var manifest = Global.project_location + "/xcshop.json"
+        var template = BuildKits.findTemplate(String(projectData.templateId || ""))
+        if (!projectData.templateId)
+            result.push({ "severity": "error", "message": "未设置模板 ID；旧数字模板需在项目设置中重新选择", "file": manifest, "property": "$.templateId", "solution": "打开项目设置，选择本地可用模板。" })
+        else if (!template.valid || !BuildKits.identityValid)
+            result.push({ "severity": "error", "message": "所选模板不可用或套件目录存在身份冲突", "file": manifest, "property": "$.templateId", "solution": "在设置 → 构建套件中检查模板与依赖，或重新选择模板。" })
+        if (projectData.dataVersion !== BuildKits.dataVersion)
+            result.push({ "severity": "error", "message": "当前编辑器不支持该项目数据版本", "file": manifest, "property": "$.dataVersion", "solution": "使用支持该项目数据版本的编辑器；不要直接改写版本号。" })
+        if (template.valid && template.dataVersion !== projectData.dataVersion)
+            result.push({ "severity": "error", "message": "模板与项目的数据版本不一致", "file": manifest, "property": "$.dataVersion", "solution": "请选择数据版本匹配的模板。" })
+        if (template.valid && BuildKits.versionSupport(template.id, String(projectData.version || "")) < 0)
+            result.push({ "severity": "error", "message": "模板不支持项目的目标版本", "file": manifest, "property": "$.version", "solution": "在项目设置中选择模板支持的版本。" })
+        if (!projectData.version || !String(projectData.version).trim().length)
+            result.push({ "severity": "error", "code": "E_TARGET_VERSION", "message": "未设置目标版本", "file": "xcshop.json" })
+        if (registeredShops.length === 0)
+            result.push({ "severity": "warning", "code": "W_NO_SHOPS", "message": "项目尚未注册商店", "file": "xcshop.json" })
+
+        var names = []
+        for (var i = 0; i < registeredShops.length; ++i) {
+            var shop = registeredShops[i] || ({})
+            var displayFile = shop.element || "xcshop.json"
+            var name = String(shop.registrationName || "")
+            if (!/^[a-z0-9_.-]+$/.test(name))
+                result.push({ "severity": "error", "code": "E_SHOP_NAME", "message": "商店注册名格式不正确", "file": displayFile })
+            else if (names.indexOf(name) >= 0)
+                result.push({ "severity": "error", "code": "E_SHOP_NAME_DUPLICATE", "message": "商店注册名重复：" + name, "file": displayFile })
+            names.push(name)
+
+            var parsed = Global.parseElementPath(shop.element || "")
+            if (!parsed || parsed.type !== "UI" || !xcfile.exists(parsed.path))
+                result.push({ "severity": "error", "code": "E_REF_NOT_FOUND", "message": "商店连接的 UI 元素不存在", "file": displayFile })
+            if (!Constants.shopContainerOptions.some(function(option) { return option.value === String(shop.containerType || "") }))
+                result.push({ "severity": "error", "code": "E_CONTAINER_TYPE", "message": "商店容器类型不受支持", "file": displayFile })
+        }
+        return result
+    }
+
+    function requestBuild() {
+        if (Builder.running || !project_location.length)
+            return false
+        BuildKits.refresh()
+        Builder.recheckExecutable()
+        var error = ""
+        var data
+        try {
+            data = JSON.parse(xcfile.read(project_location + "/xcshop.json"))
+        } catch (exception) {
+            error = "无法解析项目根目录中的 xcshop.json。"
+        }
+        if (!error.length && (!data || typeof data !== "object" || Array.isArray(data)
+                || (data.shops !== undefined && !Array.isArray(data.shops))))
+            error = "xcshop.json 的根节点必须是对象，shops 必须是数组。"
+        if (!error.length && !Builder.available)
+            error = "构建器不可用，请在设置 → 构建器中检查可执行文件路径。"
+        if (!error.length) {
+            var problems = collectBuildProblems(data, data.shops || [])
+            var errors = problems.filter(function(problem) { return problem.severity === "error" })
+            if (errors.length)
+                error = errors.map(function(problem) { return "• " + problem.message }).join("\n")
+                        + "\n\n请在项目总览中检查并修正这些问题后重新构建。"
+        }
+        if (error.length) {
+            SignalBus.sendToMain("Popup.show", {
+                "component": Constants.popupNotice,
+                "properties": { "title": "无法开始构建", "content": error }
+            })
+            return false
+        }
+        return Builder.start(project_location, BuildKits.kitsPath)
     }
 
     //文件操作

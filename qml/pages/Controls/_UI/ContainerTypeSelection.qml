@@ -15,6 +15,8 @@ Item {
 
     ContentSurface {
         anchors.fill: parent
+        hoverProgress: 1
+        backdropBlur: 0.3
     }
 
     Item {

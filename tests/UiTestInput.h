@@ -24,6 +24,17 @@ public:
         if (item && item->window())
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
     }
+    Q_INVOKABLE void rightClick(QQuickItem *item) {
+        if (!item || !item->window()) return;
+        const auto point = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
+        QTest::mouseClick(item->window(), Qt::RightButton, Qt::NoModifier, point.toPoint());
+    }
+    Q_INVOKABLE void hover(QQuickItem *item, bool inside = true) {
+        if (!item || !item->window()) return;
+        const auto point = item->mapToScene(inside ? QPointF(item->width() / 2, item->height() / 2)
+                                                 : QPointF(-10, -10));
+        QTest::mouseMove(item->window(), point.toPoint());
+    }
     Q_INVOKABLE void settle(int milliseconds = 180) { QTest::qWait(milliseconds); }
     Q_INVOKABLE QColor imageColor(const QString &path, int x, int y) {
         const QImage image(path);
