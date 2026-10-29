@@ -25,9 +25,13 @@ Window {
 
     property bool titleBarColorFilling: false
     readonly property bool expanded: windowState.maximized || windowState.fullScreen
-    readonly property int margins: expanded ? 0 : Constants.margins
+    readonly property real margins: Constants.margins * (1 - windowState.frameProgress)
+    readonly property real frameRadius: Constants.window_radius * (1 - windowState.frameProgress)
+    readonly property bool roundedFrame: margins > 0.01
+    readonly property real titleButtonSize: 30 + 6 * windowState.frameProgress
     readonly property int surfaceWidth: windowSurface.width
     readonly property int surfaceHeight: windowSurface.height
+    readonly property bool windowTransitionRunning: windowState.transitioning
     
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
 
@@ -36,15 +40,17 @@ Window {
         window: root
     }
 
+    function finishWindowTransition() {
+        windowState.finishTransition()
+    }
+
     function minimize() {
+        finishWindowTransition()
         windowState.minimize()
     }
 
     function toggleMaximized() {
-        if (expanded)
-            showNormal()
-        else
-            showMaximized()
+        windowState.toggleMaximized(Math.max(60, 240 / Global.animationSpeed))
     }
 
     Item {
@@ -86,16 +92,16 @@ Window {
             // the original backdrop from the normal scene composition.
             hideSource: true
             live: true
-            layer.enabled: !root.expanded
+            layer.enabled: root.roundedFrame
             layer.effect: OpacityMask{
                 maskSource: Rectangle{
                     width: root.surfaceWidth
                     height: root.surfaceHeight
-                    radius: Constants.window_radius
+                    radius: root.frameRadius
                 }
             }
         }
-        layer.enabled: !root.expanded
+        layer.enabled: root.roundedFrame
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: "#d0000000"

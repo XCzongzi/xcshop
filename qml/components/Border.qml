@@ -13,7 +13,7 @@ Item {
     width: mainWindow.surfaceWidth
     height: mainWindow.surfaceHeight
     visible: mainWindow.visibility === Window.Windowed
-    enabled: visible
+    enabled: visible && !mainWindow.windowTransitionRunning
 
     Repeater {
         // Corners come last so they take precedence over the edge strips.

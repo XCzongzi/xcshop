@@ -6,7 +6,7 @@ Rectangle {
     id: root
     property bool showControls: true
     required property XCWindow mainWindow
-    readonly property int margins: root.mainWindow.margins
+    readonly property real margins: root.mainWindow.margins
     property bool colorFilling: false
     
     signal closeClicked()
@@ -24,8 +24,8 @@ Rectangle {
         anchors.fill: parent
         color: Colors.background_n
         opacity: root.colorFilling
-        topLeftRadius: root.mainWindow.expanded ? 0 : Constants.window_radius
-        topRightRadius: root.mainWindow.expanded ? 0 : Constants.window_radius
+        topLeftRadius: root.mainWindow.frameRadius
+        topRightRadius: root.mainWindow.frameRadius
         Behavior on opacity{
             NumberAnimation{
                 duration: 250 / Global.animationSpeed
@@ -36,6 +36,7 @@ Rectangle {
 
     XCText{
         id: titleText
+        objectName: "windowTitle"
         x:8
         xcText: "【小菜粽子】UI商店生成器"
         xcFontSize: 16
@@ -43,7 +44,10 @@ Rectangle {
     
     MouseArea {
         anchors.fill: parent
-        onPressed: root.mainWindow.startSystemMove()    //窗口拖动
+        onPressed: {
+            root.mainWindow.finishWindowTransition()
+            root.mainWindow.startSystemMove()
+        }
         // Snapping to a screen edge is handled by the platform's system move.
         onDoubleClicked: root.maximizeClicked()
     }
@@ -52,7 +56,7 @@ Rectangle {
         id: btnRow
         
         // 普通窗口按钮留出边距，最大化时贴紧屏幕边缘。
-        readonly property int ctrBtnSize: root.mainWindow.expanded ? 36 : 30
+        readonly property real ctrBtnSize: root.mainWindow.titleButtonSize
 
         anchors.right: parent.right
         anchors.rightMargin: (36 - ctrBtnSize) / 2
@@ -83,7 +87,7 @@ Rectangle {
             id: closeBtn
             btnSize: btnRow.ctrBtnSize
             btnRadius: 2
-            topRightRadius: root.mainWindow.expanded ? 2 : Constants.window_radius - 2
+            topRightRadius: Math.max(2, root.mainWindow.frameRadius - 2)
             btnfired: "#FF0000"
             btnpressed: "#a00c0c"
             //关闭按钮

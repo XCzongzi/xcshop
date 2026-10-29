@@ -78,7 +78,7 @@ XCWindow {
             parent: popupBlurSource
             z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
             onTypeBtnClicked: typeName=>root.typeSwitch(typeName,false)
-            bottomLeftRadius: mainWindow.expanded ? 0 : Constants.window_radius
+            bottomLeftRadius: mainWindow.frameRadius
             onExtraButton_clicked:function(type) {
                 root.settingsFromWorkspace = true
                 elementExplorer.barHide(false)

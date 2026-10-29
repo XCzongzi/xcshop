@@ -7,7 +7,7 @@ BasePage {
     id: root
     color: Colors.transparent
     fullScreen: true
-    readonly property bool compactLayout: height < 560 || width < 900
+    readonly property real layoutExpansion: Math.max(0, Math.min(1, (height - 500) / 60, (width - 800) / 100))
     property bool creatingProject: false
 
     XCFile { id: projectFile }
@@ -219,9 +219,9 @@ BasePage {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 12 : 20)
-                anchors.leftMargin: root.compactLayout ? 16 : 24
-                anchors.rightMargin: root.compactLayout ? 24 : 32
+                anchors.topMargin: Constants.titleBarHeight + (12 + 8 * root.layoutExpansion)
+                anchors.leftMargin: 16 + 8 * root.layoutExpansion
+                anchors.rightMargin: 24 + 8 * root.layoutExpansion
                 height: 54
 
                 Row {
@@ -272,9 +272,9 @@ BasePage {
                 anchors.top: utilityPanel.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.topMargin: root.compactLayout ? 20 : 28
-                anchors.leftMargin: root.compactLayout ? 16 : 24
-                anchors.rightMargin: root.compactLayout ? 24 : 32
+                anchors.topMargin: 20 + 8 * root.layoutExpansion
+                anchors.leftMargin: 16 + 8 * root.layoutExpansion
+                anchors.rightMargin: 24 + 8 * root.layoutExpansion
                 height: 31
 
                 Rectangle {
@@ -314,7 +314,7 @@ BasePage {
                 anchors.left: recentHeading.left
                 anchors.right: recentHeading.right
                 anchors.topMargin: 18
-                anchors.bottomMargin: root.compactLayout ? 18 : 24
+                anchors.bottomMargin: 18 + 6 * root.layoutExpansion
                 clip: true
                 spacing: 7
                 model: Global.recentProjects
@@ -333,11 +333,11 @@ BasePage {
                 id: mainContent
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                anchors.topMargin: Constants.titleBarHeight + (root.compactLayout ? 24 : 44)
+                anchors.topMargin: Constants.titleBarHeight + (24 + 20 * root.layoutExpansion)
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: root.compactLayout ? 24 : 40
+                anchors.bottomMargin: 24 + 16 * root.layoutExpansion
                 width: Math.min(460, Math.max(0, parent.width
-                                              - (root.compactLayout ? 64 : 96)))
+                                              - (64 + 32 * root.layoutExpansion)))
                 opacity: root.creatingProject ? 0 : 1
                 enabled: !root.creatingProject
                 visible: opacity > 0.01
@@ -357,7 +357,7 @@ BasePage {
                         id: actionRow
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 140 * (root.compactLayout ? 0.88 : 1.0)
+                        height: 140
                         readonly property real minimumSpacing: 14
                         readonly property real maximumSpacing: 40
                         spacing: Math.min(maximumSpacing, minimumSpacing
@@ -366,12 +366,12 @@ BasePage {
 
                         LargeIconButton {
                             id: createProjectButton
+                            objectName: "startCreateProjectButton"
                             title: "创建"
                             subtitle: "新的xcshop项目"
                             icon: "qrc:/assets/gui/controls/new_project.png"
                             layout_width: mainContent.width
                             layout_amount: 2
-                            minimumScale: root.compactLayout ? 0.88 : 1.0
                             onClicked: root.openCreation()
                         }
                         LargeIconButton {
@@ -381,7 +381,6 @@ BasePage {
                             icon: "qrc:/assets/gui/controls/open_project.png"
                             layout_width: mainContent.width
                             layout_amount: 2
-                            minimumScale: root.compactLayout ? 0.88 : 1.0
                             onClicked: projectFolderDialog.openXC("project",
                                                                   Global.recentProjects.length
                                                                   ? Global.recentProjects[0].path : APP_DIRPATH)

@@ -284,6 +284,7 @@ if(XCSHOP_BUILD_TESTS)
         add_test(NAME window_frame_tests COMMAND appxcshop --window-frame-tests)
         set_tests_properties(window_frame_tests PROPERTIES
             ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=d3d11;QT_FORCE_STDERR_LOGGING=1"
+            RUN_SERIAL TRUE
             TIMEOUT 60)
     endif()
     qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml)

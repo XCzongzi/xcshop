@@ -1,6 +1,8 @@
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include "WindowStateController.h"
+#include <QFont>
 #include <QImage>
 #include <QPixmap>
 #include <QScreen>
@@ -131,6 +133,7 @@ private:
 private slots:
     void init()
     {
+        QMetaObject::invokeMethod(m_window, "finishWindowTransition");
         m_window->showNormal();
         QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
         QVERIFY(QTest::qWaitForWindowExposed(m_window));
@@ -146,19 +149,110 @@ private slots:
         const int margin = m_window->property("margins").toInt();
         clickAt(m_window->width() - margin - 48, margin + 18);
         QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
         QTest::mouseDClick(m_window, Qt::LeftButton, Qt::NoModifier, QPoint(220, 18));
         QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
+        QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
         QTRY_COMPARE(m_window->geometry(), normalGeometry);
         QTest::mouseDClick(m_window, Qt::LeftButton, Qt::NoModifier, QPoint(margin + 220, margin + 18));
         QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
         clickAt(m_window->width() - 54, 18);
         QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
+        QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
         QTRY_COMPARE(m_window->geometry(), normalGeometry);
         QCOMPARE(m_window->flags(), flags);
         QCOMPARE(m_window->winId(), handle);
         for (const auto &state : states)
             QVERIFY2(state.first().value<QWindow::Visibility>() != QWindow::FullScreen,
                      "Maximize/restore must not pass through fullscreen");
+    }
+
+    void smoothTransitionAndInterruptions()
+    {
+        const QRect normalGeometry = m_window->geometry();
+        auto *controller = m_window->findChild<WindowStateController *>();
+        auto *button = m_window->findChild<QQuickItem *>("startCreateProjectButton");
+        auto *title = m_window->findChild<QQuickItem *>("windowTitle");
+        QVERIFY(controller);
+        QVERIFY(button);
+        QVERIFY(title);
+        QVERIFY(!m_window->findChild<QQuickWindow *>("windowTransitionOverlay"));
+        const QSizeF buttonSize(button->width(), button->height());
+        QCOMPARE(buttonSize, QSizeF(210, 140));
+        const int fontSize = title->property("font").value<QFont>().pixelSize();
+        for (const auto expected : {QWindow::Maximized, QWindow::Windowed}) {
+            const QRect sourceGeometry = m_window->geometry();
+            const QRect targetGeometry = expected == QWindow::Maximized
+                                             ? m_window->screen()->availableGeometry() : normalGeometry;
+            QSignalSpy widths(m_window, &QWindow::widthChanged);
+            QSignalSpy frames(m_window, &QQuickWindow::frameSwapped);
+            bool sawIntermediate = false;
+            bool fixedControlMetrics = true;
+            const auto monitor = connect(m_window, &QWindow::widthChanged, this, [&](int width) {
+                if (width != sourceGeometry.width() && width != targetGeometry.width()) {
+                    sawIntermediate = true;
+                    const QPointF unit = title->mapToScene(QPointF(1, 0)) - title->mapToScene(QPointF(0, 0));
+                    fixedControlMetrics = fixedControlMetrics
+                        && QSizeF(button->width(), button->height()) == buttonSize
+                        && title->property("font").value<QFont>().pixelSize() == fontSize
+                        && qAbs(unit.x() - 1.0) < 0.001 && qAbs(unit.y()) < 0.001;
+                }
+            });
+            QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
+            QVERIFY(controller->transitioning());
+            QCOMPARE(m_window->opacity(), 1.0);
+            QTRY_VERIFY(!controller->transitioning());
+            disconnect(monitor);
+            QVERIFY2(sawIntermediate, "The real window must pass through intermediate geometry");
+            QVERIFY2(fixedControlMetrics, "Controls and text must keep their real size throughout resizing");
+            QCOMPARE(m_window->visibility(), expected);
+            QCOMPARE(m_window->opacity(), 1.0);
+            QCOMPARE(QSizeF(button->width(), button->height()), buttonSize);
+            QCOMPARE(title->property("font").value<QFont>().pixelSize(), fontSize);
+            qInfo("Live window transition: %lld size updates, %lld rendered frames",
+                  qlonglong(widths.count()), qlonglong(frames.count()));
+            QVERIFY2(widths.count() >= 4, "The real window and layout must resize through intermediate sizes");
+            QVERIFY2(frames.count() >= 4, "The live layout must be rendered throughout the transition");
+            m_window->grabWindow().save(QCoreApplication::applicationDirPath()
+                                      + (expected == QWindow::Maximized ? "/window-maximize-live.png" : "/window-restore-live.png"));
+        }
+        QCOMPARE(m_window->geometry(), normalGeometry);
+
+        QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
+        QTRY_VERIFY(m_window->width() > normalGeometry.width());
+        const QRect reverseFrom = m_window->geometry();
+        QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
+        QCOMPARE(m_window->geometry(), reverseFrom);
+        QTRY_VERIFY(!controller->transitioning());
+        QCOMPARE(m_window->visibility(), QWindow::Windowed);
+        QCOMPARE(m_window->geometry(), normalGeometry);
+
+        QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
+        QTRY_VERIFY(m_window->width() > normalGeometry.width());
+        QVERIFY(QMetaObject::invokeMethod(m_window, "minimize"));
+        QTRY_COMPARE(m_window->visibility(), QWindow::Minimized);
+        QVERIFY(!controller->transitioning());
+        nativeRestore();
+        QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+#ifdef Q_OS_WIN
+        SendMessage(reinterpret_cast<HWND>(m_window->winId()), WM_SYSCOMMAND, SC_RESTORE, 0);
+#else
+        m_window->showNormal();
+#endif
+        QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
+        QTRY_COMPARE(m_window->geometry(), normalGeometry);
+#ifdef Q_OS_WIN
+        QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
+        QTRY_VERIFY(m_window->width() > normalGeometry.width());
+        SendMessage(reinterpret_cast<HWND>(m_window->winId()), WM_SYSCOMMAND, SC_MINIMIZE, 0);
+        QTRY_COMPARE(m_window->visibility(), QWindow::Minimized);
+        QTRY_VERIFY(!controller->transitioning());
+        nativeRestore();
+        QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        m_window->showNormal();
+        QTRY_COMPARE(m_window->geometry(), normalGeometry);
+#endif
     }
 
     void maximizedMinimizeRestore()
@@ -254,6 +348,9 @@ int runWindowFrameTests(QQmlApplicationEngine &engine)
     auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     if (!window)
         return 1;
+    // Keep timing checks independent of the user's saved animation speed.
+    if (auto *global = engine.singletonInstance<QObject *>("xcshop", "Global"))
+        global->setProperty("animationSpeed", 1.0);
     WindowFrameTests tests(window);
     // Keep the application-specific switch out of Qt Test's arguments.
     return QTest::qExec(&tests, QStringList{QStringLiteral("window_frame_tests")});
