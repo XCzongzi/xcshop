@@ -13,6 +13,7 @@
 #include <QWindow>
 #include <QFontDatabase>
 #include <memory>
+int runWindowFrameTests(QQmlApplicationEngine &engine);
 #endif
 
 int main(int argc, char *argv[])
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
     std::unique_ptr<QTemporaryDir> smokeDirectory;
     UiTestInput uiTestInput;
     engine.rootContext()->setContextProperty("UiInput", &uiTestInput);
+    if (app.arguments().contains("--window-frame-tests"))
+        return runWindowFrameTests(engine);
     if (app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
         || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")
         || app.arguments().contains("--dropdown-ui-smoke") || app.arguments().contains("--light-theme-ui-smoke")

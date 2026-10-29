@@ -32,6 +32,7 @@ qt_add_executable(appxcshop
     src/ElementIO.cpp
     src/BuildKitManager.cpp
     src/BuildManager.cpp
+    src/WindowStateController.cpp
 )
 
 
@@ -224,6 +225,7 @@ qt_add_qml_module(appxcshop
         header/ElementIO.h
         header/BuildKitManager.h
         header/BuildManager.h
+        header/WindowStateController.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -274,8 +276,16 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
     set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    target_sources(appxcshop PRIVATE tests/UiTestInput.h)
+    target_sources(appxcshop PRIVATE tests/UiTestInput.h tests/WindowFrameTests.cpp)
     target_link_libraries(appxcshop PRIVATE Qt6::Test)
+    if(WIN32)
+        target_link_libraries(appxcshop PRIVATE user32)
+        # Exercise the Windows platform plugin: offscreen cannot reproduce native placement bugs.
+        add_test(NAME window_frame_tests COMMAND appxcshop --window-frame-tests)
+        set_tests_properties(window_frame_tests PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=d3d11;QT_FORCE_STDERR_LOGGING=1"
+            TIMEOUT 60)
+    endif()
     qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml)
     add_test(NAME themed_icon_ui_smoke COMMAND appxcshop --themed-icon-ui-smoke)
     set_tests_properties(themed_icon_ui_smoke PROPERTIES

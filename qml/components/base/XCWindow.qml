@@ -18,21 +18,34 @@ Window {
     readonly property int titleBarHeight: titleBar.height
     readonly property Image background: backgroundImage
     readonly property Item backdrop: rawBackdrop
-    readonly property int titleBar_height: titleBar.height
     property string backgroundMode: Global.backgroundMode
     property color backgroundColor: Colors.backgroundColor
     property string backgroundSource: Global.backgroundImage
     property real backgroundBlur: Global.backgroundBlur
 
     property bool titleBarColorFilling: false
-    property int margins: visibility === Window.Maximized? 0 : Constants.margins
+    readonly property bool expanded: windowState.maximized || windowState.fullScreen
+    readonly property int margins: expanded ? 0 : Constants.margins
     readonly property int surfaceWidth: windowSurface.width
     readonly property int surfaceHeight: windowSurface.height
     
-    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
 
-    // Keep flags stable so minimizing never destroys the previous normal or
-    // maximized placement. NativeFramelessWindow backports QTBUG-127116.
+    WindowStateController {
+        id: windowState
+        window: root
+    }
+
+    function minimize() {
+        windowState.minimize()
+    }
+
+    function toggleMaximized() {
+        if (expanded)
+            showNormal()
+        else
+            showMaximized()
+    }
 
     Item {
         id: windowSurface
@@ -73,7 +86,7 @@ Window {
             // the original backdrop from the normal scene composition.
             hideSource: true
             live: true
-            layer.enabled: root.visibility !== Window.Maximized
+            layer.enabled: !root.expanded
             layer.effect: OpacityMask{
                 maskSource: Rectangle{
                     width: root.surfaceWidth
@@ -82,7 +95,7 @@ Window {
                 }
             }
         }
-        layer.enabled: root.visibility !== Window.Maximized
+        layer.enabled: !root.expanded
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: "#d0000000"
@@ -96,22 +109,13 @@ Window {
         mainWindow: root
         z: 99
         onCloseClicked: root.close()
-        onMaximizeClicked: {
-            if (root.visibility === Window.Maximized) {
-                root.showFullScreen()
-                root.showNormal()
-            } else {
-                root.showFullScreen()
-                root.showMaximized()
-            }
-        }
-        onMinimizeClicked: root.showMinimized()
+        onMaximizeClicked: root.toggleMaximized()
+        onMinimizeClicked: root.minimize()
         colorFilling: root.titleBarColorFilling
     }
 
     Border {
         id: border
-        visible: root.visibility !== Window.Maximized
         mainWindow: root
         z: 100
     } 

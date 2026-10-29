@@ -1,97 +1,44 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import xcshop
 
+Item {
+    id: root
+    objectName: "windowResizeBorder"
+    required property XCWindow mainWindow
+    readonly property int resizeMargin: 5
 
+    x: mainWindow.margins
+    y: mainWindow.margins
+    width: mainWindow.surfaceWidth
+    height: mainWindow.surfaceHeight
+    visible: mainWindow.visibility === Window.Windowed
+    enabled: visible
 
-Item{
-    id:root
-    property Window mainWindow
-    property int margins: root.mainWindow.visibility === Window.Maximized? 0 : Constants.margins
-
-    
-      
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-            false : true
-        x:root.margins
-        y:root.margins
-        width: 5
-        height: root.mainWindow.height - 2*root.margins
-        onPressed: root.mainWindow.startSystemResize(Qt.LeftEdge)
-        cursorShape: Qt.SizeHorCursor
-    }
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-            false : true
-        x:root.mainWindow.width - root.margins
-        y:root.margins
-        width: 5
-        height: root.mainWindow.height - 2*root.margins
-        onPressed: root.mainWindow.startSystemResize(Qt.RightEdge)
-        cursorShape: Qt.SizeHorCursor
-    }
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-            false : true
-        x:root.margins
-        y:root.margins
-        width: root.mainWindow.width - 2*root.margins
-        height: 5
-        onPressed: root.mainWindow.startSystemResize(Qt.TopEdge)
-        cursorShape: Qt.SizeVerCursor
-    }
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-            false : true
-        x:root.margins
-        y:root.mainWindow.height - root.margins
-        width: root.mainWindow.width - 2*root.margins
-        height: 5
-        onPressed: root.mainWindow.startSystemResize(Qt.BottomEdge)
-        cursorShape: Qt.SizeVerCursor
-    }
-    
-
-//四个角的大小调整
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-                false : true
-        x:root.margins
-        y:root.mainWindow.height-5 - root.margins
-        height: 5
-        width: 5
-        onPressed: root.mainWindow.startSystemResize(Qt.BottomEdge | Qt.LeftEdge)
-        cursorShape: Qt.SizeBDiagCursor
-    }
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-                false : true
-        x:root.mainWindow.width-5 - root.margins
-        y:root.mainWindow.height-5 - root.margins
-        height: root.margins
-        width: root.margins
-        onPressed: root.mainWindow.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
-        cursorShape: Qt.SizeFDiagCursor
-    }
-
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-                false : true
-        x:root.margins
-        y:root.margins
-        height: 5
-        width: 5
-        onPressed: root.mainWindow.startSystemResize(Qt.TopEdge | Qt.LeftEdge)
-        cursorShape: Qt.SizeFDiagCursor
-    }
-    MouseArea{
-        visible: root.mainWindow.visibility === Window.Maximized? 
-                false : true
-        x:root.mainWindow.width-5 - root.margins
-        y:root.margins
-        height: 5
-        width: 5
-        onPressed: root.mainWindow.startSystemResize(Qt.TopEdge | Qt.RightEdge)
-        cursorShape: Qt.SizeBDiagCursor
+    Repeater {
+        // Corners come last so they take precedence over the edge strips.
+        model: [
+            { name: "Left", edges: Qt.LeftEdge, cursor: Qt.SizeHorCursor },
+            { name: "Right", edges: Qt.RightEdge, cursor: Qt.SizeHorCursor },
+            { name: "Top", edges: Qt.TopEdge, cursor: Qt.SizeVerCursor },
+            { name: "Bottom", edges: Qt.BottomEdge, cursor: Qt.SizeVerCursor },
+            { name: "BottomLeft", edges: Qt.BottomEdge | Qt.LeftEdge, cursor: Qt.SizeBDiagCursor },
+            { name: "BottomRight", edges: Qt.BottomEdge | Qt.RightEdge, cursor: Qt.SizeFDiagCursor },
+            { name: "TopLeft", edges: Qt.TopEdge | Qt.LeftEdge, cursor: Qt.SizeFDiagCursor },
+            { name: "TopRight", edges: Qt.TopEdge | Qt.RightEdge, cursor: Qt.SizeBDiagCursor }
+        ]
+        delegate: MouseArea {
+            required property var modelData
+            objectName: "windowResize" + modelData.name
+            readonly property bool horizontalEdge: (modelData.edges & (Qt.LeftEdge | Qt.RightEdge)) !== 0
+            readonly property bool verticalEdge: (modelData.edges & (Qt.TopEdge | Qt.BottomEdge)) !== 0
+            width: horizontalEdge ? root.resizeMargin : root.width
+            height: verticalEdge ? root.resizeMargin : root.height
+            x: (modelData.edges & Qt.RightEdge) ? root.width - width : 0
+            y: (modelData.edges & Qt.BottomEdge) ? root.height - height : 0
+            acceptedButtons: Qt.LeftButton
+            cursorShape: modelData.cursor
+            onPressed: root.mainWindow.startSystemResize(modelData.edges)
+        }
     }
 }

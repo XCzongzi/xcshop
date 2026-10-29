@@ -13,7 +13,7 @@ Rectangle{
     height: ignoreTitleBar? mainWindow.surfaceHeight : mainWindow.surfaceHeight - Constants.titleBarHeight
     color: Colors.transparent
 
-    layer.enabled: mainWindow.visibility !== Window.Maximized
+    layer.enabled: !mainWindow.expanded
     layer.effect: OpacityMask{
         maskSource: Rectangle{
             width: root.mainWindow.surfaceWidth
