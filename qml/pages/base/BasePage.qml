@@ -4,6 +4,7 @@ import xcshop
 Rectangle{
     id: root
     property Window mainWindow
+    property bool usePageScrollBar: true // 自带 Flickable 的页面可关闭旧滚动逻辑。
     property bool layout: headContentMinWidth + 16*(maxHeadContentCount + 1) < width //用于决定布局是否自适应窗口大小而改变
     property int content_height: 0                                  //用于记录内容高度，以便滚动条的高度变化
     readonly property int height_output: scrollBar.height_output    //用于输出滚动条已滚动的高度
@@ -41,6 +42,7 @@ Rectangle{
 
     //滚动条
     WheelHandler{
+        enabled: root.usePageScrollBar
         rotationScale: 0.1
         onWheel: function(event) {
             scrollBar.wheelDeltaY = event.angleDelta.y
@@ -49,6 +51,7 @@ Rectangle{
     }
     ScrollBar{
         id: scrollBar
+        visible: root.usePageScrollBar && content_height > height
         layout_determines: root.layout
         content_height: root.content_height
     }

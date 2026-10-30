@@ -50,6 +50,7 @@ XCWindow {
         onWidthChanged: Global.window_width = root.width
         onHeightChanged: Global.window_height = root.height
         ignoreTitleBar: pageLoader.sourceComponent === Constants.pageOnStart
+                        || pageLoader.sourceComponent === Constants.pageOnAbout
         
         property bool settingsFromWorkspace: false
 
@@ -235,12 +236,14 @@ XCWindow {
 
         Loader{
             id:pageLoader
+            objectName: "mainPageLoader"
             parent: popupBlurSource
             
-            x: Math.max(root.pageX, Constants.typeBarWidth)
+            readonly property bool aboutPage: sourceComponent === Constants.pageOnAbout
+            x: aboutPage ? 0 : Math.max(root.pageX, Constants.typeBarWidth)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
             height: Math.max(0, root.height - y - elementRelayBar.height)
-            width: root.workspaceChromeVisible ? root.width - x : root.width - x + 65
+            width: aboutPage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
             z: 96
             sourceComponent: Constants.pageOnStart
             onItemChanged: {
@@ -274,7 +277,7 @@ XCWindow {
                 freeze.visible = true
                 pageLoader.page = page_
 
-                if(pageLoader.page === Constants.pageOnStart){  //开始界面填充标题栏
+                if(pageLoader.page === Constants.pageOnStart || pageLoader.page === Constants.pageOnAbout){
                     mainWindow.titleBarColorFilling = false
                 }else{
                     mainWindow.titleBarColorFilling = true

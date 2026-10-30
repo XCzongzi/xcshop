@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/backgrounds/麦田.png</file>
+    </qresource>
+</RCC>

@@ -9,6 +9,7 @@
 #include <QWindow>
 #include <QVariantMap>
 #include <QTextLayout>
+#include <QWheelEvent>
 
 // Send actual window events so smoke tests exercise native control behavior.
 class UiTestInput : public QObject {
@@ -35,6 +36,14 @@ public:
     Q_INVOKABLE void key(QQuickItem *item, int key, int modifiers = 0) {
         if (item && item->window())
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
+    }
+    Q_INVOKABLE void wheel(QQuickItem *item, int delta) {
+        if (!item || !item->window()) return;
+        const auto point = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
+        QWheelEvent event(point, item->window()->mapToGlobal(point.toPoint()),
+                          QPoint(), QPoint(0, delta), Qt::NoButton, Qt::NoModifier,
+                          Qt::NoScrollPhase, false);
+        QCoreApplication::sendEvent(item->window(), &event);
     }
     Q_INVOKABLE void rightClick(QQuickItem *item) {
         if (!item || !item->window()) return;

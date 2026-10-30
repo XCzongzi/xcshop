@@ -19,6 +19,7 @@ int runWindowFrameTests(QQmlApplicationEngine &engine);
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QCoreApplication::setApplicationVersion(QStringLiteral(XCSHOP_VERSION));
     // This application customizes control backgrounds; native Windows style does not support that.
     QQuickStyle::setStyle("Basic");
     BuildKitManager buildKits;

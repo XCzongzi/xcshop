@@ -211,6 +211,7 @@ qt_add_qml_module(appxcshop
 
     RESOURCES
         gui.qrc
+        about.qrc
         gui_dark.qrc
         gui_light.qrc
         container.qrc
@@ -251,6 +252,7 @@ set_target_properties(appxcshop PROPERTIES
 target_link_libraries(appxcshop
     PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Concurrent
 )
+target_compile_definitions(appxcshop PRIVATE XCSHOP_VERSION="${PROJECT_VERSION}")
 
 # Seed bundled kits without replacing templates already installed/edited by the user.
 add_custom_command(TARGET appxcshop POST_BUILD
@@ -310,6 +312,11 @@ if(XCSHOP_BUILD_TESTS)
         TIMEOUT 30)
     add_test(NAME light_theme_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME background_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME about_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(about_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/AboutUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "ABOUT_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 25)
     set_tests_properties(background_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/BackgroundUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "BACKGROUND_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
