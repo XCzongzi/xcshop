@@ -6,6 +6,44 @@ Item {
     id: root
     property var accentChoices: Colors.accentChoices
     readonly property var colorChoices: Colors.colorSchemes
+    property var customBackgrounds: []
+    property string backgroundError: ""
+    readonly property var presetBackgrounds: [
+        {name: "朝阳", schemes: ["parchment"]},
+        {name: "鼠骗", schemes: ["amber"]},
+        {name: "望夜城", schemes: ["slate", "midnight"]},
+        {name: "夕阳", schemes: ["amber", "parchment"]},
+        {name: "夜村", schemes: ["slate", "forest"]},
+        {name: "樱花树", schemes: ["amber", "blush"]}
+    ]
+    XCFile { id: backgroundFiles }
+    Component.onCompleted: customBackgrounds = backgroundFiles.backgroundImages()
+
+    function chooseBackground(source) {
+        Global.backgroundImage = source
+        Global.backgroundMode = "image"
+        Global.saveSettings()
+    }
+    function importBackground(source) {
+        var imported = backgroundFiles.importBackgroundImage(source)
+        if (!imported.length) {
+            backgroundError = "导入失败，请选择有效的图片并检查存储目录权限。"
+            return
+        }
+        backgroundError = ""
+        customBackgrounds = backgroundFiles.backgroundImages()
+        chooseBackground(imported)
+    }
+    function removeBackground(source) {
+        if (!backgroundFiles.removeBackgroundImage(source)) {
+            backgroundError = "删除失败，请检查文件是否被占用。"
+            return
+        }
+        backgroundError = ""
+        customBackgrounds = backgroundFiles.backgroundImages()
+        if (Global.backgroundImage === source)
+            chooseBackground("qrc:/assets/backgrounds/朝阳.png")
+    }
 
     function chooseTheme(color) {
         Colors.setThemeColor(color)
@@ -39,9 +77,7 @@ Item {
         id: imageFileDialog
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.webp *.bmp)", "All files (*)"]
         onAccepted: {
-            Global.backgroundImage = selectedFile.toString()
-            Global.backgroundMode = "image"
-            Global.saveSettings()
+            root.importBackground(selectedFile.toString())
         }
     }
 
@@ -188,19 +224,75 @@ Item {
                 initialOption: root.backgroundTypeIndex()
                 onClicked: {
                     Global.backgroundMode = ["color", "image"][selected]
+                    if (selected === 1 && !Global.backgroundImage.length)
+                        Global.backgroundImage = "qrc:/assets/backgrounds/朝阳.png"
                     Global.saveSettings()
                 }
             }
-            Row {
+            Column {
                 id: imageRow
                 x: 0
                 y: backgroundType.y + backgroundType.height + 12
+                width: parent.width
                 visible: Global.backgroundMode === "image"
-                spacing: 10
-                ActionButton { text: "选择图片"
-                    onClicked: imageFileDialog.openXC(false, "background") }
-                    XCText { width: Math.max(120, parent.parent.width - 144); xcText: Global.backgroundImage.length ? Global.backgroundImage : "未选择图片"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned; elide: Text.ElideMiddle }
+                spacing: 12
+                XCText { xcText: "预设"; onCenter: false; xcFontSize: 14 }
+                Flow {
+                    id: presetFlow
+                    width: parent.width; spacing: 12
+                    readonly property int columns: Math.max(1, Math.floor((width + spacing) / 222))
+                    Repeater {
+                        model: root.presetBackgrounds
+                        delegate: BackgroundImageCard {
+                            required property var modelData
+                            width: (presetFlow.width - (presetFlow.columns - 1) * presetFlow.spacing) / presetFlow.columns
+                            imageName: modelData.name
+                            imageSource: "qrc:/assets/backgrounds/" + modelData.name + ".png"
+                            schemes: modelData.schemes
+                            onChosen: root.chooseBackground(imageSource)
+                            onThemeChosen: function(schemeId) {
+                                Colors.applyColorScheme(schemeId)
+                                // 深夜没有默认映射，推荐主题仍需重置强调色。
+                                Colors.setThemeColor(Colors.accentForColorScheme(schemeId) || Colors.accentChoices[0])
+                                root.chooseBackground(imageSource)
+                            }
+                        }
+                    }
                 }
+                Row {
+                    spacing: 16
+                    XCText { xcText: "自定义"; onCenter: false; height: 34; verticalAlignment: Text.AlignVCenter; xcFontSize: 14 }
+                    ActionButton { text: "导入图片"; onClicked: imageFileDialog.openXC(false, "backgroundLibrary") }
+                }
+                XCText {
+                    visible: root.customBackgrounds.length === 0
+                    width: parent.width; xcWrapMode: true
+                    xcText: "尚未导入图片。导入后将保存副本，可点击预览切换背景。"
+                    onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned
+                }
+                Flow {
+                    id: customFlow
+                    width: parent.width; spacing: 12
+                    Repeater {
+                        model: root.customBackgrounds
+                        delegate: BackgroundImageCard {
+                            required property var modelData
+                            width: (customFlow.width - (presetFlow.columns - 1) * customFlow.spacing) / presetFlow.columns
+                            imageName: modelData.name
+                            imageSource: modelData.source
+                            removable: true
+                            onChosen: root.chooseBackground(imageSource)
+                            onRemoveRequested: root.removeBackground(imageSource)
+                            onRevealRequested: backgroundFiles.revealInFileManager(imageSource)
+                        }
+                    }
+                }
+                XCText {
+                    visible: root.backgroundError.length > 0
+                    width: parent.width; xcWrapMode: true; onCenter: false
+                    xcText: root.backgroundError; xcFontSize: 12; textColor: Colors.error
+                }
+            }
                 Row {
                     id: blurRow
                     x: 0

@@ -1,5 +1,11 @@
 <RCC>
     <qresource prefix="/">
+        <file>assets/backgrounds/朝阳.png</file>
+        <file>assets/backgrounds/鼠骗.png</file>
+        <file>assets/backgrounds/望夜城.png</file>
+        <file>assets/backgrounds/夕阳.png</file>
+        <file>assets/backgrounds/夜村.png</file>
+        <file>assets/backgrounds/樱花树.png</file>
         <file>assets/gui/titleBar/close.png</file>
         <file>assets/gui/titleBar/maximize.png</file>
         <file>assets/gui/titleBar/minimize.png</file>

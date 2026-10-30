@@ -2,11 +2,12 @@
 #include <QDesktopServices>
 #include <QFile>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QDirIterator>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSaveFile>
-#include <QStandardPaths>
+#include <QCoreApplication>
 #include <QTextStream>
 #include <QUrl>
 
@@ -232,8 +233,43 @@ bool XCFile::revealInFileManager(const QString& filePath){
 #endif
 }
 
-QString XCFile::appDataPath(){
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+QString XCFile::runtimePath(){
+    const QString path = QCoreApplication::applicationDirPath();
     QDir().mkpath(path);
     return path;
+}
+
+QVariantList XCFile::backgroundImages(){
+    const QDir directory(runtimePath() + "/backgrounds");
+    QVariantList images;
+    for (const auto& info : directory.entryInfoList(QDir::Files | QDir::NoSymLinks, QDir::Name)) {
+        images.append(QVariantMap{{"name", info.completeBaseName()},
+                                  {"source", QUrl::fromLocalFile(info.absoluteFilePath()).toString()}});
+    }
+    return images;
+}
+
+QString XCFile::importBackgroundImage(const QString& sourcePath){
+    QImageReader reader(localPath(sourcePath));
+    reader.setAutoTransform(true);
+    if (!reader.canRead())
+        return {};
+    const QSize size = reader.size();
+    if (size.isValid())
+        reader.setScaledSize(size.scaled(QSize(256, 256), Qt::KeepAspectRatio));
+    if (reader.read().isNull())
+        return {};
+    const QString copied = copyToDirectory(sourcePath, runtimePath() + "/backgrounds");
+    if (!copied.isEmpty())
+        QFile::setPermissions(copied, QFile::permissions(copied) | QFileDevice::WriteOwner | QFileDevice::WriteUser);
+    return copied.isEmpty() ? QString() : QUrl::fromLocalFile(copied).toString();
+}
+
+bool XCFile::removeBackgroundImage(const QString& sourceUrl){
+    const QFileInfo info(localPath(sourceUrl));
+    const QDir directory(runtimePath() + "/backgrounds");
+    // Only delete files owned by the background library, never an original import.
+    if (info.isSymLink() || info.absoluteDir().absolutePath() != directory.absolutePath())
+        return false;
+    return QFile::remove(info.absoluteFilePath());
 }

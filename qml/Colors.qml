@@ -12,11 +12,11 @@ QtObject {
     property color fired: "#aa92949c"
     property color pressed: "#aa6b6c74"
     property color paletteText: "#ffffff"
-    property color text: imageMode ? surfaceColor("imageText", paletteText) : paletteText
+    property color text: softenLightInk(imageMode ? surfaceColor("imageText", paletteText) : paletteText, 0.10)
     // 设置页可修改，全局控件会随之更新。
     property color border: "#2f8cff"
     property color paletteMutedText: "#bbbbbb"
-    property color banned: imageMode ? surfaceColor("imageMuted", paletteMutedText) : paletteMutedText
+    property color banned: softenLightInk(imageMode ? surfaceColor("imageMuted", paletteMutedText) : paletteMutedText, 0.12)
 
     property string gui_theme: "dark"
 
@@ -47,7 +47,7 @@ QtObject {
     readonly property color control: surfaceColor("control", pressed)
     readonly property color disabledSurface: surfaceColor("control", banned)
     readonly property color outline: surfaceColor("outline", text)
-    readonly property color placeholder: surfaceColor(imageMode ? "imagePlaceholder" : "placeholder", banned)
+    readonly property color placeholder: softenLightInk(surfaceColor(imageMode ? "imagePlaceholder" : "placeholder", paletteMutedText), 0.12)
     readonly property color selection: surfaceColor("selection", fired)
     readonly property color selectedRow: surfaceColor("selection", banned)
     readonly property color ambientAccent: surfaceColor("ambient", border)
@@ -64,6 +64,13 @@ QtObject {
     readonly property color selectionContent: isLight
             ? contrastingText(Qt.tint(Qt.tint(background_n, changeA(card, 0.38)), changeA(border, 0.78)))
             : background_n
+
+    function softenLightInk(color, amount) {
+        if (!isLight) return color
+        return Qt.rgba(color.r + (1 - color.r) * amount,
+                       color.g + (1 - color.g) * amount,
+                       color.b + (1 - color.b) * amount, color.a)
+    }
 
     function surfaceColor(role, fallback) {
         if (!isLight || !lightPalette[role]) return fallback

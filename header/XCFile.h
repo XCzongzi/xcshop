@@ -26,7 +26,10 @@ public:
     Q_INVOKABLE bool removeDirectory(const QString& directoryPath);
     Q_INVOKABLE QString clone(const QString& filePath);
     Q_INVOKABLE bool revealInFileManager(const QString& filePath);
-    Q_INVOKABLE QString appDataPath();
+    Q_INVOKABLE QString runtimePath();
+    Q_INVOKABLE QVariantList backgroundImages();
+    Q_INVOKABLE QString importBackgroundImage(const QString& sourcePath);
+    Q_INVOKABLE bool removeBackgroundImage(const QString& sourceUrl);
 
 private:
     static QString localPath(const QString& path);

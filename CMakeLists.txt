@@ -137,6 +137,7 @@ qt_add_qml_module(appxcshop
 
         qml/components/settings/SettingsPageHeader.qml
         qml/components/settings/SettingsCard.qml
+        qml/components/settings/BackgroundImageCard.qml
         qml/components/settings/SettingsActionButton.qml
         qml/components/settings/SettingsNavButton.qml
         
@@ -301,6 +302,11 @@ if(XCSHOP_BUILD_TESTS)
         FAIL_REGULAR_EXPRESSION "THEMED_ICON_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
         TIMEOUT 30)
     add_test(NAME light_theme_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME background_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(background_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/BackgroundUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "BACKGROUND_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 20)
     set_tests_properties(light_theme_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
         FAIL_REGULAR_EXPRESSION "LIGHT_THEME_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
