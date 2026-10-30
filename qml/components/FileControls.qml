@@ -75,14 +75,14 @@ PanelSurface {
             height: 26
             width: Math.min(implicitWidth, 180, Math.max(0, root.width - 72))
             enabled: root.hasBuildResult
-            text: Builder.running ? (root.hasBuildResult ? "构建中…" : "其他项目构建中…") : Builder.state
+            text: Builder.running ? (root.hasBuildResult ? (Builder.state === "检查中" ? "检查中…" : "构建中…") : "其他项目构建中…") : Builder.state
             Accessible.name: text + "，查看构建详情"
             onClicked: root.buildDetailsRequested()
             contentItem: Text {
                 text: buildStatus.text
                 font.family: "微软雅黑"
                 font.pixelSize: 11
-                color: root.hasBuildResult && Builder.state === "构建失败" ? Colors.error : Colors.banned
+                color: root.hasBuildResult && (Builder.state === "构建失败" || Builder.state === "检查失败") ? Colors.error : Colors.banned
                 elide: Text.ElideRight
                 verticalAlignment: Text.AlignVCenter
             }

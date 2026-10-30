@@ -95,11 +95,13 @@ private slots:
     void versionInfo_data() {
         QTest::addColumn<QString>("mode");
         QTest::addColumn<QString>("expected");
-        QTest::newRow("stdout") << QString() << QString("xcshop-builder 0.1.0\n构建器版本信息");
-        QTest::newRow("stderr") << QString("stderr") << QString("xcshop-builder 0.1.0\n构建器版本信息");
-        QTest::newRow("empty") << QString("empty") << QString("构建器未返回版本信息。");
-        QTest::newRow("error") << QString("error") << QString("获取失败（退出码 2）\nunsupported option");
-        QTest::newRow("timeout") << QString("slow") << QString("获取超时，请检查构建器是否支持 --version。");
+        QTest::newRow("stdout") << QString() << QString("路径无效：未获取到有效版本信息。");
+        QTest::newRow("stderr") << QString("stderr") << QString("路径无效：未获取到有效版本信息。");
+        QTest::newRow("invalid-json") << QString("invalid-json") << QString("路径无效：未获取到有效版本信息。");
+        QTest::newRow("json") << QString("json") << QString("{\"builderVersion\":\"0.1.0\",\"protocolVersion\":0,\"maxSupportedDataVersion\":0}");
+        QTest::newRow("empty") << QString("empty") << QString("路径无效：未返回版本信息。");
+        QTest::newRow("error") << QString("error") << QString("路径无效：获取版本失败（退出码 2）。");
+        QTest::newRow("timeout") << QString("slow") << QString("路径无效：获取版本超时。");
     }
     void versionInfo() {
         QFETCH(QString, mode);
@@ -113,6 +115,22 @@ private slots:
         builder.fetchVersion(); // Ignore repeated requests while a query is running.
         QTRY_VERIFY_WITH_TIMEOUT(!builder.queryingVersion(), 8000);
         QCOMPARE(builder.versionInfo(), expected);
+        QCOMPARE(builder.versionValid(), mode == "json");
+        if (mode == "json")
+            QCOMPARE(builder.displayVersionInfo(), QString("版本：0.1.0\n最高支持数据版本：0"));
+        else
+            QCOMPARE(builder.displayVersionInfo(), expected);
+        BuildManager restored;
+        restored.setExecutablePath(fixture);
+        restored.restoreVersionInfo(fixture, builder.versionInfo());
+        QCOMPARE(restored.versionInfo(), expected);
+        QCOMPARE(restored.displayVersionInfo(), builder.displayVersionInfo());
+        QCOMPARE(restored.versionValid(), builder.versionValid());
+        restored.recheckExecutable();
+        restored.setExecutablePath(fixture);
+        QCOMPARE(restored.versionInfo(), expected);
+        restored.restoreVersionInfo(fixture + ".different", "stale version");
+        QCOMPARE(restored.versionInfo(), expected);
         QVERIFY(!builder.running());
         QVERIFY(builder.consoleText().isEmpty());
         builder.setExecutablePath(fixture + ".missing");
@@ -124,7 +142,7 @@ private slots:
     void process_data() {
         QTest::addColumn<QString>("mode");
         QTest::addColumn<bool>("success");
-        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large", "arguments"})
+        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large", "arguments", "invalid-mode", "invalid-output"})
             QTest::newRow(mode) << QString(mode) << (QString(mode) == "success" || QString(mode) == "large" || QString(mode) == "arguments");
     }
     void process() {
@@ -159,6 +177,32 @@ private slots:
         }
         if (mode == "large") QVERIFY(builder.consoleText().size() <= 256 * 1024);
         QCOMPARE(builder.outputPath(), temp.path() + "/generated/测试 output");
+    }
+    void checkOnlyResults() {
+        QTemporaryDir temp;
+        const auto project = temp.path() + "/project";
+        QVERIFY(makeKit(temp.path() + "/kits"));
+        BuildManager builder;
+        builder.setExecutablePath(fixture);
+        for (const auto &mode : {"check", "check-error", "no-output", "written", "legacy-check"}) {
+            const bool legacy = QString(mode) == "legacy-check";
+            const bool checkOnly = QString(mode).startsWith("check") || legacy;
+            const bool success = QString(mode) != "check-error";
+            QVERIFY(makeManifest(project, legacy ? "success" : mode));
+            builder.setStartupArguments(legacy ? "--check" : "");
+            QSignalSpy finished(&builder, &BuildManager::completed);
+            QVERIFY(builder.start(project, temp.path() + "/kits"));
+            QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);
+            QCOMPARE(finished[0][0].toBool(), success);
+            QCOMPARE(builder.state(), checkOnly ? (success ? "检查通过" : "检查失败") : "构建成功");
+            if (QString(mode) == "written") {
+                QCOMPARE(builder.summary(), "数据包已生成");
+                QVERIFY(!builder.outputPath().isEmpty());
+            } else {
+                QVERIFY(!builder.summary().contains("已生成"));
+                QVERIFY(builder.outputPath().isEmpty());
+            }
+        }
     }
     void customOutputFolder() {
         QTemporaryDir temp;

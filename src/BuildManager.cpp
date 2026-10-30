@@ -18,10 +18,23 @@ QString absolutePath(const QString &value) {
     const auto text = url.isLocalFile() ? url.toLocalFile() : value.trimmed();
     return text.isEmpty() ? QString() : QDir::cleanPath(QFileInfo(text).absoluteFilePath());
 }
+bool validVersionInfo(const QString &info) {
+    const auto document = QJsonDocument::fromJson(info.toUtf8());
+    if (!document.isObject()) return false;
+    const auto object = document.object();
+    if (!object["builderVersion"].isString() || object["builderVersion"].toString().trimmed().isEmpty()) return false;
+    for (const auto &key : {"protocolVersion", "maxSupportedDataVersion"}) {
+        const auto value = object[key];
+        if (!value.isDouble() || value.toInt(-1) < 0 || value.toDouble() != value.toInt(-1)) return false;
+    }
+    return true;
+}
 bool validProtocol(const QJsonObject &object) {
     if (object["protocol"] != "xcshop-builder/result" || object["version"].toInt(-1) != 0) return false;
     for (const auto &name : {"buildEndedNormally", "buildSucceeded", "terminatedEarly"})
         if (!object[name].isBool()) return false;
+    if (object.contains("mode") && object["mode"] != "check" && object["mode"] != "build") return false;
+    if (object.contains("outputWritten") && !object["outputWritten"].isBool()) return false;
     if (!object["internalError"].isNull() && !object["internalError"].isString()) return false;
     for (const auto &name : {"errors", "warnings"}) {
         if (!object[name].isArray()) return false;
@@ -58,15 +71,16 @@ BuildManager::BuildManager(QObject *parent) : QObject(parent), m_executablePath(
         m_versionOutput += output.left(qMax<qsizetype>(0, 64 * 1024 - m_versionOutput.size()));
     });
     connect(&m_versionTimer, &QTimer::timeout, this, [this] {
-        m_versionInfo = "获取超时，请检查构建器是否支持 --version。";
+        m_versionInfo = "路径无效：获取版本超时。";
         m_versionProcess.kill();
     });
     connect(&m_versionProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error != QProcess::FailedToStart) return;
         m_versionTimer.stop();
-        m_versionInfo = "无法获取构建器信息：" + m_versionProcess.errorString();
+        m_versionInfo = "路径无效：无法启动构建器。";
         m_queryingVersion = false;
         emit versionInfoChanged();
+        emit versionInfoFetched();
     });
     connect(&m_versionProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
         m_versionTimer.stop();
@@ -75,18 +89,21 @@ BuildManager::BuildManager(QObject *parent) : QObject(parent), m_executablePath(
         const auto output = QString::fromUtf8(m_versionOutput).replace("\r\n", "\n").trimmed();
         if (m_versionInfo.isEmpty()) {
             if (status != QProcess::NormalExit || exitCode != 0)
-                m_versionInfo = "获取失败（退出码 " + QString::number(exitCode) + "）" + (output.isEmpty() ? QString() : "\n" + output);
+                m_versionInfo = "路径无效：获取版本失败（退出码 " + QString::number(exitCode) + "）。";
             else
-                m_versionInfo = output.isEmpty() ? "构建器未返回版本信息。" : output;
+                m_versionInfo = validVersionInfo(output) ? output
+                    : output.isEmpty() ? "路径无效：未返回版本信息。" : "路径无效：未获取到有效版本信息。";
         }
         m_queryingVersion = false;
         emit versionInfoChanged();
+        emit versionInfoFetched();
     });
     connect(&m_process, &QProcess::readyReadStandardOutput, this, [this] { readChannel(false); });
     connect(&m_process, &QProcess::readyReadStandardError, this, [this] { readChannel(true); });
     connect(&m_process, &QProcess::started, this, [this] {
-        m_state = m_cancelled ? "正在取消" : "构建中";
-        m_summary = "正在检查项目并生成数据包";
+        const bool checkOnly = m_process.arguments().contains("--check");
+        m_state = m_cancelled ? "正在取消" : checkOnly ? "检查中" : "构建中";
+        m_summary = checkOnly ? "正在检查项目" : "正在检查项目并生成数据包";
         if (m_cancelled) m_process.terminate();
         emit changed();
     });
@@ -116,10 +133,9 @@ BuildManager::~BuildManager() {
 }
 QString BuildManager::defaultExecutablePath() const {
 #ifdef Q_OS_WIN
-    // Temporary development default, explicitly requested until the builder is distributed.
-    return "D:/Projects/Code/cpp/xcshop-builder/x64/Debug/xcshop-builder.exe";
+    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.0.exe";
 #else
-    return QCoreApplication::applicationDirPath() + "/xcshop-builder";
+    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.0";
 #endif
 }
 bool BuildManager::available() const {
@@ -140,12 +156,30 @@ void BuildManager::setStartupArguments(const QString &arguments) {
     m_startupArguments = arguments;
     emit startupArgumentsChanged();
 }
+QString BuildManager::displayVersionInfo() const {
+    const auto document = QJsonDocument::fromJson(m_versionInfo.toUtf8());
+    if (!document.isObject()) return m_versionInfo;
+    const auto object = document.object();
+    QStringList details;
+    if (object["builderVersion"].isString())
+        details << "版本：" + object["builderVersion"].toString();
+    if (object["maxSupportedDataVersion"].isDouble())
+        details << "最高支持数据版本：" + QString::number(object["maxSupportedDataVersion"].toInt());
+    return details.isEmpty() ? m_versionInfo : details.join('\n');
+}
+bool BuildManager::versionValid() const { return validVersionInfo(m_versionInfo); }
+void BuildManager::restoreVersionInfo(const QString &path, const QString &info) {
+    if (m_queryingVersion || absolutePath(path) != m_executablePath) return;
+    m_versionInfo = info;
+    emit versionInfoChanged();
+}
 void BuildManager::fetchVersion() {
     if (m_running || m_queryingVersion) return;
     m_versionInfo.clear();
     if (!available()) {
-        m_versionInfo = "构建器不可用，请检查程序路径。";
+        m_versionInfo = "路径无效：构建器不可用。";
         emit versionInfoChanged();
+        emit versionInfoFetched();
         return;
     }
     m_versionOutput.clear();
@@ -186,6 +220,8 @@ QString BuildManager::resolveOutputPath(const QString &project, const QString &p
 bool BuildManager::start(const QString &project, const QString &kits) {
     if (m_running || m_queryingVersion) return false;
     m_projectPath = absolutePath(project);
+    const auto startupArguments = QProcess::splitCommand(m_startupArguments);
+    const bool checkOnly = startupArguments.contains("--check");
     m_outputPath.clear();
     m_console.clear();
     m_problems.clear();
@@ -214,7 +250,7 @@ bool BuildManager::start(const QString &project, const QString &kits) {
             const auto output = data["generatePath"].toString();
             const auto name = data["outputFolder"].toString().isEmpty()
                     ? data["name"].toString() : data["outputFolder"].toString();
-            if (!output.isEmpty() && !name.isEmpty())
+            if (!checkOnly && !output.isEmpty() && !name.isEmpty())
                 m_outputPath = resolveOutputPath(m_projectPath, output, name);
         }
     }
@@ -233,7 +269,7 @@ bool BuildManager::start(const QString &project, const QString &kits) {
     setRunning(true);
     m_tick.start();
     QStringList arguments{"--project", m_projectPath, "--kits", kitsPath};
-    arguments.append(QProcess::splitCommand(m_startupArguments));
+    arguments.append(startupArguments);
     m_process.start(m_executablePath, arguments, QIODevice::ReadOnly);
     return true;
 }
@@ -305,7 +341,7 @@ void BuildManager::finish(int exitCode, QProcess::ExitStatus status) {
     bool success = false;
     if (m_cancelled) {
         m_state = "已取消";
-        m_summary = "构建已停止，请重新构建后再使用输出";
+        m_summary = m_process.arguments().contains("--check") ? "检查已停止" : "构建已停止，请重新构建后再使用输出";
     } else if (status == QProcess::CrashExit) {
         integrationError("构建器异常退出。", "请查看控制台输出，并检查构建器运行库或内部异常。");
     } else if (!m_protocolError.isEmpty() || !m_receivedResult || m_result.isEmpty()) {
@@ -317,8 +353,13 @@ void BuildManager::finish(int exitCode, QProcess::ExitStatus status) {
         success = exitCode == 0 && m_result["buildSucceeded"].toBool()
                 && m_result["buildEndedNormally"].toBool() && !m_result["terminatedEarly"].toBool()
                 && m_result["errorCount"].toInt() == 0;
-        m_state = success ? "构建成功" : "构建失败";
-        m_summary = success ? "数据包已生成" : "构建已终止，请修正问题后重试";
+        const bool checkOnly = m_result.contains("mode") ? m_result["mode"].toString() == "check"
+                                                        : m_process.arguments().contains("--check");
+        const bool outputWritten = !checkOnly && (!m_result.contains("outputWritten") || m_result["outputWritten"].toBool());
+        if (checkOnly || !outputWritten) m_outputPath.clear();
+        m_state = checkOnly ? (success ? "检查通过" : "检查失败") : (success ? "构建成功" : "构建失败");
+        m_summary = success ? (outputWritten ? "数据包已生成" : "未生成数据包")
+                           : checkOnly ? "请修正问题后重新检查" : "构建已终止，请修正问题后重试";
         if (!success && m_problems.isEmpty())
             integrationError("构建未成功，但构建器没有提供错误详情（退出码 " + QString::number(exitCode) + "）。",
                              "请检查控制台输出及构建器返回的结果。");

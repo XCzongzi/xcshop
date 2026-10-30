@@ -13,6 +13,8 @@ class BuildManager : public QObject {
     Q_PROPERTY(QString defaultExecutablePath READ defaultExecutablePath CONSTANT)
     Q_PROPERTY(bool available READ available NOTIFY executablePathChanged)
     Q_PROPERTY(QString versionInfo READ versionInfo NOTIFY versionInfoChanged)
+    Q_PROPERTY(QString displayVersionInfo READ displayVersionInfo NOTIFY versionInfoChanged)
+    Q_PROPERTY(bool versionValid READ versionValid NOTIFY versionInfoChanged)
     Q_PROPERTY(bool queryingVersion READ queryingVersion NOTIFY versionInfoChanged)
     Q_PROPERTY(QString startupArguments READ startupArguments WRITE setStartupArguments NOTIFY startupArgumentsChanged)
     Q_PROPERTY(bool running READ running NOTIFY changed)
@@ -32,6 +34,8 @@ public:
     QString defaultExecutablePath() const;
     bool available() const;
     QString versionInfo() const { return m_versionInfo; }
+    QString displayVersionInfo() const;
+    bool versionValid() const;
     bool queryingVersion() const { return m_queryingVersion; }
     QString startupArguments() const { return m_startupArguments; }
     void setStartupArguments(const QString &arguments);
@@ -48,10 +52,12 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void recheckExecutable();
     Q_INVOKABLE void fetchVersion();
+    Q_INVOKABLE void restoreVersionInfo(const QString &path, const QString &info);
     Q_INVOKABLE QString resolveOutputPath(const QString &project, const QString &parentPath,
                                          const QString &folderName) const;
 signals:
     void versionInfoChanged();
+    void versionInfoFetched();
     void startupArgumentsChanged();
     void executablePathChanged();
     void changed();

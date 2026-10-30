@@ -25,7 +25,7 @@ Item {
                     id: pathField
                     width: parent.width
                     text: Builder.executablePath
-                    placeholderText: "选择 xcshop-builder.exe"
+                    placeholderText: "选择构建器程序"
                     enabled: !Builder.running && !Builder.queryingVersion
                 }
                 Flow {
@@ -39,50 +39,35 @@ Item {
                             Builder.executablePath = pathField.text
                             Builder.recheckExecutable()
                             root.feedback = Global.saveSettings() ? "" : "保存失败"
+                            Builder.fetchVersion()
                         }
                     }
                     SettingsActionButton {
-                        text: "使用测试 Debug 路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running && !Builder.queryingVersion
+                        text: "恢复默认路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running && !Builder.queryingVersion
                         onClicked: {
                             pathField.text = Builder.defaultExecutablePath
                             Builder.executablePath = pathField.text
                             root.feedback = Global.saveSettings() ? "" : "保存失败"
+                            Builder.fetchVersion()
                         }
                     }
                     SettingsActionButton { text: "定位程序"; onClicked: file.revealInFileManager(Builder.executablePath) }
                 }
                 XCText {
                     width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
-                    visible: Builder.running || !Builder.available
+                    visible: Builder.running || (!Builder.available && !Builder.versionInfo.length)
                     xcText: Builder.running ? "构建中" : "构建器不可用"
                     textColor: Builder.available ? Colors.banned : Colors.error
                 }
                 XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; visible: root.feedback.length > 0; xcText: root.feedback; textColor: Colors.error }
-                Item {
-                    width: parent.width
-                    height: 32
-                    XCText {
-                        anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
-                        xcText: "构建器信息"; onCenter: false; xcFontSize: 13
-                    }
-                    SettingsActionButton {
-                        objectName: "fetchBuilderVersion"
-                        anchors.right: parent.right
-                        text: Builder.queryingVersion ? "获取中…" : "获取"
-                        enabled: !Builder.running && !Builder.queryingVersion
-                        onClicked: {
-                            Builder.executablePath = pathField.text
-                            Builder.fetchVersion()
-                        }
-                    }
-                }
+                XCText { xcText: "构建器信息"; onCenter: false; xcFontSize: 13 }
                 XCText {
                     objectName: "builderVersionInfo"
                     width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
                     textFormat: Text.PlainText
-                    visible: Builder.versionInfo.length > 0
-                    xcText: Builder.versionInfo
-                    textColor: Colors.banned
+                    visible: Builder.queryingVersion || Builder.versionInfo.length > 0
+                    xcText: Builder.queryingVersion ? "获取中…" : Builder.displayVersionInfo
+                    textColor: Builder.queryingVersion || Builder.versionValid ? Colors.banned : Colors.error
                 }
             }
         }

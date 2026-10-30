@@ -25,7 +25,7 @@ BasePage {
     readonly property string buildState: building && !hasBuildResult ? "其他项目正在构建"
                                         : hasBuildResult ? Builder.state : builderAvailable ? "未构建" : "构建器不可用"
     readonly property string buildStage: hasBuildResult ? Builder.summary : ""
-    readonly property real buildProgress: hasBuildResult && Builder.state === "构建成功" ? 1 : 0
+    readonly property real buildProgress: hasBuildResult && (Builder.state === "构建成功" || Builder.state === "检查通过") ? 1 : 0
     readonly property string buildConsole: hasBuildResult ? Builder.consoleText : ""
     readonly property string buildElapsed: hasBuildResult ? formatElapsed(Builder.elapsedMs) : "—"
     readonly property string buildOutputPath: hasBuildResult ? Builder.outputPath : ""

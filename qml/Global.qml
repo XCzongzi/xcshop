@@ -339,6 +339,10 @@ QtObject{
     //文件操作
     property XCFile xcfile: XCFile{}
     property var savedSettings: ({})
+    property Connections builderVersionConnection: Connections {
+        target: Builder
+        function onVersionInfoFetched() { Global.saveSettings() }
+    }
 
     function loadSettings(){
         reloadMinecraftResources()
@@ -357,6 +361,8 @@ QtObject{
                     ? saved.editorLatinFont.trim() : "Consolas"
             if (typeof saved.kitsPath === "string") BuildKits.kitsPath = saved.kitsPath
             if (typeof saved.builderPath === "string") Builder.executablePath = saved.builderPath
+            if (typeof saved.builderVersionInfo === "string")
+                Builder.restoreVersionInfo(saved.builderPath || "", saved.builderVersionInfo)
             if (typeof saved.builderStartupArguments === "string") Builder.startupArguments = saved.builderStartupArguments
             if (typeof saved.preferredTemplateId === "string") BuildKits.preferredTemplateId = saved.preferredTemplateId
             Colors.loadSettings(saved)
@@ -398,6 +404,7 @@ QtObject{
         settings.uiCanvasViews = uiCanvasViews
         settings.kitsPath = BuildKits.kitsPath
         settings.builderPath = Builder.executablePath
+        settings.builderVersionInfo = Builder.versionInfo
         settings.builderStartupArguments = Builder.startupArguments
         settings.preferredTemplateId = BuildKits.preferredTemplateId
         if (xcfile.writeAtomic(settingsPath, JSON.stringify(settings, null, 2))) {
