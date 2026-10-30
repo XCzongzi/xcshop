@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
+import QtQuick.Controls.impl as Impl
 import xcshop
 
 BasePage {
@@ -30,6 +31,14 @@ BasePage {
         revealAnimation.start()
     }
 
+    function restoreCover() {
+        if (view.contentY <= 1 && !revealAnimation.running) return
+        revealAnimation.stop()
+        view.cancelFlick()
+        revealAnimation.to = 0
+        revealAnimation.start()
+    }
+
     function openLink(url) {
         linkFeedback = Qt.openUrlExternally(url) ? "" : "无法打开浏览器，请手动访问：" + url
     }
@@ -51,7 +60,8 @@ BasePage {
         id: card
         required property string title
         required property string subtitle
-        required property string mark
+        required property url iconSource
+        property color iconColor: Colors.transparent
         required property url destination
         property bool sponsor: false
         readonly property color accent: sponsor ? (Colors.isLight ? "#7251ad" : "#c2a4f2") : root.ink
@@ -76,27 +86,23 @@ BasePage {
                 x: 18; anchors.verticalCenter: parent.verticalCenter
                 width: 42; height: 42; radius: 12
                 color: Colors.changeA(card.accent, 0.10)
-                AboutText {
+                Impl.IconImage {
+                    objectName: card.objectName + "Icon"
                     anchors.centerIn: parent
-                    text: card.mark
-                    color: card.accent
-                    font.pixelSize: card.sponsor ? 23 : 14
-                    font.bold: true
+                    width: 28; height: 28
+                    source: card.iconSource
+                    color: card.iconColor
+                    fillMode: Image.PreserveAspectFit
                 }
             }
             Column {
                 x: 74; anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, parent.width - x - 42); spacing: 5
+                width: Math.max(0, parent.width - x - 18); spacing: 5
                 AboutText {
                     width: parent.width; text: card.title; color: card.accent
                     font.pixelSize: card.sponsor ? 18 : 15; font.weight: Font.DemiBold
                 }
                 AboutText { width: parent.width; text: card.subtitle; color: root.mutedInk; font.pixelSize: 12 }
-            }
-            AboutText {
-                anchors.right: parent.right; anchors.rightMargin: 18
-                anchors.verticalCenter: parent.verticalCenter
-                text: "↗"; color: card.accent; font.pixelSize: 19
             }
         }
         HoverHandler { cursorShape: Qt.PointingHandCursor }
@@ -112,10 +118,16 @@ BasePage {
         flickableDirection: Flickable.VerticalFlick
         clip: true
         onMovementStarted: {
-            if (!root.expanded) root.expanded = true
             revealAnimation.stop()
+            root.expanded = true
         }
-        // First wheel gesture reveals the profile; later gestures scroll normally.
+        onContentYChanged: {
+            if (!revealAnimation.running && contentY <= 1) root.expanded = false
+        }
+        onMovementEnded: {
+            if (!revealAnimation.running && contentY <= 1) root.expanded = false
+        }
+        // Returning to the cover rearms the same reveal gesture.
         WheelHandler {
             target: null
             enabled: !root.expanded || revealAnimation.running
@@ -154,8 +166,25 @@ BasePage {
                 gradient: Gradient {
                     GradientStop { position: 0; color: Colors.isLight ? "#ccffffff" : "#99000000" }
                     GradientStop { position: 0.26; color: "transparent" }
-                    GradientStop { position: 1; color: "#33000000" }
+                    GradientStop { position: 1; color: "transparent" }
                 }
+            }
+            Rectangle {
+                objectName: "aboutCoverFade"
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: Math.min(180, parent.height * 0.35)
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Colors.changeA(root.sheetColor, 0) }
+                    GradientStop { position: 0.45; color: Colors.changeA(root.sheetColor, 0.32) }
+                    GradientStop { position: 1; color: root.sheetColor }
+                }
+            }
+            MouseArea {
+                objectName: "aboutCoverArea"
+                anchors.fill: parent
+                cursorShape: root.expanded ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.restoreCover()
             }
         }
 
@@ -219,9 +248,7 @@ BasePage {
                         Repeater {
                             model: [
                                 { label: "软件版本", value: "v" + (Qt.application.version || "—") },
-                                { label: "软件用途", value: "Minecraft Java 版商店数据包编辑与构建" },
-                                { label: "编辑模块", value: "UI 界面 · 物品 · 代价 · 展示" },
-                                { label: "构建方式", value: "模板套件 + 外部构建器" }
+                                { label: "软件用途", value: "Minecraft Java 版商店数据包编辑与构建" }
                             ]
                             delegate: Item {
                                 id: fact
@@ -240,19 +267,23 @@ BasePage {
                     width: parent.width; spacing: 14
                     SectionTitle { text: "开发者" }
                     AboutText { text: "XCzongzi"; font.pixelSize: 16; font.weight: Font.DemiBold }
-                    AboutText { text: "小菜粽子 · 本软件开发者"; color: root.mutedInk }
+                    AboutText { text: "小菜粽子"; color: root.mutedInk }
                     Flow {
                         width: parent.width; spacing: 12
                         LinkCard {
                             objectName: "aboutGithub"
                             width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
-                            title: "GitHub"; subtitle: "@XCzongzi"; mark: "GH"
+                            title: "GitHub"; subtitle: "@XCzongzi"
+                            iconSource: Colors.isLight ? "qrc:/assets/gui/brands/github-black.svg"
+                                                       : "qrc:/assets/gui/brands/github-white.svg"
                             destination: "https://github.com/XCzongzi"
                         }
                         LinkCard {
                             objectName: "aboutBilibili"
                             width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
-                            title: "bilibili"; subtitle: "小菜粽子 · 个人空间"; mark: "哔"
+                            title: "bilibili"; subtitle: "@小菜粽子"
+                            iconSource: "qrc:/assets/gui/brands/bilibili.svg"
+                            iconColor: "#00a1d6"
                             destination: "https://space.bilibili.com/481184316"
                         }
                     }
@@ -266,12 +297,13 @@ BasePage {
                         objectName: "aboutSponsor"
                         width: parent.width
                         sponsor: true; title: "在爱发电支持小菜粽子"
-                        subtitle: "自愿赞助 · 感谢每一份支持"; mark: "♥"
+                        subtitle: "感谢支持"
+                        iconSource: "qrc:/assets/gui/brands/afdian.png"
                         destination: "https://afdian.com/a/xczongzi"
                     }
                     AboutText {
                         width: parent.width; color: root.mutedInk; font.pixelSize: 12
-                        text: "赞助说明：赞助为自愿支持，不是购买软件或服务，不承诺更新频率、功能上线时间、定制开发或优先技术支持。请根据自身情况理性支持；具体赞助方案与支付规则以爱发电页面为准。"
+                        text: "赞助说明：赞助为自愿支持，不是购买软件或服务，不承诺更新频率、功能上线时间、定制开发或优先技术支持，请根据自身情况理性支持。"
                     }
                 }
 
@@ -281,7 +313,7 @@ BasePage {
                 }
                 AboutText {
                     width: parent.width; horizontalAlignment: Text.AlignHCenter
-                    text: "由 XCzongzi 用心制作"; color: root.mutedInk; font.pixelSize: 11
+                    text: "Made by XCzongzi."; color: root.mutedInk; font.pixelSize: 11
                 }
             }
 
@@ -301,6 +333,7 @@ BasePage {
         target: view; property: "contentY"
         duration: 520 / Global.animationSpeed
         easing.type: Easing.OutCubic
+        onFinished: root.expanded = view.contentY > 1
     }
 
     // Give the fixed navigation its own surface once the photo leaves the viewport.

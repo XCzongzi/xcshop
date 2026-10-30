@@ -64,40 +64,55 @@ Window {
                     root.check(String(root.find(page, "aboutGithub").destination) === "https://github.com/XCzongzi", "GitHub URL")
                     root.check(String(root.find(page, "aboutBilibili").destination) === "https://space.bilibili.com/481184316", "bilibili URL")
                     root.check(String(root.find(page, "aboutSponsor").destination) === "https://afdian.com/a/xczongzi", "sponsor URL")
+                    for (var iconName of ["aboutGithubIcon", "aboutBilibiliIcon", "aboutSponsorIcon"])
+                        root.check(root.find(page, iconName).status === Image.Ready, iconName + " did not load")
                     view.contentY = view.contentHeight - view.height
                     root.capture("sponsor-dark")
                     UiInput.click(root.find(page, "aboutBack"))
                     root.check(root.backEvents === 1, "back event")
                 } else if (root.stage === 3) {
+                    UiInput.wheel(view, 12000)
+                } else if (root.stage === 4) {
+                    root.check(view.contentY <= 1 && !page.expanded, "scrolling to the cover did not rearm reveal")
+                    UiInput.wheel(view, -120)
+                } else if (root.stage === 5) {
+                    root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1, "second wheel reveal failed")
+                    UiInput.click(root.find(page, "aboutCoverArea"), page.width / 2, view.contentY + 40)
+                } else if (root.stage === 6) {
+                    root.check(view.contentY <= 1 && !page.expanded, "cover click did not restore initial state")
+                    UiInput.click(root.find(page, "aboutRevealArea"), page.width / 2, 60)
+                } else if (root.stage === 7) {
+                    root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1, "content click did not reveal again")
+                } else if (root.stage === 8) {
                     loader.active = false
                     root.width = 800; root.height = 500
                     Colors.applyColorScheme("parchment")
                     loader.active = true
-                } else if (root.stage === 4) {
+                } else if (root.stage === 9) {
                     root.check(!page.expanded && view.contentY === 0, "reentry did not reset cover")
                     root.capture("cover-light-small")
                     UiInput.wheel(view, -120)
-                } else if (root.stage === 5) {
+                } else if (root.stage === 10) {
                     root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1, "wheel did not reveal profile")
                     root.capture("expanded-light-small")
                     root.width = 480
                     view.contentY = view.contentHeight - view.height
-                } else if (root.stage === 6) {
+                } else if (root.stage === 11) {
                     var github = root.find(page, "aboutGithub")
                     var bilibili = root.find(page, "aboutBilibili")
                     root.check(bilibili.y > github.y && github.width <= page.width, "narrow cards did not stack")
                     root.check(view.contentY <= view.contentHeight - view.height + 1, "scroll exceeds content after resize")
                     view.contentY = view.contentHeight - view.height
                     root.capture("sponsor-light-narrow")
-                } else if (root.stage === 7) {
+                } else if (root.stage === 12) {
                     Global.settingsPath = SMOKE_DIR + "/about-settings.json"
                     root.appWindow = applicationWindow.createObject(null)
                     root.hide()
-                } else if (root.stage === 8) {
+                } else if (root.stage === 13) {
                     var appLoader = root.find(root.appWindow.contentItem, "mainPageLoader")
                     root.savedBackground = root.appWindow.backgroundSource
                     appLoader.item.pageEvent("Start.", { object: "about" })
-                } else if (root.stage === 9) {
+                } else if (root.stage === 14) {
                     var aboutLoader = root.find(root.appWindow.contentItem, "mainPageLoader")
                     root.check(aboutLoader.sourceComponent === Constants.pageOnAbout, "start-page navigation")
                     root.check(aboutLoader.item.width === root.appWindow.surfaceWidth
@@ -108,10 +123,10 @@ Window {
                     root.appWindow.contentItem.grabToImage(function(result) {
                         result.saveToFile(SMOKE_OUTPUT_DIR + "/about-full-window.png")
                     })
-                } else if (root.stage === 10) {
+                } else if (root.stage === 15) {
                     var backLoader = root.find(root.appWindow.contentItem, "mainPageLoader")
                     UiInput.click(root.find(backLoader.item, "aboutBack"))
-                } else if (root.stage === 11) {
+                } else if (root.stage === 16) {
                     root.check(root.find(root.appWindow.contentItem, "mainPageLoader").sourceComponent === Constants.pageOnStart,
                                "return to start page")
                     root.appWindow.close()

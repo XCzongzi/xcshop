@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>assets/backgrounds/麦田.png</file>
+        <file>assets/gui/brands/github-black.svg</file>
+        <file>assets/gui/brands/github-white.svg</file>
+        <file>assets/gui/brands/bilibili.svg</file>
+        <file>assets/gui/brands/afdian.png</file>
     </qresource>
 </RCC>
