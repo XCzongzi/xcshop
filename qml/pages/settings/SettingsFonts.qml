@@ -5,7 +5,7 @@ import xcshop
 SettingsCard {
     id: root
     objectName: "editorFontSettings"
-    title: "编辑器字体"
+    title: "编辑框字体"
     contentHeight: fontForm.height
     property string feedback: ""
 

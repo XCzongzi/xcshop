@@ -50,7 +50,7 @@ Window {
     }
 
     function toggleMaximized() {
-        windowState.toggleMaximized(Math.max(60, 240 / Global.animationSpeed))
+        windowState.toggleMaximized(Math.max(60, 160 / Global.animationSpeed))
     }
 
     Item {

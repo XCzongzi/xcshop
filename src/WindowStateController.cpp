@@ -10,7 +10,7 @@ WindowStateController::WindowStateController(QObject *parent) : QObject(parent)
     m_geometryCache.setSingleShot(true);
     m_geometryCache.setInterval(0);
     connect(&m_geometryCache, &QTimer::timeout, this, &WindowStateController::rememberNormalGeometry);
-    m_animation.setEasingCurve(QEasingCurve::OutCubic);
+    m_animation.setEasingCurve(QEasingCurve::InOutQuint);
     connect(&m_animation, &QVariantAnimation::valueChanged, this,
             [this](const QVariant &value) { animateGeometry(value.toReal()); });
     connect(&m_animation, &QVariantAnimation::finished, this, &WindowStateController::finishTransition);
