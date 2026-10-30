@@ -42,11 +42,46 @@ bool validProtocol(const QJsonObject &object) {
 
 BuildManager::BuildManager(QObject *parent) : QObject(parent), m_executablePath(defaultExecutablePath()) {
     m_process.setProcessChannelMode(QProcess::SeparateChannels);
+    m_versionProcess.setProcessChannelMode(QProcess::MergedChannels);
 #ifdef Q_OS_WIN
     m_process.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *arguments) {
         arguments->flags |= 0x08000000; // CREATE_NO_WINDOW, no console flashes in the editor.
     });
+    m_versionProcess.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *arguments) {
+        arguments->flags |= 0x08000000;
+    });
 #endif
+    m_versionTimer.setSingleShot(true);
+    m_versionTimer.setInterval(5000);
+    connect(&m_versionProcess, &QProcess::readyReadStandardOutput, this, [this] {
+        const auto output = m_versionProcess.readAllStandardOutput();
+        m_versionOutput += output.left(qMax<qsizetype>(0, 64 * 1024 - m_versionOutput.size()));
+    });
+    connect(&m_versionTimer, &QTimer::timeout, this, [this] {
+        m_versionInfo = "获取超时，请检查构建器是否支持 --version。";
+        m_versionProcess.kill();
+    });
+    connect(&m_versionProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart) return;
+        m_versionTimer.stop();
+        m_versionInfo = "无法获取构建器信息：" + m_versionProcess.errorString();
+        m_queryingVersion = false;
+        emit versionInfoChanged();
+    });
+    connect(&m_versionProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
+        m_versionTimer.stop();
+        const auto remaining = m_versionProcess.readAllStandardOutput();
+        m_versionOutput += remaining.left(qMax<qsizetype>(0, 64 * 1024 - m_versionOutput.size()));
+        const auto output = QString::fromUtf8(m_versionOutput).replace("\r\n", "\n").trimmed();
+        if (m_versionInfo.isEmpty()) {
+            if (status != QProcess::NormalExit || exitCode != 0)
+                m_versionInfo = "获取失败（退出码 " + QString::number(exitCode) + "）" + (output.isEmpty() ? QString() : "\n" + output);
+            else
+                m_versionInfo = output.isEmpty() ? "构建器未返回版本信息。" : output;
+        }
+        m_queryingVersion = false;
+        emit versionInfoChanged();
+    });
     connect(&m_process, &QProcess::readyReadStandardOutput, this, [this] { readChannel(false); });
     connect(&m_process, &QProcess::readyReadStandardError, this, [this] { readChannel(true); });
     connect(&m_process, &QProcess::started, this, [this] {
@@ -76,6 +111,7 @@ BuildManager::BuildManager(QObject *parent) : QObject(parent), m_executablePath(
     });
 }
 BuildManager::~BuildManager() {
+    if (m_versionProcess.state() != QProcess::NotRunning) m_versionProcess.kill();
     if (m_process.state() != QProcess::NotRunning) m_process.kill();
 }
 QString BuildManager::defaultExecutablePath() const {
@@ -91,11 +127,33 @@ bool BuildManager::available() const {
     return info.isFile() && info.isExecutable();
 }
 void BuildManager::setExecutablePath(const QString &path) {
-    if (m_running) return;
+    if (m_running || m_queryingVersion) return;
     const auto next = absolutePath(path);
     if (m_executablePath == next) return;
     m_executablePath = next;
+    m_versionInfo.clear();
+    emit versionInfoChanged();
     emit executablePathChanged();
+}
+void BuildManager::setStartupArguments(const QString &arguments) {
+    if (m_running || m_startupArguments == arguments) return;
+    m_startupArguments = arguments;
+    emit startupArgumentsChanged();
+}
+void BuildManager::fetchVersion() {
+    if (m_running || m_queryingVersion) return;
+    m_versionInfo.clear();
+    if (!available()) {
+        m_versionInfo = "构建器不可用，请检查程序路径。";
+        emit versionInfoChanged();
+        return;
+    }
+    m_versionOutput.clear();
+    m_queryingVersion = true;
+    emit versionInfoChanged();
+    m_versionProcess.setWorkingDirectory(QFileInfo(m_executablePath).absolutePath());
+    m_versionTimer.start();
+    m_versionProcess.start(m_executablePath, {"--version"}, QIODevice::ReadOnly);
 }
 void BuildManager::recheckExecutable() { emit executablePathChanged(); }
 void BuildManager::setRunning(bool value) {
@@ -120,7 +178,7 @@ void BuildManager::integrationError(const QString &reason, const QString &soluti
     m_state = "构建失败";
 }
 bool BuildManager::start(const QString &project, const QString &kits) {
-    if (m_running) return false;
+    if (m_running || m_queryingVersion) return false;
     m_projectPath = absolutePath(project);
     m_outputPath.clear();
     m_console.clear();
@@ -167,7 +225,9 @@ bool BuildManager::start(const QString &project, const QString &kits) {
     // No shell and no hand-built quoting: spaces and Chinese paths remain separate arguments.
     setRunning(true);
     m_tick.start();
-    m_process.start(m_executablePath, {"--project", m_projectPath, "--kits", kitsPath}, QIODevice::ReadOnly);
+    QStringList arguments{"--project", m_projectPath, "--kits", kitsPath};
+    arguments.append(QProcess::splitCommand(m_startupArguments));
+    m_process.start(m_executablePath, arguments, QIODevice::ReadOnly);
     return true;
 }
 void BuildManager::cancel() {

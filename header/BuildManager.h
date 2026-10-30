@@ -12,6 +12,9 @@ class BuildManager : public QObject {
     Q_PROPERTY(QString executablePath READ executablePath WRITE setExecutablePath NOTIFY executablePathChanged)
     Q_PROPERTY(QString defaultExecutablePath READ defaultExecutablePath CONSTANT)
     Q_PROPERTY(bool available READ available NOTIFY executablePathChanged)
+    Q_PROPERTY(QString versionInfo READ versionInfo NOTIFY versionInfoChanged)
+    Q_PROPERTY(bool queryingVersion READ queryingVersion NOTIFY versionInfoChanged)
+    Q_PROPERTY(QString startupArguments READ startupArguments WRITE setStartupArguments NOTIFY startupArgumentsChanged)
     Q_PROPERTY(bool running READ running NOTIFY changed)
     Q_PROPERTY(QString projectPath READ projectPath NOTIFY changed)
     Q_PROPERTY(QString state READ state NOTIFY changed)
@@ -28,6 +31,10 @@ public:
     void setExecutablePath(const QString &path);
     QString defaultExecutablePath() const;
     bool available() const;
+    QString versionInfo() const { return m_versionInfo; }
+    bool queryingVersion() const { return m_queryingVersion; }
+    QString startupArguments() const { return m_startupArguments; }
+    void setStartupArguments(const QString &arguments);
     bool running() const { return m_running; }
     QString projectPath() const { return m_projectPath; }
     QString state() const { return m_state; }
@@ -40,13 +47,21 @@ public:
     Q_INVOKABLE bool start(const QString &project, const QString &kits);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void recheckExecutable();
+    Q_INVOKABLE void fetchVersion();
 signals:
+    void versionInfoChanged();
+    void startupArgumentsChanged();
     void executablePathChanged();
     void changed();
     void runningChanged(bool running);
     void completed(bool success);
 private:
     QProcess m_process;
+    QProcess m_versionProcess;
+    QTimer m_versionTimer;
+    QByteArray m_versionOutput;
+    QString m_versionInfo, m_startupArguments;
+    bool m_queryingVersion = false;
     QTimer m_tick, m_killTimer;
     QElapsedTimer m_clock;
     QString m_executablePath, m_projectPath, m_state = "未构建", m_summary, m_outputPath, m_console;

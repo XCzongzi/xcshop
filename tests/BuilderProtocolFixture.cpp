@@ -10,11 +10,25 @@
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     const auto arguments = app.arguments();
+    if (arguments.contains("--version")) {
+        const auto mode = qEnvironmentVariable("XCSHOP_FIXTURE_VERSION_MODE");
+        if (mode == "slow") QThread::msleep(10000);
+        if (mode == "empty") return 0;
+        if (mode == "error") { std::fputs("unsupported option\n", stderr); return 2; }
+        const auto version = QString("xcshop-builder 0.1.0\n构建器版本信息\n").toUtf8();
+        auto *channel = mode == "stderr" ? stderr : stdout;
+        std::fwrite(version.data(), 1, version.size(), channel);
+        return 0;
+    }
     const int index = arguments.indexOf("--project");
     if (index < 0 || index + 1 >= arguments.size() || !arguments.contains("--kits")) return 9;
     QFile manifest(arguments[index + 1] + "/xcshop.json");
     if (!manifest.open(QIODevice::ReadOnly)) return 10;
     const auto mode = QJsonDocument::fromJson(manifest.readAll()).object()["fixtureMode"].toString();
+    if (mode == "arguments") {
+        const auto label = arguments.indexOf("--label");
+        if (label < 0 || arguments.value(label + 1) != "中文 with spaces" || !arguments.contains("--verbose")) return 11;
+    }
     if (mode == "slow") QThread::msleep(10000);
     if (mode == "crash") std::abort();
     if (mode == "missing") { std::fputs("no result\n", stdout); return 1; }

@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls as Controls
 import xcshop
 
 Item {
@@ -17,7 +16,6 @@ Item {
 
         SettingsCard {
             title: "构建器程序"
-            description: "构建器独立运行。编辑器向它传入项目目录和构建套件目录，并接收日志、错误与警告。"
             contentHeight: form.height
             Column {
                 id: form
@@ -28,48 +26,80 @@ Item {
                     width: parent.width
                     text: Builder.executablePath
                     placeholderText: "选择 xcshop-builder.exe"
-                    enabled: !Builder.running
+                    enabled: !Builder.running && !Builder.queryingVersion
                 }
                 Flow {
                     width: parent.width
                     spacing: 8
-                    SettingsActionButton { text: "浏览…"; enabled: !Builder.running; onClicked: executableDialog.openXC(false, "builder") }
+                    SettingsActionButton { text: "浏览…"; enabled: !Builder.running && !Builder.queryingVersion; onClicked: executableDialog.openXC(false, "builder") }
                     SettingsActionButton {
-                        text: "应用路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running
+                        text: "应用路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running && !Builder.queryingVersion
                         primary: true
                         onClicked: {
                             Builder.executablePath = pathField.text
                             Builder.recheckExecutable()
-                            root.feedback = Global.saveSettings() ? "路径已保存" : "保存设置失败，请检查写入权限"
+                            root.feedback = Global.saveSettings() ? "" : "保存失败"
                         }
                     }
                     SettingsActionButton {
-                        text: "使用测试 Debug 路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running
+                        text: "使用测试 Debug 路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running && !Builder.queryingVersion
                         onClicked: {
                             pathField.text = Builder.defaultExecutablePath
                             Builder.executablePath = pathField.text
-                            root.feedback = Global.saveSettings() ? "已恢复测试路径" : "保存设置失败"
+                            root.feedback = Global.saveSettings() ? "" : "保存失败"
                         }
                     }
                     SettingsActionButton { text: "定位程序"; onClicked: file.revealInFileManager(Builder.executablePath) }
                 }
                 XCText {
                     width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
-                    xcText: Builder.running ? "正在构建，结束前不能切换程序路径。"
-                                            : (Builder.available ? "已找到可执行文件（实际协议在构建时验证）" : "构建器不可用，请检查程序路径。")
+                    visible: Builder.running || !Builder.available
+                    xcText: Builder.running ? "构建中" : "构建器不可用"
                     textColor: Builder.available ? Colors.banned : Colors.error
                 }
-                XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: root.feedback }
+                XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; visible: root.feedback.length > 0; xcText: root.feedback; textColor: Colors.error }
+                Item {
+                    width: parent.width
+                    height: 32
+                    XCText {
+                        anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter
+                        xcText: "构建器信息"; onCenter: false; xcFontSize: 13
+                    }
+                    SettingsActionButton {
+                        objectName: "fetchBuilderVersion"
+                        anchors.right: parent.right
+                        text: Builder.queryingVersion ? "获取中…" : "获取"
+                        enabled: !Builder.running && !Builder.queryingVersion
+                        onClicked: {
+                            Builder.executablePath = pathField.text
+                            Builder.fetchVersion()
+                        }
+                    }
+                }
+                XCText {
+                    objectName: "builderVersionInfo"
+                    width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
+                    textFormat: Text.PlainText
+                    visible: Builder.versionInfo.length > 0
+                    xcText: Builder.versionInfo
+                    textColor: Colors.banned
+                }
             }
         }
         SettingsCard {
-            title: "运行约定"
-            description: "使用 --project 与 --kits 参数，要求 xcshop-builder/result 版本 2。项目的 generatePath 是数据包父目录，实际输出为 generatePath/项目名称。"
-            contentHeight: 44
-            XCText {
-                width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
-                xcText: "构建状态由应用统一保存，切换工作区不会丢失日志。取消构建会停止进程；取消后请重新构建确认输出。"
-                textColor: Colors.banned
+            title: "启动参数"
+            contentHeight: argumentsField.height
+            XCTextField {
+                id: argumentsField
+                objectName: "builderStartupArguments"
+                width: parent.width
+                text: Builder.startupArguments
+                placeholderText: "可选"
+                enabled: !Builder.running
+                onTextEdited: {
+                    Builder.startupArguments = text
+                    root.feedback = Global.saveSettings() ? "" : "保存失败"
+                }
             }
         }
     }

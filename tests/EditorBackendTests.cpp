@@ -92,11 +92,40 @@ private slots:
         QVERIFY(!kits.removeTemplate(templateId).isEmpty());
         QVERIFY(!kits.importKit(incoming.path()).isEmpty());
     }
+    void versionInfo_data() {
+        QTest::addColumn<QString>("mode");
+        QTest::addColumn<QString>("expected");
+        QTest::newRow("stdout") << QString() << QString("xcshop-builder 0.1.0\n构建器版本信息");
+        QTest::newRow("stderr") << QString("stderr") << QString("xcshop-builder 0.1.0\n构建器版本信息");
+        QTest::newRow("empty") << QString("empty") << QString("构建器未返回版本信息。");
+        QTest::newRow("error") << QString("error") << QString("获取失败（退出码 2）\nunsupported option");
+        QTest::newRow("timeout") << QString("slow") << QString("获取超时，请检查构建器是否支持 --version。");
+    }
+    void versionInfo() {
+        QFETCH(QString, mode);
+        QFETCH(QString, expected);
+        qputenv("XCSHOP_FIXTURE_VERSION_MODE", mode.toUtf8());
+        BuildManager builder;
+        builder.setExecutablePath(fixture);
+        builder.fetchVersion();
+        qunsetenv("XCSHOP_FIXTURE_VERSION_MODE");
+        QVERIFY(builder.queryingVersion());
+        builder.fetchVersion(); // Ignore repeated requests while a query is running.
+        QTRY_VERIFY_WITH_TIMEOUT(!builder.queryingVersion(), 8000);
+        QCOMPARE(builder.versionInfo(), expected);
+        QVERIFY(!builder.running());
+        QVERIFY(builder.consoleText().isEmpty());
+        builder.setExecutablePath(fixture + ".missing");
+        QVERIFY(builder.versionInfo().isEmpty());
+        builder.fetchVersion();
+        QVERIFY(!builder.queryingVersion());
+        QVERIFY(builder.versionInfo().contains("不可用"));
+    }
     void process_data() {
         QTest::addColumn<QString>("mode");
         QTest::addColumn<bool>("success");
-        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large"})
-            QTest::newRow(mode) << QString(mode) << (QString(mode) == "success" || QString(mode) == "large");
+        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large", "arguments"})
+            QTest::newRow(mode) << QString(mode) << (QString(mode) == "success" || QString(mode) == "large" || QString(mode) == "arguments");
     }
     void process() {
         QFETCH(QString, mode);
@@ -108,6 +137,7 @@ private slots:
         BuildManager builder;
         builder.setExecutablePath(fixture);
         QVERIFY(builder.available());
+        if (mode == "arguments") builder.setStartupArguments("--label \"中文 with spaces\" --verbose");
         QSignalSpy finished(&builder, &BuildManager::completed);
         QVERIFY(builder.start(project, temp.path() + "/kits"));
         QVERIFY(!builder.start(project, temp.path() + "/kits"));

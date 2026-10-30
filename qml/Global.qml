@@ -342,6 +342,7 @@ QtObject{
                     ? saved.editorLatinFont.trim() : "Consolas"
             if (typeof saved.kitsPath === "string") BuildKits.kitsPath = saved.kitsPath
             if (typeof saved.builderPath === "string") Builder.executablePath = saved.builderPath
+            if (typeof saved.builderStartupArguments === "string") Builder.startupArguments = saved.builderStartupArguments
             if (typeof saved.preferredTemplateId === "string") BuildKits.preferredTemplateId = saved.preferredTemplateId
             Colors.loadSettings(saved)
             if (saved.animationSpeed) animationSpeed = saved.animationSpeed
@@ -382,6 +383,7 @@ QtObject{
         settings.uiCanvasViews = uiCanvasViews
         settings.kitsPath = BuildKits.kitsPath
         settings.builderPath = Builder.executablePath
+        settings.builderStartupArguments = Builder.startupArguments
         settings.preferredTemplateId = BuildKits.preferredTemplateId
         if (xcfile.writeAtomic(settingsPath, JSON.stringify(settings, null, 2))) {
             savedSettings = settings
