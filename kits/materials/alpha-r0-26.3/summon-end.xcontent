@@ -1,0 +1,6 @@
+_summon/{{shopName}}.mcfunction
+execute align xyz run scoreboard players operation @n[tag=xcshop.shop,tag=xcshop.shop.{{shopName}}] __xcshop__ = #shop_max_id __xcshop__
+data modify block ~ ~ ~ components.minecraft:custom_data.xcshop.shop set value {{shopJson}}
+execute store result block ~ ~ ~ components.minecraft:custom_data.xcshop.id int 1 run scoreboard players get #shop_max_id __xcshop__
+scoreboard players add #shop_max_id __xcshop__ 1
+execute as @e[distance = ..10, tag = xcshop.shop, tag = xcshop.shop.{{shopName}}] at @s run function xcshop:{{shopPath}}/set

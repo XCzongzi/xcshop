@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+function xcshop:{{productPath}}/success

@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+scoreboard players remove @s {{type.value}} {{amount}}

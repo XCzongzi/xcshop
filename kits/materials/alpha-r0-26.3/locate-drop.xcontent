@@ -1,0 +1,4 @@
+locate_drop.mcfunction
+execute store result score #temp __xcshop__ run data get entity @s Item.components."minecraft:custom_data".xcshop.shopID 1
+execute on origin run scoreboard players operation @s __xcshop__ = #temp __xcshop__
+execute on origin if score @n[tag=xcshop.shop] __xcshop__ = @s __xcshop__ run return 1

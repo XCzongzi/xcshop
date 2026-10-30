@@ -1,0 +1,25 @@
+int loreStart = 1;
+int lorePosition = 1;
+int loreDepth = 0;
+bool loreQuoted = false;
+bool loreEscaped = false;
+while (lorePosition < len(additionalCostDisplayText)) {
+    string character = substr(additionalCostDisplayText, lorePosition, 1);
+    if (loreQuoted) {
+        if (loreEscaped) { loreEscaped = false; }
+        else if (character == "\\") { loreEscaped = true; }
+        else if (character == "\"") { loreQuoted = false; }
+    } else {
+        if (character == "\"") { loreQuoted = true; }
+        else if (character == "{" || character == "[") { loreDepth++; }
+        else if ((character == "}" || character == "]") && loreDepth > 0) { loreDepth--; }
+        else if (character == "," || character == "]") {
+            if (loreDepth == 0) {
+                string loreLine = trim(substr(additionalCostDisplayText, loreStart, lorePosition - loreStart));
+                if (loreLine != "") { build "product-lore.xcontent" }
+                loreStart = lorePosition + 1;
+            }
+        }
+    }
+    lorePosition++;
+}

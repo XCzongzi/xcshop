@@ -1,0 +1,2 @@
+shop.mcfunction
+clear @s *[custom_data ~ {xcshop:{xcshop:1b}}]

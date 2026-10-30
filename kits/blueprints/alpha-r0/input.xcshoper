@@ -1,0 +1,28 @@
+string objectiveName = result.scoreboard;
+build "objective.xcshoper"
+string inputClause = "";
+if (filter.scoreboard != "") {
+    objectiveName = filter.scoreboard;
+    build "objective.xcshoper"
+    inputClause = "if score " + filter.target + " " + filter.scoreboard + " matches " + filter.score + " ";
+}
+build "input-entry.xcontent"
+build "input-default.xcontent"
+foreach (connections[]) {
+    int connectionNumber = @index;
+    build "input-route.xcontent"
+    foreach (slots[]) {
+        int inputSlotNumber = index;
+        if (items.length == 0) { build "input-empty.xcontent" }
+        else {
+            string inputItemClause = "";
+            foreach (items[]) {
+                string stackText = item;
+                build "spec.xcshoper"
+                inputItemClause += "unless items block ~ ~ ~ container." + inputSlotNumber + " " + stackText + " ";
+            }
+            build "input-item.xcontent"
+        }
+    }
+    build "input-end.xcontent"
+}

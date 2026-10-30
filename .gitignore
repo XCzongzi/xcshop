@@ -22,11 +22,40 @@
 /settings.json
 /item-mappings.json
 
-# Minecraft assets
-/assets/minecraft/
+# Keep generated Minecraft assets and caches local; include only bundled GUI images.
+/assets/minecraft/*
+!/assets/minecraft/gui/
+/assets/minecraft/gui/*
+!/assets/minecraft/gui/container/
+!/assets/minecraft/gui/item_lore/
+/assets/minecraft/gui/container/*
+!/assets/minecraft/gui/container/0.png
+!/assets/minecraft/gui/container/1.png
+!/assets/minecraft/gui/container/2.png
+!/assets/minecraft/gui/container/3.png
+!/assets/minecraft/gui/container/4.png
+!/assets/minecraft/gui/container/5.png
+/assets/minecraft/gui/item_lore/*
+!/assets/minecraft/gui/item_lore/background.png
+!/assets/minecraft/gui/item_lore/frame.png
 
-# Local build kits
-/kits/
+# Include the bundled Alpha r0 sources; keep other local kits out of Git.
+/kits/*
+!/kits/alpha-r0-README.md
+!/kits/templates/
+/kits/templates/*
+!/kits/templates/alpha-r0.xcshopT
+!/kits/blueprints/
+/kits/blueprints/*
+!/kits/blueprints/alpha-r0/
+/kits/blueprints/alpha-r0/*
+!/kits/blueprints/alpha-r0/*.xcshoper
+!/kits/materials/
+/kits/materials/*
+!/kits/materials/alpha-r0-26.3/
+/kits/materials/alpha-r0-26.3/*
+!/kits/materials/alpha-r0-26.3/*.xcontent
+!/kits/materials/alpha-r0-26.3/runtime.xclist
 
 # Project ideas / design notes (local only)
 /项目构思/

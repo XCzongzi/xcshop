@@ -1,0 +1,63 @@
+item_return.mcfunction
+summon chest_minecart ~ ~ ~ {Tags:["xcshop.temp"]}
+
+item replace entity @n[tag=xcshop.temp] container.0 from block ~ ~ ~ container.0
+item replace entity @n[tag=xcshop.temp] container.1 from block ~ ~ ~ container.1
+item replace entity @n[tag=xcshop.temp] container.2 from block ~ ~ ~ container.2
+item replace entity @n[tag=xcshop.temp] container.3 from block ~ ~ ~ container.3
+item replace entity @n[tag=xcshop.temp] container.4 from block ~ ~ ~ container.4
+item replace entity @n[tag=xcshop.temp] container.5 from block ~ ~ ~ container.5
+item replace entity @n[tag=xcshop.temp] container.6 from block ~ ~ ~ container.6
+item replace entity @n[tag=xcshop.temp] container.7 from block ~ ~ ~ container.7
+item replace entity @n[tag=xcshop.temp] container.8 from block ~ ~ ~ container.8
+item replace entity @n[tag=xcshop.temp] container.9 from block ~ ~ ~ container.9
+item replace entity @n[tag=xcshop.temp] container.10 from block ~ ~ ~ container.10
+item replace entity @n[tag=xcshop.temp] container.11 from block ~ ~ ~ container.11
+item replace entity @n[tag=xcshop.temp] container.12 from block ~ ~ ~ container.12
+item replace entity @n[tag=xcshop.temp] container.13 from block ~ ~ ~ container.13
+item replace entity @n[tag=xcshop.temp] container.14 from block ~ ~ ~ container.14
+item replace entity @n[tag=xcshop.temp] container.15 from block ~ ~ ~ container.15
+item replace entity @n[tag=xcshop.temp] container.16 from block ~ ~ ~ container.16
+item replace entity @n[tag=xcshop.temp] container.17 from block ~ ~ ~ container.17
+item replace entity @n[tag=xcshop.temp] container.18 from block ~ ~ ~ container.18
+item replace entity @n[tag=xcshop.temp] container.19 from block ~ ~ ~ container.19
+item replace entity @n[tag=xcshop.temp] container.20 from block ~ ~ ~ container.20
+item replace entity @n[tag=xcshop.temp] container.21 from block ~ ~ ~ container.21
+item replace entity @n[tag=xcshop.temp] container.22 from block ~ ~ ~ container.22
+item replace entity @n[tag=xcshop.temp] container.23 from block ~ ~ ~ container.23
+item replace entity @n[tag=xcshop.temp] container.24 from block ~ ~ ~ container.24
+item replace entity @n[tag=xcshop.temp] container.25 from block ~ ~ ~ container.25
+item replace entity @n[tag=xcshop.temp] container.26 from block ~ ~ ~ container.26
+
+tp @n[tag=xcshop.temp] @s
+execute at @s run kill @n[tag=xcshop.temp]
+execute at @s run kill @e[type=item,nbt={Item:{components:{"minecraft:custom_data":{xcshop:{xcshop:1b}}}}}]
+
+
+item replace block ~ ~ ~ container.0 with air
+item replace block ~ ~ ~ container.1 with air
+item replace block ~ ~ ~ container.2 with air
+item replace block ~ ~ ~ container.3 with air
+item replace block ~ ~ ~ container.4 with air
+item replace block ~ ~ ~ container.5 with air
+item replace block ~ ~ ~ container.6 with air
+item replace block ~ ~ ~ container.7 with air
+item replace block ~ ~ ~ container.8 with air
+item replace block ~ ~ ~ container.9 with air
+item replace block ~ ~ ~ container.10 with air
+item replace block ~ ~ ~ container.11 with air
+item replace block ~ ~ ~ container.12 with air
+item replace block ~ ~ ~ container.13 with air
+item replace block ~ ~ ~ container.14 with air
+item replace block ~ ~ ~ container.15 with air
+item replace block ~ ~ ~ container.16 with air
+item replace block ~ ~ ~ container.17 with air
+item replace block ~ ~ ~ container.18 with air
+item replace block ~ ~ ~ container.19 with air
+item replace block ~ ~ ~ container.20 with air
+item replace block ~ ~ ~ container.21 with air
+item replace block ~ ~ ~ container.22 with air
+item replace block ~ ~ ~ container.23 with air
+item replace block ~ ~ ~ container.24 with air
+item replace block ~ ~ ~ container.25 with air
+item replace block ~ ~ ~ container.26 with air

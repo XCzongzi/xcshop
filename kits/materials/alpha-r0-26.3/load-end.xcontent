@@ -1,0 +1,4 @@
+load.mcfunction
+say xcshop数据包加载完毕
+scoreboard objectives add __xcshop.drop__ minecraft.custom:minecraft.drop
+scoreboard players reset @a __xcshop.drop__

@@ -1,0 +1,3 @@
+{{operationPath}}.mcfunction
+execute store result score #item_record __xcshop__ run clear @s {{type.value}} 0
+execute unless score #item_record __xcshop__ matches {{amount}}.. run {{failureCommand}}

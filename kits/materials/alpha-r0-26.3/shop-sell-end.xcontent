@@ -1,0 +1,3 @@
+{{shopPath}}/sell.mcfunction
+function xcshop:item_return
+function xcshop:{{shopPath}}/set

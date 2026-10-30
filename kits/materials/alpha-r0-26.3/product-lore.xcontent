@@ -1,0 +1,2 @@
+{{productPath}}/set.mcfunction
+data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:lore" append value {{loreLine}}

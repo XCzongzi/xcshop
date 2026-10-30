@@ -1,0 +1,3 @@
+{{productPath}}/sell.mcfunction
+execute store result score #item_record __xcshop__ run clear @s *[custom_data ~ {xcshop:{item: "{{slotNumber}}:{{productNumber}}"}}] 0
+scoreboard players operation #items_per_slot __xcshop__ = #item_record __xcshop__

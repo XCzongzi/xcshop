@@ -1,0 +1,3 @@
+_summon/{{shopName}}.mcfunction
+execute align xyz run summon marker ~ ~ ~ {Tags:["xcshop.shop","xcshop.shop.{{shopName}}"]}
+setblock ~ ~ ~ {{containerType}}

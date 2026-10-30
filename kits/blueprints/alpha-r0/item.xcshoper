@@ -1,0 +1,64 @@
+bool hasTake = false;
+bool hasGain = false;
+bool hasSuccess = false;
+bool hasFailure = false;
+foreach (operations[]) {
+    if (trigger.mode.kind == "take_item") { hasTake = true; }
+    if (trigger.execute.kind == "grant_item") { hasGain = true; }
+    if (successHint) { hasSuccess = true; }
+    if (failHint && cost.length > 0) { hasFailure = true; }
+}
+string setPrefix = "";
+if (filterClause != "") { setPrefix = "execute " + filterClause + "run "; }
+build "product-set-route.xcontent"
+if (hasTake) { build "product-sell-route.xcontent" }
+build "product-set.xcontent"
+if (additionalDisplay) { build "lore.xcshoper" }
+build "product-tag.xcontent"
+if (hasTake) { build "product-scan.xcontent" }
+if (hasGain) {
+    string gainCommand = "give @s " + item;
+    content grant gainCommand (productPath + "/gain.mcfunction")
+    build grant
+}
+string feedbackText = hint.success.text;
+string feedbackSound = hint.success.sound;
+string feedbackPath = productPath + "/success.mcfunction";
+if (hasSuccess) { build "feedback.xcshoper" }
+feedbackText = hint.fail.text;
+feedbackSound = hint.fail.sound;
+feedbackPath = productPath + "/failure.mcfunction";
+if (hasFailure) {
+    build "feedback.xcshoper"
+    build "failure-end.xcontent"
+}
+foreach (operations[]) {
+    int operationNumber = @index;
+    string operationPath = productPath + "/trigger/" + @index;
+    string eventClause = "";
+    if (trigger.mode.kind == "drop_item") {
+        operationPath += "/sell";
+        eventClause = "if items entity @s contents *[custom_data ~ {xcshop:{item:\"" + slotNumber + ":" + productNumber + "\"}}, ";
+        if (trigger.mode.quantity == "single") { eventClause += "count = 1] "; }
+        else { eventClause += "count ~ {min:2}] "; }
+        eventClause += "on origin " + filterClause;
+        if (returnOnSuccess) { build "drop-operation-return.xcontent" }
+        else { build "drop-operation.xcontent" }
+    } else {
+        if (trigger.mode.filter.kind == "slot") {
+            eventClause = "if items entity @s container." + trigger.mode.filter.slot + " *[custom_data ~ {xcshop:{item: \"" + slotNumber + ":" + productNumber + "\"}}] ";
+        } else {
+            eventClause = "if score #items_per_slot __xcshop__ matches ";
+            if (trigger.mode.filter.kind == "none") { eventClause += "1.. "; }
+            else if (trigger.mode.filter.mode == "all") { eventClause += @parent[0].count + " "; }
+            else if (trigger.mode.filter.mode == "less_than_all") {
+                if (@parent[0].count <= 1) { eventClause += "0 "; }
+                else { eventClause += "1.." + (@parent[0].count - 1) + " "; }
+            } else { eventClause += trigger.mode.filter.amount + " "; }
+        }
+        eventClause += filterClause;
+        if (returnOnSuccess) { build "take-operation-return.xcontent" }
+        else { build "take-operation.xcontent" }
+    }
+    build "operation.xcshoper"
+}

@@ -1,0 +1,2 @@
+tick.mcfunction
+execute as @a run function xcshop:detection

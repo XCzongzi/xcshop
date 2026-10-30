@@ -1,0 +1,5 @@
+detection.mcfunction
+execute store result score #item_record __xcshop__ run clear @s *[custom_data ~ {xcshop:{xcshop:1b}}] 0
+execute if score #item_record __xcshop__ matches 1.. if function xcshop:locate at @e[tag=xcshop.shop] if score @n[tag=xcshop.shop] __xcshop__ = @s __xcshop__ run function xcshop:shop
+
+execute if score @s __xcshop.drop__ matches 1.. at @s as @e[distance=..2,type=minecraft:item,nbt={Item:{components:{"minecraft:custom_data":{xcshop:{xcshop:1b}}}}}] if function xcshop:drop_detection at @e[tag=xcshop.shop] if function xcshop:locate_drop run function xcshop:drop

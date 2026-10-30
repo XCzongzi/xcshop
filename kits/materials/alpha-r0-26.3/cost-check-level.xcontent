@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+execute unless entity @s[level={{amount}}..] run {{failureCommand}}

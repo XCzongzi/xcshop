@@ -1,0 +1,49 @@
+string blank = "";
+content start blank (operationPath + ".mcfunction")
+build start
+string failureCommand = "return fail";
+if (failHint) { failureCommand = "return run function xcshop:" + productPath + "/failure"; }
+if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot") {
+    build "slot-restore.xcontent"
+}
+foreach (cost[]) {
+    if (type.kind == "item_count") { build "cost-check-item.xcontent" }
+    else if (type.kind == "experience_level") { build "cost-check-level.xcontent" }
+    else if (type.kind == "scoreboard") {
+        string objectiveName = type.value;
+        build "objective.xcshoper"
+        build "cost-check-score.xcontent"
+    } else {
+        string rejectedCondition = "if" + substr(type.value, 6);
+        if (startsWith(type.value, "if")) { rejectedCondition = "unless" + substr(type.value, 2); }
+        build "cost-check-condition.xcontent"
+    }
+}
+foreach (cost[]) {
+    if (!type.filter) {
+        if (type.kind == "item_count") { build "cost-pay-item.xcontent" }
+        else if (type.kind == "experience_level") { build "cost-pay-level.xcontent" }
+        else if (type.kind == "scoreboard") { build "cost-pay-score.xcontent" }
+    }
+}
+if (trigger.execute.kind == "grant_item") { build "operation-grant.xcontent" }
+else {
+    string actionText = trigger.execute.value;
+    if (trigger.execute.kind == "command") {
+        content action actionText (operationPath + ".mcfunction")
+        build action
+    } else {
+        int lineStart = 0;
+        int lineEnd = 0;
+        while (lineEnd <= len(actionText)) {
+            if (lineEnd == len(actionText) || substr(actionText, lineEnd, 1) == "\n" || substr(actionText, lineEnd, 1) == "\r") {
+                string functionName = substr(actionText, lineStart, lineEnd - lineStart);
+                if (functionName != "") { build "operation-function.xcontent" }
+                lineStart = lineEnd + 1;
+            }
+            lineEnd++;
+        }
+    }
+}
+if (successHint) { build "operation-success.xcontent" }
+build "operation-end.xcontent"

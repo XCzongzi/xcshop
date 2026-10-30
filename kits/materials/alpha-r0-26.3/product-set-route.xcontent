@@ -1,0 +1,2 @@
+{{shopPath}}/set.mcfunction
+{{setPrefix}}function xcshop:{{productPath}}/set

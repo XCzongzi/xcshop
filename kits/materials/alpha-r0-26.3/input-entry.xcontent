@@ -1,0 +1,2 @@
+{{inputPath}}.mcfunction
+execute at @s at @e[tag=xcshop.shop] if score @n[tag=xcshop.shop] __xcshop__ = @s __xcshop__ {{inputClause}}run function xcshop:{{inputPath}}/match

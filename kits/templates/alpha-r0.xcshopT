@@ -1,0 +1,42 @@
+89755dae-f798-440d-b3a9-342ee8a9070f
+0
+"26.3"
+../blueprints/alpha-r0/main.xcshoper
+../materials/alpha-r0-26.3
+[
+    "Alpha r0：按 xcshop 测试数据包的标记实体、拿取/掷出、独立操作和布局匹配逻辑生成，面向 Minecraft Java 26.3。",
+    "使用固定命名空间 xcshop；27 格方块容器。布局输入器仅提供 function 入口，不自动调用。"
+]
+foreach (Shop[]) {
+    if (slots.length != 27 || (containerType != "barrel" && containerType != "chest"
+        && containerType != "trapped_chest" && containerType != "shulker_box")) {
+        error("Alpha r0 仅支持 27 格方块容器。", "请选择桶、单箱、陷阱单箱或潜影盒；不支持实体容器、末影箱或 54 格容器。");
+    }
+    foreach (slots[]) {
+        foreach (items[]) {
+            if (count < 1) { error("商品数量必须大于 0。"); }
+            foreach (operations[]) {
+                if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot"
+                    && (int(trigger.mode.filter.slot) < 0 || int(trigger.mode.filter.slot) > 35)) {
+                    error("玩家物品栏槽位超出 0 到 35。", "请选择快捷栏或背包中的有效槽位。");
+                }
+                if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "quantity"
+                    && trigger.mode.filter.mode == "custom"
+                    && (int(trigger.mode.filter.amount) < 1 || int(trigger.mode.filter.amount) > 2147483647)) {
+                    error("自定义触发数量必须是正的 32 位整数。");
+                }
+                foreach (cost[]) {
+                    if (int(amount) < 0 || int(amount) > 2147483647) {
+                        error("代价数量超出 0 到 2147483647。", "请使用 Minecraft 指令允许的非负 32 位整数。");
+                    }
+                }
+            }
+        }
+    }
+    foreach (layoutInputGroups[]) {
+        if (int(defaultValue) < -2147483648 || int(defaultValue) > 2147483647) { error("布局默认值超出 32 位计分板整数范围。"); }
+        foreach (connections[]) {
+            if (int(value) < -2147483648 || int(value) > 2147483647) { error("布局匹配值超出 32 位计分板整数范围。"); }
+        }
+    }
+}

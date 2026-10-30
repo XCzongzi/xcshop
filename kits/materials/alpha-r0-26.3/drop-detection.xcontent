@@ -1,0 +1,2 @@
+drop_detection.mcfunction
+execute on origin if entity @s[distance=0] run return 1

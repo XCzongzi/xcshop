@@ -1,0 +1,4 @@
+if (objectiveName != "" && !contains(declaredObjectives, "|" + objectiveName + "|")) {
+    declaredObjectives += objectiveName + "|";
+    build "objective.xcontent"
+}
