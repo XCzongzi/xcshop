@@ -48,6 +48,8 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void recheckExecutable();
     Q_INVOKABLE void fetchVersion();
+    Q_INVOKABLE QString resolveOutputPath(const QString &project, const QString &parentPath,
+                                         const QString &folderName) const;
 signals:
     void versionInfoChanged();
     void startupArgumentsChanged();

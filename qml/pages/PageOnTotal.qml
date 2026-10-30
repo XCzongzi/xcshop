@@ -29,6 +29,9 @@ BasePage {
     readonly property string buildConsole: hasBuildResult ? Builder.consoleText : ""
     readonly property string buildElapsed: hasBuildResult ? formatElapsed(Builder.elapsedMs) : "—"
     readonly property string buildOutputPath: hasBuildResult ? Builder.outputPath : ""
+    readonly property string outputFolderName: String(projectData.outputFolder || "")
+    readonly property string configuredOutputPath: Builder.resolveOutputPath(Global.project_location,
+            String(projectData.generatePath || ""), outputFolderName || String(projectData.name || ""))
 
     readonly property int buildErrorCount: {
         var count = 0
@@ -277,8 +280,32 @@ BasePage {
     function beginBuild() {
         if (!manifestLoaded || building)
             return
+        if (!saveOutputFolder(buildBar.outputFolderDraft))
+            return
         Global.requestBuild()
         refreshStatistics()
+    }
+
+    function saveOutputFolder(name) {
+        if (!manifestLoaded || building || Global.outputFolderError(name).length)
+            return false
+        if (name === outputFolderName)
+            return true
+        var next = clone(projectData)
+        if (name.length)
+            next.outputFolder = name
+        else
+            delete next.outputFolder
+        return saveManifest(next, registeredShops)
+    }
+
+    function openBuildOutput() {
+        // Before the first build, open the configured parent without creating any directories.
+        var path = configuredOutputPath
+        if (!projectFile.isDirectory(path))
+            path = Builder.resolveOutputPath(Global.project_location, String(projectData.generatePath || ""), "")
+        if (!path.length || !projectFile.revealInFileManager(path))
+            showNotice("无法打开生成位置", "生成目录尚不存在或无法访问，请检查项目设置中的生成位置。")
     }
 
     function showBuildProblem(problem) {
@@ -388,10 +415,16 @@ BasePage {
             buildProgress: root.buildProgress
             elapsedText: root.buildElapsed
             outputPath: root.buildOutputPath
+            configuredOutputPath: root.configuredOutputPath
+            outputFolderName: root.outputFolderName
+            defaultFolderName: String(root.projectData.name || "")
+            outputSettingsEnabled: root.manifestLoaded && !root.building
             consoleText: root.buildConsole
             problems: root.buildProblems
             onStartRequested: root.beginBuild()
             onCancelRequested: Builder.cancel()
+            onOutputFolderSubmitted: function(name) { root.saveOutputFolder(name) }
+            onRevealRequested: root.openBuildOutput()
             onProblemActivated: function(problem) { root.showBuildProblem(problem) }
         }
 

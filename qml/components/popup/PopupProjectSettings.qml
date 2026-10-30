@@ -173,7 +173,7 @@ PopupFrame {
         id: outputLabel
         x: 24
         y: root.selectedTemplate.allowsNewer ? 269 : 239
-        xcText: "数据包生成父目录（最终输出为此目录 / 项目名称）"
+        xcText: "数据包生成父目录（文件夹名称可在总览的构建栏设置）"
         xcFontSize: 11
         boldFont: false
         onCenter: false

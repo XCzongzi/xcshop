@@ -150,6 +150,17 @@ Window {
                     page.addShop({"registrationName": "smoke", "element": "UI/shop.xcseUI", "containerType": "barrel"})
                     check(page.registeredShops.length === 1, "shop registration disconnected")
                     check(page.canBuild, "dashboard failed preflight")
+                    var folderField = find(page, "buildOutputFolderField")
+                    check(folderField && find(page, "buildRevealOutputButton"), "output controls missing")
+                    folderField.text = "../invalid"
+                    check(!page.saveOutputFolder(folderField.text), "unsafe folder name accepted")
+                    folderField.text = "自定义 数据包"
+                    folderField.editingFinished()
+                    check(JSON.parse(file.read(project + "/xcshop.json")).outputFolder === "自定义 数据包", "output folder was not saved")
+                    check(page.projectData.name !== "自定义 数据包", "output folder changed project name")
+                    check(page.saveOutputFolder(""), "cannot restore default output folder")
+                    check(JSON.parse(file.read(project + "/xcshop.json")).outputFolder === undefined, "default output folder was not restored")
+                    check(page.saveOutputFolder("自定义 数据包"), "cannot save custom output folder")
                     screenshot("dashboard")
                     break
                 case 4:
@@ -171,12 +182,14 @@ Window {
                     if (Builder.running) { --root.step; return }
                     check(Builder.result.buildSucceeded, "real builder failed: " + Builder.consoleText)
                     check(file.exists(Builder.outputPath + "/pack.mcmeta"), "datapack not generated")
+                    check(Builder.outputPath.endsWith("/自定义 数据包"), "builder ignored output folder")
                     break
                 case 8:
                     show(total)
                     break
                 case 9:
                     check(page.buildState === "构建成功", "build state lost after page change")
+                    check(find(page, "buildOutputFolderField").text === "自定义 数据包", "output folder lost after page change")
                     check(page.buildConsole.length > 0, "build console lost after page change")
                     check(find(fileControls, "quickBuildButton").enabled, "quick build did not recover after completion")
                     UiInput.click(find(fileControls, "quickBuildStatus"))

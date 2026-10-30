@@ -160,6 +160,22 @@ private slots:
         if (mode == "large") QVERIFY(builder.consoleText().size() <= 256 * 1024);
         QCOMPARE(builder.outputPath(), temp.path() + "/generated/测试 output");
     }
+    void customOutputFolder() {
+        QTemporaryDir temp;
+        const auto project = temp.path() + "/project";
+        QVERIFY(makeKit(temp.path() + "/kits"));
+        BuildManager builder;
+        builder.setExecutablePath(fixture);
+        QCOMPARE(builder.resolveOutputPath(project, "../generated", "独立 文件夹"),
+                 temp.path() + "/generated/独立 文件夹");
+        for (const auto &folder : {QString("独立 文件夹"), QString()}) {
+            QJsonObject data{{"name", "测试 output"}, {"generatePath", "../generated"}, {"outputFolder", folder}};
+            QVERIFY(writeFile(project + "/xcshop.json", QJsonDocument(data).toJson()));
+            QVERIFY(builder.start(project, temp.path() + "/kits"));
+            QTRY_VERIFY_WITH_TIMEOUT(!builder.running(), 10000);
+            QCOMPARE(builder.outputPath(), temp.path() + "/generated/" + (folder.isEmpty() ? QString("测试 output") : folder));
+        }
+    }
     void cancellationAndMissingProgram() {
         QTemporaryDir temp;
         QVERIFY(makeManifest(temp.path() + "/project", "slow"));

@@ -241,6 +241,18 @@ QtObject{
         return parsed ? parsed.relativePath : normalizeElementPath(filePath)
     }
 
+    function outputFolderError(value) {
+        if (value === undefined || value === null || value === "")
+            return ""
+        if (typeof value !== "string" || !value.trim().length
+                || /[\\/:*?"<>|\x00-\x1f]/.test(value) || /[. ]$/.test(value)
+                || value === "." || value === "..")
+            return "文件夹名称不能包含路径或特殊字符，也不能以点或空格结尾"
+        if (/^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(\.|$)/i.test(value))
+            return "此名称为系统保留名称，请换一个名称"
+        return ""
+    }
+
     function collectBuildProblems(projectData, registeredShops) {
         var result = []
         if (!projectData.name || !String(projectData.name).trim().length)
@@ -250,6 +262,9 @@ QtObject{
             result.push({ "severity": "error", "code": "E_NAMESPACE", "message": "项目命名空间格式不正确", "file": "xcshop.json" })
         if (!projectData.generatePath || !String(projectData.generatePath).trim().length)
             result.push({ "severity": "error", "code": "E_OUTPUT_PATH", "message": "未设置数据包生成位置", "file": "xcshop.json" })
+        var folderError = outputFolderError(projectData.outputFolder)
+        if (folderError.length)
+            result.push({ "severity": "error", "code": "E_OUTPUT_FOLDER", "message": folderError, "file": "xcshop.json", "property": "$.outputFolder" })
         var manifest = Global.project_location + "/xcshop.json"
         var template = BuildKits.findTemplate(String(projectData.templateId || ""))
         if (!projectData.templateId)

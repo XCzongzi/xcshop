@@ -177,6 +177,12 @@ void BuildManager::integrationError(const QString &reason, const QString &soluti
     appendLog("[编辑器] " + reason);
     m_state = "构建失败";
 }
+QString BuildManager::resolveOutputPath(const QString &project, const QString &parentPath,
+                                       const QString &folderName) const {
+    if (project.isEmpty() || parentPath.isEmpty()) return {};
+    return QDir::cleanPath(QDir(QDir(absolutePath(project)).absoluteFilePath(parentPath)).filePath(folderName));
+}
+
 bool BuildManager::start(const QString &project, const QString &kits) {
     if (m_running || m_queryingVersion) return false;
     m_projectPath = absolutePath(project);
@@ -206,9 +212,10 @@ bool BuildManager::start(const QString &project, const QString &kits) {
             const auto data = document.object();
             // Actual semantic validation belongs to the builder. Only derive a display path here.
             const auto output = data["generatePath"].toString();
-            const auto name = data["name"].toString();
+            const auto name = data["outputFolder"].toString().isEmpty()
+                    ? data["name"].toString() : data["outputFolder"].toString();
             if (!output.isEmpty() && !name.isEmpty())
-                m_outputPath = QDir::cleanPath(QDir(QDir(m_projectPath).absoluteFilePath(output)).filePath(name));
+                m_outputPath = resolveOutputPath(m_projectPath, output, name);
         }
     }
     if (!error.isEmpty()) {

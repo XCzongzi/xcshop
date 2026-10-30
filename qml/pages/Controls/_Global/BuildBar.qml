@@ -14,11 +14,19 @@ ContentBar {
     property real buildProgress: 0
     property string elapsedText: "—"
     property string outputPath: ""
+    property string configuredOutputPath: ""
+    property string outputFolderName: ""
+    property string defaultFolderName: ""
+    property bool outputSettingsEnabled: false
+    readonly property alias outputFolderDraft: folderField.text
+    readonly property string folderError: Global.outputFolderError(folderField.text)
     property string consoleText: ""
     property var problems: []
 
     signal startRequested
     signal cancelRequested
+    signal outputFolderSubmitted(string name)
+    signal revealRequested
     signal problemActivated(var problem)
 
     title: "构建"
@@ -94,6 +102,54 @@ ContentBar {
     }
 
     Item {
+        id: outputSettings
+        visible: root.outputSettingsEnabled || root.configuredOutputPath.length > 0
+        x: root.padding + 64
+        y: 16
+        width: Math.max(0, root.width - x - root.padding)
+        height: 30
+
+        XCTextField {
+            id: folderField
+            objectName: "buildOutputFolderField"
+            anchors.right: revealButton.left
+            anchors.rightMargin: 8
+            width: Math.max(0, Math.min(240, parent.width - revealButton.width - 8))
+            height: parent.height
+            editorFontSize: 12
+            text: root.outputFolderName
+            placeholderText: root.defaultFolderName || "文件夹名称"
+            enabled: root.outputSettingsEnabled
+            selectByMouse: true
+            Accessible.name: "生成文件夹名称"
+            onEditingFinished: {
+                if (enabled && !root.folderError.length)
+                    root.outputFolderSubmitted(text)
+            }
+            Controls.ToolTip.visible: (activeFocus && root.folderError.length > 0) || folderHover.hovered
+            Controls.ToolTip.delay: root.folderError.length ? 0 : 500
+            Controls.ToolTip.text: root.folderError || "生成文件夹名称，留空使用项目名称"
+            HoverHandler { id: folderHover }
+        }
+
+        ActionButton {
+            id: revealButton
+            objectName: "buildRevealOutputButton"
+            anchors.right: parent.right
+            width: 104
+            height: parent.height
+            text: "打开生成位置"
+            textSize: 12
+            enabled: root.configuredOutputPath.length > 0 && !root.building
+            onClicked: root.revealRequested()
+            Controls.ToolTip.visible: revealHover.hovered
+            Controls.ToolTip.delay: 500
+            Controls.ToolTip.text: root.configuredOutputPath
+            HoverHandler { id: revealHover }
+        }
+    }
+
+    Item {
         x: root.padding
         y: 54
         width: parent.width - root.padding * 2
@@ -159,7 +215,7 @@ ContentBar {
                 height: 36
                 text: root.building ? "取消构建" : "开始构建"
                 textSize: 12
-                enabled: root.building || (root.builderAvailable && root.canBuild)
+                enabled: root.building || (root.builderAvailable && root.canBuild && !root.folderError.length)
 
                 onClicked: {
                     if (root.building)
