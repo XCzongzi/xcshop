@@ -1,0 +1,47 @@
+xcshop Independent Builder Interoperability Permission, version 1.0
+
+Additional permission under section 7 of GNU GPL version 3
+
+The copyright holders who apply this permission to their material in the
+xcshop editor grant the following additional permission, to the extent
+that they have authority to do so. The material to which the project
+applies this permission is identified in LICENSING.md accompanying the
+editor source code. The editor remains licensed under GPL-3.0-only.
+
+You may use, modify and convey the editor so that it interoperates with
+an independent xcshop-builder executable, or an independent executable
+implementing a compatible builder protocol, solely through separate
+processes using command-line arguments, files, standard input/output or
+JSON messages. You may also convey the editor and such an independent
+builder in the same distribution or installation package. Solely because
+of this permitted interoperability and joint packaging, you need not
+license that independent builder under the GPL or provide its source
+code as part of the editor's Corresponding Source.
+
+This permission does not authorize incorporation of GPL-covered editor
+code into a proprietary builder, incorporation of builder code into the
+editor, or in-process linking to a proprietary builder library. It does
+not remove any GPL requirements for the editor itself, its modifications,
+or its Corresponding Source. The editor source must include the editor's
+builder interface and protocol-handling code as required by the GPL.
+
+This permission grants no rights to the builder itself, Qt, Minecraft
+assets or any other third-party material. Separate rights needed to use
+or redistribute them must be obtained and their licenses respected.
+
+When relying on this permission to convey the editor, accompany it with
+this permission and the GPL version 3 license text. Under GPL section 7,
+you may remove this additional permission from a copy or from material
+you modify; a copy from which the permission has been removed cannot
+rely on the removed permission. You may extend this permission to your
+own contributions if you have the authority to grant it.
+
+The GPL version 3 warranty and liability provisions remain applicable.
+
+中文阅读说明（以上英文条款为准）：
+
+本额外许可仅适用于权利人有权授权的编辑器代码，允许通过独立进程、
+命令行、文件和 JSON 等接口与独立构建器协作，并在另有构建器分发权
+的前提下同包分发，不仅因此要求公开独立构建器源码。编辑器及修改版
+的 GPLv3 义务继续适用。此许可不授予构建器或其他第三方内容的权利，
+也不覆盖把闭源构建器代码并入编辑器进程的情形。

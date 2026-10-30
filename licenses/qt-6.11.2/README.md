@@ -1,0 +1,74 @@
+# Qt 6.11.2 第三方许可文本索引
+
+摘取本机 Qt 6.11.2 官方离线文档中相关模块的版权与许可 pre 文本，保留原文。此集合包含候选组件及可选图像插件，不代表所有条目都进入最终 Release 包；仍需结合实际部署结果、构建配置和 SPDX 清单核查。版本变化时重新核对。
+
+原文集合见 [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)。不包含 Qt 框架和第三方库完整源码；源码分发安排仍需另行完成。
+
+| 本机文档路径 | 原文块数 |
+| --- | ---: |
+| `qtcore/qtcore-attribution-android-gradle-wrapper.html` | 2 |
+| `qtcore/qtcore-attribution-blake2.html` | 2 |
+| `qtcore/qtcore-attribution-doubleconversion.html` | 2 |
+| `qtcore/qtcore-attribution-easing.html` | 2 |
+| `qtcore/qtcore-attribution-extra-cmake-modules.html` | 2 |
+| `qtcore/qtcore-attribution-forkfd.html` | 2 |
+| `qtcore/qtcore-attribution-kwin.html` | 2 |
+| `qtcore/qtcore-attribution-md4.html` | 2 |
+| `qtcore/qtcore-attribution-md5.html` | 2 |
+| `qtcore/qtcore-attribution-pcre2-sljit.html` | 2 |
+| `qtcore/qtcore-attribution-pcre2.html` | 2 |
+| `qtcore/qtcore-attribution-qeventdispatcher-cf.html` | 2 |
+| `qtcore/qtcore-attribution-rfc6234.html` | 2 |
+| `qtcore/qtcore-attribution-sha1.html` | 2 |
+| `qtcore/qtcore-attribution-sha3-endian.html` | 2 |
+| `qtcore/qtcore-attribution-sha3-keccak.html` | 2 |
+| `qtcore/qtcore-attribution-siphash.html` | 2 |
+| `qtcore/qtcore-attribution-tika-mimetypes.html` | 2 |
+| `qtcore/qtcore-attribution-tinycbor.html` | 2 |
+| `qtcore/qtcore-attribution-tlexpected.html` | 2 |
+| `qtcore/qtcore-attribution-unicode-character-database.html` | 2 |
+| `qtcore/qtcore-attribution-unicode-cldr.html` | 2 |
+| `qtcore/qtcore-attribution-zlib.html` | 2 |
+| `qtdoc/qtentrypoint.html` | 1 |
+| `qtgui/qtgui-attribution-aglfn.html` | 2 |
+| `qtgui/qtgui-attribution-android-native-style.html` | 2 |
+| `qtgui/qtgui-attribution-cocoa-platform-plugin.html` | 2 |
+| `qtgui/qtgui-attribution-d3d12memoryallocator.html` | 2 |
+| `qtgui/qtgui-attribution-dejayvu.html` | 2 |
+| `qtgui/qtgui-attribution-emoji-segmenter.html` | 2 |
+| `qtgui/qtgui-attribution-freetype-bdf.html` | 2 |
+| `qtgui/qtgui-attribution-freetype-pcf.html` | 2 |
+| `qtgui/qtgui-attribution-freetype-zlib.html` | 2 |
+| `qtgui/qtgui-attribution-freetype.html` | 2 |
+| `qtgui/qtgui-attribution-grayraster.html` | 2 |
+| `qtgui/qtgui-attribution-harfbuzz-ng.html` | 2 |
+| `qtgui/qtgui-attribution-icc-srgb-color-profile.html` | 2 |
+| `qtgui/qtgui-attribution-libjpeg.html` | 3 |
+| `qtgui/qtgui-attribution-libpng.html` | 2 |
+| `qtgui/qtgui-attribution-md4c.html` | 2 |
+| `qtgui/qtgui-attribution-opengl-es2-headers.html` | 2 |
+| `qtgui/qtgui-attribution-opengl-headers.html` | 2 |
+| `qtgui/qtgui-attribution-pixman.html` | 2 |
+| `qtgui/qtgui-attribution-rhi-miniengine-d3d12-mipmap.html` | 2 |
+| `qtgui/qtgui-attribution-smooth-scaling-algorithm.html` | 2 |
+| `qtgui/qtgui-attribution-vulkan-xml-spec.html` | 2 |
+| `qtgui/qtgui-attribution-vulkanmemoryallocator.html` | 2 |
+| `qtgui/qtgui-attribution-webgradients.html` | 2 |
+| `qtgui/qtgui-attribution-wintab.html` | 2 |
+| `qtgui/qtgui-attribution-xcb-xinput.html` | 2 |
+| `qtgui/qtgui-attribution-xserverhelper.html` | 2 |
+| `qtimageformats/qtimageformats-attribution-libtiff.html` | 2 |
+| `qtimageformats/qtimageformats-attribution-libwebp.html` | 2 |
+| `qtnetwork/qtnetwork-attribution-libpsl.html` | 2 |
+| `qtnetwork/qtnetwork-attribution-psl-data.html` | 2 |
+| `qtqml/qtqml-attribution-masm.html` | 2 |
+| `qtquick/qtquick-attribution-gear-icon.html` | 2 |
+| `qtquick/qtquick-attribution-georama-font.html` | 2 |
+| `qtquick/qtquick-attribution-map-of-europe.html` | 2 |
+| `qtquick/qtquick-attribution-weather-icons.html` | 2 |
+| `qtquick/qtquick-attribution-work-sans-font.html` | 2 |
+| `qtquick/qtquick-attribution-yoga.html` | 2 |
+| `qtquickcontrols/qtquickcontrols-attribution-shadow-angular-material.html` | 2 |
+| `qtshadertools/qtshadertools-attribution-glslang.html` | 2 |
+| `qtshadertools/qtshadertools-attribution-spirvcross.html` | 3 |
+| `qtsvg/qtsvg-attribution-xsvg.html` | 2 |
