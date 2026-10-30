@@ -758,7 +758,7 @@ PanelSurface {
                 y: 3
                 width: parent.width - 72
                 height: 28
-                font.pixelSize: 12
+                editorFontSize: 12
                 placeholderText: "新分组名称"
                 onAccepted: root.addCustomGroup(text)
             }

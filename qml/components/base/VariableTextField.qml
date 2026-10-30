@@ -97,9 +97,7 @@ ResizableEditor {
         textFormat: Text.RichText
         wrapMode: Text.WrapAnywhere
         color: Colors.text
-        font.family: textField.font.family
-        font.pixelSize: textField.font.pixelSize
-        font.bold: textField.font.bold
+        font: textField.font
     }
 
     Rectangle {

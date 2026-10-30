@@ -19,6 +19,8 @@ QtObject{
     property string backgroundImage: ""
     property real backgroundBlur: 0.45
     property string settingsPath: ""
+    property string editorChineseFont: "Microsoft YaHei"
+    property string editorLatinFont: "Consolas"
     property var recentProjects: []
     property int elementRelayHeight: 160
     // 工作区内可拖动的面板尺寸统一保存在 settings.json。
@@ -334,6 +336,10 @@ QtObject{
             if (typeof saved !== "object" || Array.isArray(saved))
                 return
             savedSettings = saved
+            editorChineseFont = typeof saved.editorChineseFont === "string" && saved.editorChineseFont.trim().length
+                    ? saved.editorChineseFont.trim() : "Microsoft YaHei"
+            editorLatinFont = typeof saved.editorLatinFont === "string" && saved.editorLatinFont.trim().length
+                    ? saved.editorLatinFont.trim() : "Consolas"
             if (typeof saved.kitsPath === "string") BuildKits.kitsPath = saved.kitsPath
             if (typeof saved.builderPath === "string") Builder.executablePath = saved.builderPath
             if (typeof saved.preferredTemplateId === "string") BuildKits.preferredTemplateId = saved.preferredTemplateId
@@ -364,6 +370,8 @@ QtObject{
             return
         var settings = Object.assign({}, savedSettings, Colors.settingsData())
         settings.animationSpeed = animationSpeed
+        settings.editorChineseFont = editorChineseFont
+        settings.editorLatinFont = editorLatinFont
         settings.backgroundMode = backgroundMode
         settings.backgroundImage = backgroundImage
         settings.backgroundBlur = backgroundBlur

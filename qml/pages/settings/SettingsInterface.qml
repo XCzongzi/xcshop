@@ -327,5 +327,7 @@ Item {
                 onMoved: { Global.animationSpeed = value; Global.saveSettings() }
             }
         }
+
+        SettingsFonts {}
     }
 }

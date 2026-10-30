@@ -12,7 +12,7 @@ set(QT_QML_GENERATE_QMLLS_INI ON)   #图形效果
 
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Concurrent)
 
-qt_standard_project_setup(REQUIRES 6.5)
+qt_standard_project_setup(REQUIRES 6.8)
 
 include_directories(header)    # 头文件目录
 
@@ -188,6 +188,7 @@ qt_add_qml_module(appxcshop
         qml/pages/PageOnDisplay.qml
         qml/pages/PageOnSettings.qml
         qml/pages/settings/SettingsInterface.qml
+        qml/pages/settings/SettingsFonts.qml
         qml/pages/settings/SettingsBuildKits.qml
         qml/pages/settings/SettingsBuilder.qml
         qml/pages/settings/SettingsItems.qml
@@ -222,6 +223,7 @@ qt_add_qml_module(appxcshop
         src/ElementIO.cpp
 
         header/XCFile.h
+        header/EditorFonts.h
         header/MinecraftAssetImporter.h
         header/MinecraftImportSupport.h
         header/ElementIO.h
@@ -290,7 +292,12 @@ if(XCSHOP_BUILD_TESTS)
             RUN_SERIAL TRUE
             TIMEOUT 60)
     endif()
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml)
+    add_test(NAME editor_fonts_ui_smoke COMMAND appxcshop --editor-fonts-ui-smoke)
+    set_tests_properties(editor_fonts_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        FAIL_REGULAR_EXPRESSION "EDITOR_FONTS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 20)
     add_test(NAME explorer_ui_smoke COMMAND appxcshop --explorer-ui-smoke)
     set_tests_properties(explorer_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"

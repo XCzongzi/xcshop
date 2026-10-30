@@ -381,7 +381,7 @@ PopupFrame {
                 height: Math.max(jsonPreviewViewport.availableHeight, implicitHeight)
                 readOnly: true; selectByMouse: true; wrapMode: TextEdit.WrapAnywhere
                 text: root.exportedJson()
-                font.family: "Consolas"; font.pixelSize: 12
+                editorFontSize: 12
             }
         }
     }

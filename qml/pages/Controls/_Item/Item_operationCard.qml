@@ -96,7 +96,7 @@ Item {
                 y: 4
                 height: 24
                 width: moveUpButton.x - x - 10
-                font.pixelSize: 13
+                editorFontSize: 13
                 text: root.operation.title
                 placeholderText: "名称"
                 highlightMacros: true

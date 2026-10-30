@@ -8,6 +8,7 @@ TextArea{
 
     signal accepted
     property bool highlightMacros: false
+    property int editorFontSize: 16
 
     wrapMode: TextEdit.Wrap
 
@@ -25,8 +26,7 @@ TextArea{
         idleOpacity: 0.50
     }
 
-    font.family: "微软雅黑"
-    font.pixelSize: 16
+    font: EditorFonts.mixedFont(Global.editorChineseFont, Global.editorLatinFont, editorFontSize)
 
     MacroTextOverlay {
         target: root

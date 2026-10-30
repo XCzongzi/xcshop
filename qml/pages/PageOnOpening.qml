@@ -16,7 +16,7 @@ BasePage {
     }
 
 
-    TextField {
+    XCTextField {
         id: urlTextField
         x: 50
         width:500
@@ -49,7 +49,7 @@ BasePage {
             xct.xcText = JSON.stringify(jsonObj)
         }
     }
-    TextField{
+    XCTextField{
         id: jsonInput
         y:120
         height: 50

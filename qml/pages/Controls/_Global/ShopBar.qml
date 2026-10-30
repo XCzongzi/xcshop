@@ -272,7 +272,7 @@ ContentBar {
                     width: Math.max(64, parent.width * 0.30)
                     height: parent.height
                     placeholderText: "注册名"
-                    font.pixelSize: 11
+                    editorFontSize: 11
                     onTextEdited: root.feedbackMessage = ""
                     onAccepted: root.submitNewShop()
                 }

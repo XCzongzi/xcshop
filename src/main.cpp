@@ -56,16 +56,20 @@ int main(int argc, char *argv[])
     if (app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
         || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")
         || app.arguments().contains("--dropdown-ui-smoke") || app.arguments().contains("--light-theme-ui-smoke")
-        || app.arguments().contains("--themed-icon-ui-smoke") || app.arguments().contains("--explorer-ui-smoke")) {
+        || app.arguments().contains("--themed-icon-ui-smoke") || app.arguments().contains("--explorer-ui-smoke")
+        || app.arguments().contains("--editor-fonts-ui-smoke")) {
 #ifdef Q_OS_WIN
         // The offscreen platform does not enumerate Windows system fonts.
-        for (const auto &name : {"msyh.ttc", "segoeui.ttf", "consola.ttf"})
+        for (const auto &name : {"msyh.ttc", "segoeui.ttf", "consola.ttf", "simsun.ttc"})
             QFontDatabase::addApplicationFont(qEnvironmentVariable("WINDIR", "C:/Windows") + "/Fonts/" + name);
 #endif
         smokeDirectory = std::make_unique<QTemporaryDir>(appDir + "/ui-smoke-XXXXXX");
         engine.rootContext()->setContextProperty("SMOKE_DIR", smokeDirectory->path());
         engine.rootContext()->setContextProperty("SMOKE_OUTPUT_DIR", appDir);
-        if (app.arguments().contains("--explorer-ui-smoke")) {
+        if (app.arguments().contains("--editor-fonts-ui-smoke")) {
+            engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
+            engine.load(QUrl("qrc:/tests/EditorFontsUiSmoke.qml"));
+        } else if (app.arguments().contains("--explorer-ui-smoke")) {
             engine.load(QUrl("qrc:/tests/ExplorerUiSmoke.qml"));
         } else if (app.arguments().contains("--themed-icon-ui-smoke")) {
             engine.load(QUrl("qrc:/tests/ThemedIconUiSmoke.qml"));

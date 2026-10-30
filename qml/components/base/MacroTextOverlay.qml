@@ -26,7 +26,5 @@ Text {
     textFormat: Text.RichText
     wrapMode: multiline ? Text.WrapAnywhere : Text.NoWrap
     color: "transparent"
-    font.family: target ? target.font.family : ""
-    font.pixelSize: target ? target.font.pixelSize : 16
-    font.bold: target ? target.font.bold : false
+    font: target ? target.font : Qt.font({pixelSize: 16})
 }

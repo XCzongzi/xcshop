@@ -223,8 +223,7 @@ ContentBar {
                         textFormat: TextEdit.PlainText
                         BuildConsoleDocument { document: consoleOutput.textDocument }
                         placeholderText: "暂无构建输出"
-                        font.pixelSize: 11
-                        font.family: "Consolas"
+                        editorFontSize: 11
                         wrapMode: TextEdit.WrapAnywhere
                         // 固定留出滑块空间，避免显隐时反复换行、改变内容高度。
                         rightPadding: consoleScrollBar.width + 16

@@ -77,7 +77,7 @@ Item {
         height: 28
         text: root.isPresetColor(root.color) ? "" : root.color
         placeholderText: "#RRGGBB"
-        font.pixelSize: 12
+        editorFontSize: 12
         onTextEdited: {
             root.color = text.length ? text : root.lastPresetColor
             root.propertyEdited()

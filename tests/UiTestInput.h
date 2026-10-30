@@ -8,12 +8,24 @@
 #include <QTest>
 #include <QWindow>
 #include <QVariantMap>
+#include <QTextLayout>
 
 // Send actual window events so smoke tests exercise native control behavior.
 class UiTestInput : public QObject {
     Q_OBJECT
 public:
     using QObject::QObject;
+    Q_INVOKABLE QStringList renderedFontFamilies(const QFont &font, const QString &text) {
+        QTextLayout layout(text, font);
+        layout.beginLayout();
+        layout.createLine();
+        layout.endLayout();
+        QStringList families;
+        for (const auto &run : layout.glyphRuns())
+            families.append(run.rawFont().familyName());
+        families.removeDuplicates();
+        return families;
+    }
     Q_INVOKABLE void click(QQuickItem *item, qreal x = -1, qreal y = -1) {
         if (!item || !item->window()) return;
         const auto point = item->mapToScene(QPointF(x < 0 ? item->width() / 2 : x,

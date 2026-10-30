@@ -9,6 +9,7 @@ TextField{
     property bool isWrap: false // 默认为非自动换行
     wrapMode: isWrap? TextEdit.Wrap : TextEdit.NoWrap // 自动换行((No)Warp)
     property bool highlightMacros: false
+    property int editorFontSize: 16
     verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
 
     color: Colors.text
@@ -26,8 +27,7 @@ TextField{
         idleOpacity: root.isWrap ? 0.50 : 0.36
     }
 
-    font.family: "Consolas"
-    font.pixelSize: 16
+    font: EditorFonts.mixedFont(Global.editorChineseFont, Global.editorLatinFont, editorFontSize)
 
     MacroTextOverlay {
         target: root
