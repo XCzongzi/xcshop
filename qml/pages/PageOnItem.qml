@@ -12,7 +12,11 @@ BaseIOPage {
     function elementReading() {
         if (!Array.isArray(eledata.operations) || eledata.cost !== undefined || eledata.trigger !== undefined)
             throw new Error("此页面只支持操作组格式，请使用新建项目");
-        eledata.itemSyntaxError = itemField.isSyntaxError(eledata.item);
+        var itemSyntaxError = itemField.isSyntaxError(eledata.item);
+        if (eledata.itemSyntaxError !== itemSyntaxError) {
+            eledata.itemSyntaxError = itemSyntaxError;
+            root.updateDataOut();
+        }
         displayMode.selected = eledata.display.mode === "additional" ? 1 : 0;
         displayElement.setElement(eledata.display.element, false);
         for (var i = 0; i < eledata.operations.length; ++i)

@@ -20,10 +20,19 @@ function highlight(source, palette, mode) {
         return colorText(source, palette.invalid)
     }
 
-    var state = { source: source, position: 0, output: "", bracketDepth: 0 }
+    // Macro values are only known at build time. Use same-length numeric
+    // placeholders for parsing (valid in IDs, keys, values and quantities),
+    // while rendering the original text. Match MacroHighlighter's macro rules.
+    var parseSource = source.replace(/\{\{([^{}\r\n]+)\}\}/g, function (macro, name, offset) {
+        if (offset > 0 && source.charAt(offset - 1) === "\\")
+            return macro
+        return macro.replace(/[^\r\n]/g, "0")
+    })
+    var state = { source: parseSource, position: 0, output: "", bracketDepth: 0, outputPosition: 0 }
 
     function append(value, color) {
-        state.output += colorText(value, color)
+        state.output += colorText(source.slice(state.outputPosition, state.outputPosition + value.length), color)
+        state.outputPosition += value.length
     }
 
     function skipWhitespace() {
@@ -213,7 +222,7 @@ function highlight(source, palette, mode) {
         return false
     }
 
-    var itemMatch = source.match(/^(?:#)?[a-z0-9_.-]+(?::[a-z0-9_+\-.\/]+)?/)
+    var itemMatch = state.source.match(/^(?:#)?[a-z0-9_.-]+(?::[a-z0-9_+\-.\/]+)?/)
     if (!itemMatch)
         return invalidText()
 
