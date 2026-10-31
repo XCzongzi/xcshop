@@ -16,8 +16,10 @@ BasePage {
     readonly property color ink: Colors.paletteText
     readonly property color mutedInk: Colors.paletteMutedText
     readonly property real coverHeight: Math.max(240, height - 142)
-    readonly property real expandedCoverHeight: Math.min(220, height * 0.32)
+    readonly property real expandedCoverHeight: coverHeight * 21 / 115
     readonly property real revealOffset: coverHeight - expandedCoverHeight
+    readonly property real coverScroll: Math.max(0, Math.min(view.contentY, revealOffset))
+    readonly property real headerOffset: Math.max(0, view.contentY - revealOffset)
     readonly property real pagePadding: width < 700 ? 24 : 48
     readonly property real columnWidth: Math.max(0, Math.min(880, width - pagePadding * 2))
     property bool expanded: false
@@ -113,7 +115,7 @@ BasePage {
         objectName: "aboutScrollView"
         anchors.fill: parent
         contentWidth: width
-        contentHeight: root.coverHeight + sheet.height
+        contentHeight: root.coverHeight + sheet.height + information.height + 40
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.VerticalFlick
         clip: true
@@ -148,6 +150,9 @@ BasePage {
         }
 
         Item {
+            objectName: "aboutCoverViewport"
+            y: root.headerOffset
+            z: 1
             width: view.width
             height: root.coverHeight
             clip: true
@@ -155,8 +160,8 @@ BasePage {
                 id: cover
                 objectName: "aboutCover"
                 width: parent.width; height: parent.height
-                // Keep the horizon visible as the cover scrolls away.
-                y: view.contentY * 0.5
+                // Stop the parallax together with the pinned cover.
+                y: root.coverScroll * 0.5
                 source: "qrc:/assets/backgrounds/麦田.png"
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
@@ -190,17 +195,21 @@ BasePage {
 
         Rectangle {
             id: sheet
-            objectName: "aboutInformation"
-            y: root.coverHeight
+            objectName: "aboutProfileHeader"
+            y: root.coverHeight + root.headerOffset
+            z: 2
             width: view.width
-            height: information.y + information.height + 40
+            height: identity.y + identity.height + 36
             color: root.sheetColor
+
+            // Keep scrolled links beneath the opaque profile from receiving clicks.
+            MouseArea { anchors.fill: parent }
 
             Rectangle {
                 id: avatar
                 objectName: "aboutAvatar"
                 x: (parent.width - width) / 2
-                y: -height * 2 / 3
+                y: -Math.min(height * 2 / 3, root.coverHeight - root.coverScroll)
                 width: 102; height: width; radius: width / 2
                 color: "#000000"
                 border.width: 5
@@ -214,6 +223,7 @@ BasePage {
             }
             Column {
                 id: identity
+                objectName: "aboutIdentity"
                 y: avatar.height / 3 + 12
                 width: root.columnWidth
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -233,91 +243,6 @@ BasePage {
                 }
             }
 
-            Column {
-                id: information
-                y: identity.y + identity.height + 36
-                width: root.columnWidth
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 28
-
-                Column {
-                    width: parent.width; spacing: 16
-                    SectionTitle { text: "软件信息" }
-                    Column {
-                        width: parent.width; spacing: 0
-                        Repeater {
-                            model: [
-                                { label: "软件版本", value: "v" + (Qt.application.version || "—") },
-                                { label: "软件用途", value: "Minecraft Java 版商店数据包编辑与构建" }
-                            ]
-                            delegate: Item {
-                                id: fact
-                                required property var modelData
-                                width: parent.width
-                                height: Math.max(42, factValue.implicitHeight + 22)
-                                AboutText { y: 11; width: 90; text: fact.modelData.label; color: root.mutedInk }
-                                AboutText { id: factValue; x: 104; y: 11; width: parent.width - x; text: fact.modelData.value }
-                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Colors.changeA(root.ink, 0.07) }
-                            }
-                        }
-                    }
-                }
-
-                Column {
-                    width: parent.width; spacing: 14
-                    SectionTitle { text: "开发者" }
-                    AboutText { text: "XCzongzi"; font.pixelSize: 16; font.weight: Font.DemiBold }
-                    AboutText { text: "小菜粽子"; color: root.mutedInk }
-                    Flow {
-                        width: parent.width; spacing: 12
-                        LinkCard {
-                            objectName: "aboutGithub"
-                            width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
-                            title: "GitHub"; subtitle: "@XCzongzi"
-                            iconSource: Colors.isLight ? "qrc:/assets/gui/brands/github-black.svg"
-                                                       : "qrc:/assets/gui/brands/github-white.svg"
-                            destination: "https://github.com/XCzongzi"
-                        }
-                        LinkCard {
-                            objectName: "aboutBilibili"
-                            width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
-                            title: "bilibili"; subtitle: "@小菜粽子"
-                            iconSource: "qrc:/assets/gui/brands/bilibili.svg"
-                            iconColor: "#00a1d6"
-                            destination: "https://space.bilibili.com/481184316"
-                        }
-                    }
-                }
-
-                Column {
-                    width: parent.width; spacing: 14
-                    SectionTitle { text: "赞助开发者" }
-                    AboutText { width: parent.width; text: "如果这个工具对你有帮助，欢迎支持我的开发。"; color: root.mutedInk }
-                    LinkCard {
-                        objectName: "aboutSponsor"
-                        width: parent.width
-                        sponsor: true; title: "在爱发电支持小菜粽子"
-                        subtitle: "感谢支持"
-                        iconSource: "qrc:/assets/gui/brands/afdian.png"
-                        destination: "https://afdian.com/a/xczongzi"
-                    }
-                    AboutText {
-                        width: parent.width; color: root.mutedInk; font.pixelSize: 12
-                        text: "赞助说明：赞助为自愿支持，不是购买软件或服务，不承诺更新频率、功能上线时间、定制开发或优先技术支持，请根据自身情况理性支持。"
-                    }
-                }
-
-                AboutText {
-                    visible: root.linkFeedback.length > 0
-                    width: parent.width; text: root.linkFeedback; color: Colors.warning
-                }
-                AboutText {
-                    width: parent.width; horizontalAlignment: Text.AlignHCenter
-                    text: "Made by XCzongzi."; color: root.mutedInk; font.pixelSize: 11
-                }
-            }
-
-            // Only the cover state needs this overlay; expanded links remain interactive.
             MouseArea {
                 objectName: "aboutRevealArea"
                 anchors.fill: parent
@@ -326,6 +251,93 @@ BasePage {
                 onClicked: root.revealInformation()
             }
         }
+
+        Column {
+            id: information
+            objectName: "aboutInformation"
+            y: root.coverHeight + sheet.height
+            width: root.columnWidth
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 28
+
+            Column {
+                width: parent.width; spacing: 16
+                SectionTitle { text: "软件信息" }
+                Column {
+                    width: parent.width; spacing: 0
+                    Repeater {
+                        model: [
+                            { label: "软件版本", value: "v" + (Qt.application.version || "—") },
+                            { label: "软件用途", value: "Minecraft Java 版商店数据包编辑与构建" }
+                        ]
+                        delegate: Item {
+                            id: fact
+                            required property var modelData
+                            width: parent.width
+                            height: Math.max(42, factValue.implicitHeight + 22)
+                            AboutText { y: 11; width: 90; text: fact.modelData.label; color: root.mutedInk }
+                            AboutText { id: factValue; x: 104; y: 11; width: parent.width - x; text: fact.modelData.value }
+                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Colors.changeA(root.ink, 0.07) }
+                        }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width; spacing: 14
+                SectionTitle { text: "开发者" }
+                AboutText { text: "XCzongzi"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                AboutText { text: "小菜粽子"; color: root.mutedInk }
+                Flow {
+                    width: parent.width; spacing: 12
+                    LinkCard {
+                        objectName: "aboutGithub"
+                        width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
+                        title: "GitHub"; subtitle: "@XCzongzi"
+                        iconSource: Colors.isLight ? "qrc:/assets/gui/brands/github-black.svg"
+                                                   : "qrc:/assets/gui/brands/github-white.svg"
+                        destination: "https://github.com/XCzongzi"
+                    }
+                    LinkCard {
+                        objectName: "aboutBilibili"
+                        width: parent.width < 540 ? parent.width : (parent.width - 12) / 2
+                        title: "bilibili"; subtitle: "@小菜粽子"
+                        iconSource: "qrc:/assets/gui/brands/bilibili.svg"
+                        iconColor: "#00a1d6"
+                        destination: "https://space.bilibili.com/481184316"
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width; spacing: 14
+                SectionTitle { text: "赞助开发者" }
+                AboutText { width: parent.width; text: "如果这个工具对你有帮助，欢迎支持我的开发。"; color: root.mutedInk }
+                LinkCard {
+                    objectName: "aboutSponsor"
+                    width: parent.width
+                    sponsor: true; title: "在爱发电支持小菜粽子"
+                    subtitle: "感谢支持"
+                    iconSource: "qrc:/assets/gui/brands/afdian.png"
+                    destination: "https://afdian.com/a/xczongzi"
+                }
+                AboutText {
+                    width: parent.width; color: root.mutedInk; font.pixelSize: 12
+                    text: "赞助说明：赞助为自愿支持，不是购买软件或服务，不承诺更新频率、功能上线时间、定制开发或优先技术支持，请根据自身情况理性支持。"
+                }
+            }
+
+            AboutText {
+                visible: root.linkFeedback.length > 0
+                width: parent.width; text: root.linkFeedback; color: Colors.warning
+            }
+            AboutText {
+                objectName: "aboutFooter"
+                width: parent.width; horizontalAlignment: Text.AlignHCenter
+                text: "Made by XCzongzi."; color: root.mutedInk; font.pixelSize: 11
+            }
+        }
+
     }
 
     NumberAnimation {
@@ -334,15 +346,6 @@ BasePage {
         duration: 520 / Global.animationSpeed
         easing.type: Easing.OutCubic
         onFinished: root.expanded = view.contentY > 1
-    }
-
-    // Give the fixed navigation its own surface once the photo leaves the viewport.
-    Rectangle {
-        width: parent.width
-        height: Constants.titleBarHeight + 64
-        color: root.sheetColor
-        opacity: Math.max(0, Math.min(1, (view.contentY - root.coverHeight + height) / 48))
-        visible: opacity > 0
     }
 
     ActionButton {

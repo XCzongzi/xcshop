@@ -10,6 +10,8 @@ Window {
     property int backEvents: 0
     property var appWindow: null
     property string savedBackground: ""
+    property var pinnedPositions: []
+    property real revealedInformationY: 0
     XCFile { id: results }
     Component.onCompleted: results.write(SMOKE_OUTPUT_DIR + "/about-test-result.txt", "RUNNING")
     Loader { id: loader; anchors.fill: parent; sourceComponent: about }
@@ -39,6 +41,28 @@ Window {
             result.saveToFile(SMOKE_OUTPUT_DIR + "/about-" + name + ".png")
         })
     }
+    function headerPositions(page) {
+        return ["aboutCover", "aboutAvatar", "aboutIdentity"].map(function(name) {
+            return root.find(page, name).mapToItem(page, 0, 0).y
+        })
+    }
+    function checkPinnedHeader(page) {
+        var cover = root.find(page, "aboutCoverViewport")
+        var coverBottom = cover.mapToItem(page, 0, cover.height).y
+        root.check(Math.abs(coverBottom - page.coverHeight * 21 / 115) < 0.1,
+                   "cover did not stop at 21/115 of its initial height: " + coverBottom)
+        var avatar = root.find(page, "aboutAvatar")
+        var identity = root.find(page, "aboutIdentity")
+        root.check(avatar.mapToItem(page, 0, 0).y >= -0.1, "pinned avatar is clipped")
+        root.check(identity.mapToItem(page, 0, identity.height).y < page.height, "pinned title is hidden")
+    }
+    function checkHeaderUnchanged(page) {
+        root.checkPinnedHeader(page)
+        var positions = root.headerPositions(page)
+        for (var i = 0; i < positions.length; i++)
+            root.check(Math.abs(positions[i] - root.pinnedPositions[i]) < 0.1,
+                       "header moved after reaching its minimum height: " + i)
+    }
     Timer {
         interval: 850; running: true; repeat: true
         onTriggered: {
@@ -57,10 +81,16 @@ Window {
                     root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1,
                                "click did not reveal profile: expanded=" + page.expanded + ", offset=" + view.contentY + ", expected=" + page.revealOffset)
                     root.check(!root.find(page, "aboutRevealArea").visible, "overlay still blocks links")
+                    root.checkPinnedHeader(page)
+                    root.pinnedPositions = root.headerPositions(page)
+                    root.revealedInformationY = root.find(page, "aboutInformation").mapToItem(page, 0, 0).y
                     root.capture("expanded-dark")
                     UiInput.wheel(view, -120)
                 } else if (root.stage === 2) {
                     root.check(view.contentY > page.revealOffset + 10, "normal wheel scrolling failed")
+                    root.checkHeaderUnchanged(page)
+                    root.check(root.find(page, "aboutInformation").mapToItem(page, 0, 0).y < root.revealedInformationY - 10,
+                               "information did not scroll beneath the fixed header")
                     root.check(String(root.find(page, "aboutGithub").destination) === "https://github.com/XCzongzi", "GitHub URL")
                     root.check(String(root.find(page, "aboutBilibili").destination) === "https://space.bilibili.com/481184316", "bilibili URL")
                     root.check(String(root.find(page, "aboutSponsor").destination) === "https://afdian.com/a/xczongzi", "sponsor URL")
@@ -71,6 +101,12 @@ Window {
                     UiInput.click(root.find(page, "aboutBack"))
                     root.check(root.backEvents === 1, "back event")
                 } else if (root.stage === 3) {
+                    root.checkHeaderUnchanged(page)
+                    var footer = root.find(page, "aboutFooter")
+                    var header = root.find(page, "aboutProfileHeader")
+                    root.check(footer.mapToItem(page, 0, 0).y >= header.mapToItem(page, 0, header.height).y,
+                               "fixed header prevents reaching the final content")
+                    root.check(footer.mapToItem(page, 0, footer.height).y <= page.height, "footer is outside the viewport")
                     UiInput.wheel(view, 12000)
                 } else if (root.stage === 4) {
                     root.check(view.contentY <= 1 && !page.expanded, "scrolling to the cover did not rearm reveal")
@@ -94,6 +130,7 @@ Window {
                     UiInput.wheel(view, -120)
                 } else if (root.stage === 10) {
                     root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1, "wheel did not reveal profile")
+                    root.checkPinnedHeader(page)
                     root.capture("expanded-light-small")
                     root.width = 480
                     view.contentY = view.contentHeight - view.height
@@ -102,6 +139,7 @@ Window {
                     var bilibili = root.find(page, "aboutBilibili")
                     root.check(bilibili.y > github.y && github.width <= page.width, "narrow cards did not stack")
                     root.check(view.contentY <= view.contentHeight - view.height + 1, "scroll exceeds content after resize")
+                    root.checkPinnedHeader(page)
                     view.contentY = view.contentHeight - view.height
                     root.capture("sponsor-light-narrow")
                 } else if (root.stage === 12) {
