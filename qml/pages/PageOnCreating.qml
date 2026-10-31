@@ -96,7 +96,7 @@ BasePage {
     }
 
     function createProject() {
-        if (!canCreate)
+        if (!canCreate || projectCreationSucceeded)
             return
 
         projectCreationSucceeded = false
@@ -126,28 +126,15 @@ BasePage {
             BuildKits.preferredTemplateId = currentTemplateId
             Global.saveSettings()
             projectCreationSucceeded = true
-            showProjectResult("创建成功", "项目已成功创建至：\n" + Global.project_location
-                                + "\n\n即将在工作区中打开项目")
+            Global.current_element = "Global"
+            pageEvent("Creating.projectCreated", { "name": name })
         } else {
             showProjectResult("创建失败", "无法创建项目目录或写入配置文件，请检查路径权限后重试。")
         }
     }
 
     function executeFromMain(type) {
-        if (type === "notice" && projectCreationSucceeded) {
-            controlsOpacity = 0
-            createdAnimation.start()
-        }
-    }
-
-    NumberAnimation {
-        id: createdAnimation
-        target: root
-        property: "x"
-        to: -root.width
-        duration: 650 / Global.animationSpeed
-        easing.type: Easing.InOutCubic
-        onFinished: root.pageEvent("Creating.projectCreated", {})
+        // Failure notices leave the form available for correction.
     }
 
     XCFile { id: xcFile }

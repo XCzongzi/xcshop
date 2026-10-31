@@ -85,6 +85,7 @@ qt_add_qml_module(appxcshop
         qml/components/settings/SettingsSection.qml
 
         qml/components/TitleBar.qml
+        qml/components/WorkspaceEntrance.qml
         qml/components/Border.qml
         qml/components/TypeBar.qml
         qml/components/ElementExplorer.qml
@@ -326,6 +327,11 @@ if(XCSHOP_BUILD_TESTS)
         FAIL_REGULAR_EXPRESSION "BUILD_KITS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
         TIMEOUT 25)
     add_test(NAME about_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME workspace_transition_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(workspace_transition_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/WorkspaceTransitionUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "WORKSPACE_TRANSITION_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 30)
     set_tests_properties(about_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/AboutUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "ABOUT_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"

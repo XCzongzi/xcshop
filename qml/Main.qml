@@ -117,6 +117,7 @@ XCWindow {
         Item {
             id: popupBlurSource
             anchors.fill: parent
+            opacity: workspaceEntrance.contentOpacity
             ShaderEffectSource {
                 // Keep the backdrop viewport fixed to the whole window surface.
                 // Only page content moves down when the titlebar is reserved.
@@ -289,6 +290,49 @@ XCWindow {
         readonly property bool workspaceChromeVisible: typeBar.isEnabled && Global.project_location.length > 0
         property int pageX: elementExplorer.x + elementExplorer.width
 
+        WorkspaceEntrance {
+            id: workspaceEntrance
+            parent: mainWindow.contentItem
+            x: mainWindow.margins
+            y: mainWindow.margins
+            width: mainWindow.surfaceWidth
+            height: mainWindow.surfaceHeight
+            z: 98
+            onCovered: {
+                opcAnim.stop()
+                if (closing) {
+                    // Unload the workspace before clearing its backing state.
+                    pageLoader.sourceComponent = null
+                    typeBar.disable(false)
+                    elementExplorer.barHide(false)
+                    elementExplorer.pendingFolder = ""
+                    elementRelayBar.endSelection()
+                    root.settingsFromWorkspace = false
+                    Global.project_location = ""
+                    Global.version = ""
+                    Global.current_fileLocation = ["", "", "", "", ""]
+                    Global.current_fileName = ["", "", "", "", ""]
+                    Global.uiCanvasViews = ({})
+                    Global.current_element = "Global"
+                    typeBar.currentType = 0
+                    mainWindow.titleBarColorFilling = false
+                    pageLoader.sourceComponent = Constants.pageOnStart
+                    return
+                }
+                Global.current_element = "Global"
+                typeBar.currentType = 0
+                typeBar.enable(false)
+                elementExplorer.barHide(false)
+                mainWindow.titleBarColorFilling = true
+                pageLoader.sourceComponent = Constants.pageOnTotal
+            }
+            onFinished: {
+                typeBar.freeze = false
+                freeze.visible = false
+                if (pageLoader.item) pageLoader.item.forceActiveFocus()
+            }
+        }
+
         Loader{
             id:pageLoader
             objectName: "mainPageLoader"
@@ -300,6 +344,7 @@ XCWindow {
             height: Math.max(0, root.height - y - elementRelayBar.height)
             width: aboutPage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
             z: 96
+            transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) }
             sourceComponent: Constants.pageOnStart
             onItemChanged: {
                 if (item)
@@ -356,8 +401,7 @@ XCWindow {
                         case "Start.":
                             switch(parameters.object){
                                 case "projectOpened":
-                                    typeBar.enable(false)
-                                    root.typeSwitch("Global", true)
+                                    workspaceEntrance.start(false, parameters.name)
                                 break;case "settings":
                                     root.settingsFromWorkspace = false
                                     pageLoader.pageSwitch(Constants.pageOnSettings)
@@ -379,11 +423,15 @@ XCWindow {
                         break
 
                         case "Creating.projectCreated":
-                            typeBar.enable(false)
-                            pageLoader.sourceComponent = Constants.pageOnTotal //取消销毁动画，以配合页面动画
+                            workspaceEntrance.start(true, parameters.name)
                         break
                         case "Creating.back":
                             pageLoader.pageSwitch(Constants.pageOnStart)
+                        break
+
+                        case "Project.close":
+                            if (Builder.running || workspaceEntrance.busy) return
+                            workspaceEntrance.start(false, String(pageLoader.item.projectData.name || "XCShop"), true)
                         break
 
                         case "Settings.back":

@@ -375,6 +375,7 @@ BasePage {
             templateOptions: root.templateOptions
             enabled: !root.building
             onEditRequested: root.editProject()
+            onCloseRequested: root.pageEvent("Project.close", {})
             onRevealRequested: function(path) {
                 if (!projectFile.revealInFileManager(path))
                     root.showNotice("无法打开目录", "目录不存在或暂时无法访问。")

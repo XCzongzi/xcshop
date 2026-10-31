@@ -9,6 +9,18 @@ BasePage {
     fullScreen: true
     readonly property real layoutExpansion: Math.max(0, Math.min(1, (height - 500) / 60, (width - 800) / 100))
     property bool creatingProject: false
+    property real creationProgress: creatingProject ? 1 : 0
+    Behavior on creationProgress {
+        NumberAnimation {
+            id: creationFade
+            duration: 280 / Global.animationSpeed
+            easing.type: Easing.InOutQuad
+            onFinished: {
+                if (root.creatingProject) creationPage.forceActiveFocus()
+                else mainContent.forceActiveFocus()
+            }
+        }
+    }
 
     XCFile { id: projectFile }
 
@@ -44,7 +56,7 @@ BasePage {
         Global.version = projectInfo.version ? String(projectInfo.version) : ""
         Global.current_element = "Global"
         Global.rememberProject(projectPath, projectInfo)
-        pageEvent("Start.", { "object": "projectOpened" })
+        pageEvent("Start.", { "object": "projectOpened", "name": String(projectInfo.name) })
     }
 
     function openCreation() {
@@ -331,6 +343,7 @@ BasePage {
 
             Item {
                 id: mainContent
+                objectName: "startActionsPanel"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: Constants.titleBarHeight + (24 + 20 * root.layoutExpansion)
@@ -338,16 +351,9 @@ BasePage {
                 anchors.bottomMargin: 24 + 16 * root.layoutExpansion
                 width: Math.min(460, Math.max(0, parent.width
                                               - (64 + 32 * root.layoutExpansion)))
-                opacity: root.creatingProject ? 0 : 1
-                enabled: !root.creatingProject
-                visible: opacity > 0.01
+                opacity: Math.max(0, 1 - root.creationProgress * 2)
+                visible: opacity > 0
 
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 160 / Global.animationSpeed
-                        easing.type: Easing.OutCubic
-                    }
-                }
 
                 Item {
                     id: startActions
@@ -391,23 +397,45 @@ BasePage {
 
             }
 
-            PageOnCreating {
-                id: creationPage
+            Item {
+                id: creationPanel
+                objectName: "startCreationPanel"
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.topMargin: Constants.titleBarHeight
                 z: 1
-                visible: root.creatingProject
-                // PageOnCreating is normally a top-level page.  Here it is
-                // created with the start page and simply hidden until needed.
-                fullScreen: false
-                mainWindow: root.mainWindow
-                backdropSource: startBackdrop
-                embeddedBackAction: function() {
-                    root.closeCreation()
+                visible: opacity > 0
+                opacity: Math.max(0, root.creationProgress * 2 - 1)
+                // Animate the wrapper so BasePage's own entrance cannot
+                // override the binding or delay the creation form's fade.
+                PageOnCreating {
+                    id: creationPage
+                    anchors.fill: parent
+                    // Keep the form alive to preserve inputs when going back.
+                    fullScreen: false
+                    mainWindow: root.mainWindow
+                    backdropSource: startBackdrop
+                    embeddedBackAction: function() {
+                        root.closeCreation()
+                    }
                 }
+            }
+
+            // Intercept input without putting the visible controls in a
+            // disabled visual state during the fade.
+            MouseArea {
+                objectName: "creationTransitionInputBlocker"
+                anchors.fill: parent
+                z: 2
+                visible: creationFade.running
+                hoverEnabled: true
+                focus: visible
+                onVisibleChanged: { if (visible) forceActiveFocus() }
+                onWheel: event => event.accepted = true
+                Keys.onPressed: event => event.accepted = true
+                Keys.onReleased: event => event.accepted = true
             }
 
             Connections {

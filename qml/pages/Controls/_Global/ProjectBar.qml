@@ -10,6 +10,7 @@ ContentBar {
     property var templateOptions: []
 
     signal editRequested
+    signal closeRequested
     signal revealRequested(string path)
 
     title: "当前项目"
@@ -102,6 +103,17 @@ ContentBar {
             y: outputLabel.y + 10
             height: 29
             spacing: 6
+
+            TextButton {
+                objectName: "closeProjectButton"
+                text: "关闭项目"
+                height: parent.height
+                radius: 6
+                textSize: 10
+                widthBorderSize: 8
+                buttonColor: Colors.changeA(Colors.pressed, 0.72)
+                onClicked: root.closeRequested()
+            }
 
             TextButton {
                 text: "打开目录"
