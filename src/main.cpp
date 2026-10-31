@@ -7,8 +7,12 @@
 #include "XCFile.h"
 #include "BuildKitManager.h"
 #include "BuildManager.h"
+#include "UpdateChecker.h"
+#include <QTimer>
 #ifdef XCSHOP_UI_TESTS
 #include "../tests/UiTestInput.h"
+#include "../tests/UpdateFeedFixture.h"
+#include <QDesktopServices>
 #include <QTemporaryDir>
 #include <QWindow>
 #include <QFontDatabase>
@@ -24,6 +28,20 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
     BuildKitManager buildKits;
     BuildManager builder;
+    UpdateChecker updates;
+    UpdateChecker *activeUpdates = &updates;
+#ifdef XCSHOP_UI_TESTS
+    std::unique_ptr<QTemporaryDir> updateTestDirectory;
+    std::unique_ptr<UpdateFeedFixture> updateFeed;
+    std::unique_ptr<UpdateChecker> testUpdates;
+    if (app.arguments().contains("--update-ui-smoke")) {
+        updateTestDirectory = std::make_unique<QTemporaryDir>();
+        updateFeed = std::make_unique<UpdateFeedFixture>();
+        testUpdates = std::make_unique<UpdateChecker>(updateFeed->url(), updateTestDirectory->filePath("state.ini"));
+        activeUpdates = testUpdates.get();
+        QDesktopServices::setUrlHandler("https", updateFeed.get(), "recordOpenedUrl");
+    }
+#endif
     QObject::connect(&builder, &BuildManager::runningChanged, &buildKits, &BuildKitManager::setBusy);
     QQmlApplicationEngine engine;
 
@@ -40,6 +58,10 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("DESKTOP_DIRPATH", desktopDir);
     engine.rootContext()->setContextProperty("BuildKits", &buildKits);
     engine.rootContext()->setContextProperty("Builder", &builder);
+    engine.rootContext()->setContextProperty("Updates", activeUpdates);
+#ifdef XCSHOP_UI_TESTS
+    if (updateFeed) engine.rootContext()->setContextProperty("UpdateFixture", updateFeed.get());
+#endif
 
 
     QObject::connect(
@@ -54,7 +76,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("UiInput", &uiTestInput);
     if (app.arguments().contains("--window-frame-tests"))
         return runWindowFrameTests(engine);
-    if (app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
+    if (app.arguments().contains("--update-ui-smoke") || app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
         || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")
         || app.arguments().contains("--dropdown-ui-smoke") || app.arguments().contains("--light-theme-ui-smoke")
         || app.arguments().contains("--themed-icon-ui-smoke") || app.arguments().contains("--explorer-ui-smoke")
@@ -67,7 +89,10 @@ int main(int argc, char *argv[])
         smokeDirectory = std::make_unique<QTemporaryDir>(appDir + "/ui-smoke-XXXXXX");
         engine.rootContext()->setContextProperty("SMOKE_DIR", smokeDirectory->path());
         engine.rootContext()->setContextProperty("SMOKE_OUTPUT_DIR", appDir);
-        if (app.arguments().contains("--editor-fonts-ui-smoke")) {
+        if (app.arguments().contains("--update-ui-smoke")) {
+            engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
+            engine.load(QUrl("qrc:/tests/UpdateUiSmoke.qml"));
+        } else if (app.arguments().contains("--editor-fonts-ui-smoke")) {
             engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
             engine.load(QUrl("qrc:/tests/EditorFontsUiSmoke.qml"));
         } else if (app.arguments().contains("--explorer-ui-smoke")) {
@@ -91,6 +116,12 @@ int main(int argc, char *argv[])
     } else
 #endif
     engine.loadFromModule("xcshop", "Main");
+
+    // Test entry points use isolated local fixtures instead of the public feed.
+#ifdef XCSHOP_UI_TESTS
+    if (app.arguments().size() == 1)
+#endif
+        QTimer::singleShot(1500, &updates, &UpdateChecker::check);
 
 #ifdef XCSHOP_UI_TESTS
     if (app.arguments().contains("--startup-smoke")) {

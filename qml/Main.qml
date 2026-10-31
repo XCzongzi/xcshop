@@ -9,6 +9,12 @@ XCWindow {
     id: mainWindow
     property bool closeAfterBuild: false
     property bool closeQuestionShown: false
+    property bool pendingUpdateNotice: false
+
+    Connections {
+        target: Updates
+        function onStartupUpdateAvailable() { mainWindow.pendingUpdateNotice = true }
+    }
 
     onClosing: function(event) {
         if (!Builder.running) return
@@ -57,6 +63,45 @@ XCWindow {
         // 所有模态弹窗均从这里进入。弹窗组件只需提供 close(result) 函数并发出 closed(result) 信号。
         function showPopup(component, properties, callback) {
             popup.open(component, properties, callback)
+        }
+
+        function showUpdateDialog() {
+            if (!Updates.updateAvailable || popup.active) return
+            mainWindow.pendingUpdateNotice = false
+            var version = Updates.latestVersion
+            var destination = Updates.releaseUrl
+            root.showPopup(Constants.popupNotice, {
+                "objectName": "updateNotice",
+                "title": "发现新版本 v" + version,
+                "content": "当前版本：v" + Qt.application.version + "\n最新版本：v" + version
+                           + "\n\n" + (Updates.releaseNotes || "查看发布页面，了解本次更新内容。")
+                           + "\n\n关闭后，此版本将不再自动提醒；仍可在关于页查看。",
+                "dialogWidth": 560,
+                "dialogHeight": 420,
+                "doubleButton": true,
+                "cancelText": "关闭",
+                "confirmText": "查看更新"
+            }, function(result) {
+                if (result === 0) {
+                    Updates.dismissVersion(version)
+                } else if (result === 1 && !Qt.openUrlExternally(destination)) {
+                    root.showPopup(Constants.popupNotice, {
+                        "title": "无法打开浏览器",
+                        "content": "请手动访问：\n" + destination
+                    })
+                }
+            })
+        }
+
+        // Do not replace another dialog or interrupt a running build.
+        Timer {
+            interval: 250
+            repeat: true
+            running: mainWindow.pendingUpdateNotice
+            onTriggered: {
+                if (!popup.active && !Builder.running && !mainWindow.closeQuestionShown)
+                    root.showUpdateDialog()
+            }
         }
 
         // 独立的背景与页面内容层，不包含弹窗，供磨砂面板安全取样。
@@ -318,6 +363,9 @@ XCWindow {
                         break
                         case "Popup.close":
                             popup.close(parameters.result)
+                        break
+                        case "Updates.show":
+                            root.showUpdateDialog()
                         break
 
                         case "Creating.projectCreated":

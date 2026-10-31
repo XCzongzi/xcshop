@@ -64,10 +64,48 @@ BasePage {
         id: fact
         required property string label
         required property string value
+        property bool showUpdate: false
         implicitHeight: Math.max(42, factValue.implicitHeight + 22)
         height: implicitHeight
         AboutText { y: 11; width: 90; text: fact.label; color: root.mutedInk }
-        AboutText { id: factValue; x: 104; y: 11; width: Math.max(0, parent.width - x); text: fact.value }
+        AboutText {
+            id: factValue
+            x: 104; y: 11
+            width: Math.max(0, parent.width - x - (fact.showUpdate ? updateBadge.width + 6 : 0))
+            text: fact.value
+            wrapMode: fact.showUpdate ? Text.NoWrap : Text.Wrap
+            elide: Text.ElideRight
+        }
+        Controls.AbstractButton {
+            id: updateBadge
+            objectName: "aboutUpdateBadge"
+            visible: fact.showUpdate
+            x: factValue.x + Math.min(factValue.implicitWidth, factValue.width) + 6
+            y: 5
+            width: implicitWidth
+            implicitWidth: badgeLabel.implicitWidth + 8
+            implicitHeight: 30
+            hoverEnabled: true
+            Accessible.name: "有新版本，查看更新"
+            onClicked: root.pageEvent("Updates.show", {})
+            background: Rectangle {
+                radius: 5
+                color: Colors.changeA(Colors.accentText, updateBadge.down ? 0.20 : updateBadge.hovered ? 0.13 : 0.07)
+                border.width: updateBadge.activeFocus ? 1 : 0
+                border.color: Colors.accentText
+            }
+            contentItem: AboutText {
+                id: badgeLabel
+                text: "[有新版本]"
+                color: Colors.accentText
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.NoWrap
+            }
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
+        }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Colors.changeA(root.ink, 0.07) }
     }
 
@@ -284,6 +322,7 @@ BasePage {
                             objectName: "aboutSoftwareVersion"
                             width: (parent.width - parent.spacing) / 2
                             label: "软件版本"; value: "v" + (Qt.application.version || "—")
+                            showUpdate: Updates.updateAvailable
                         }
                         AboutFact {
                             objectName: "aboutDataVersionLimit"

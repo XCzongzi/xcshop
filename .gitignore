@@ -20,6 +20,7 @@
 
 # Local application data
 /settings.json
+/update-state.ini
 /item-mappings.json
 
 # Keep generated Minecraft assets and caches local; include only bundled GUI images.

@@ -33,6 +33,8 @@ qt_add_executable(appxcshop
     src/BuildKitManager.cpp
     src/BuildManager.cpp
     src/WindowStateController.cpp
+    src/UpdateChecker.cpp
+    header/UpdateChecker.h
 )
 
 
@@ -272,6 +274,10 @@ option(XCSHOP_BUILD_TESTS "Build editor integration tests" OFF)
 if(XCSHOP_BUILD_TESTS)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
+    qt_add_executable(update_checker_tests tests/UpdateCheckerTests.cpp tests/UpdateFeedFixture.h
+        src/UpdateChecker.cpp header/UpdateChecker.h)
+    target_link_libraries(update_checker_tests PRIVATE Qt6::Network Qt6::Test)
+    add_test(NAME update_checker_tests COMMAND update_checker_tests)
     qt_add_executable(editor_backend_tests tests/EditorBackendTests.cpp
         src/BuildKitManager.cpp header/BuildKitManager.h src/BuildManager.cpp header/BuildManager.h)
     target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test)
@@ -283,7 +289,7 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME minecraft_import_tests COMMAND minecraft_import_tests)
     set_tests_properties(minecraft_import_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1")
     target_compile_definitions(appxcshop PRIVATE XCSHOP_UI_TESTS=1)
-    target_sources(appxcshop PRIVATE tests/UiTestInput.h tests/WindowFrameTests.cpp)
+    target_sources(appxcshop PRIVATE tests/UiTestInput.h tests/WindowFrameTests.cpp tests/UpdateFeedFixture.h)
     target_link_libraries(appxcshop PRIVATE Qt6::Test)
     if(WIN32)
         target_link_libraries(appxcshop PRIVATE user32)
@@ -294,7 +300,12 @@ if(XCSHOP_BUILD_TESTS)
             RUN_SERIAL TRUE
             TIMEOUT 60)
     endif()
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml tests/UpdateUiSmoke.qml)
+    add_test(NAME update_ui_smoke COMMAND appxcshop --update-ui-smoke)
+    set_tests_properties(update_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
+        FAIL_REGULAR_EXPRESSION "UPDATE_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 30)
     add_test(NAME editor_fonts_ui_smoke COMMAND appxcshop --editor-fonts-ui-smoke)
     set_tests_properties(editor_fonts_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
