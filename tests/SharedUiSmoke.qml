@@ -16,6 +16,7 @@ Window {
     property bool capturePending: false
     property bool checkingFocus: false
     property string project: SMOKE_DIR + "/shared-ui"
+    TextMetrics { id: wrapMetrics }
     XCFile {
         id: file
     }
@@ -48,6 +49,10 @@ Window {
                 objectName: "area"
                 width: 500
                 height: 128
+            }
+            XCTextField {
+                objectName: "singleLineField"
+                width: 500
             }
             XCComboBox {
                 id: selectionSample
@@ -114,6 +119,130 @@ Window {
             return item.placeholderText === (valueField ? "值" : "参数名")
                     && item.parent.index === index
         })
+    }
+    function checkLongSelection(editor, syntaxMode) {
+        editor.highlightMacros = true
+        if (editor.syntaxHighlightMode !== undefined)
+            editor.syntaxHighlightMode = syntaxMode
+        var input = editor.input || editor
+        input.selectByMouse = true
+        var body = ("stone {{price}} 中文🙂 long text ").repeat(80)
+        var source = syntaxMode === 1 ? "minecraft:stone{display:{Name:'" + body + "'}} 64"
+                   : syntaxMode === 2 ? "minecraft:stone[minecraft:custom_name='" + body + "'] 64"
+                   : body
+        if (editor.setContent)
+            editor.setContent(source)
+        else
+            input.text = source
+        input.forceActiveFocus()
+        input.cursorPosition = source.length
+        UiInput.settle(40)
+        var origin = input.positionToRectangle(0)
+        if (input.autoScroll !== undefined)
+            check(origin.y < input.topPadding || origin.x < input.leftPadding,
+                  "Long input did not auto-scroll: " + editor.objectName + "/" + syntaxMode)
+        else
+            check(input.contentHeight > input.height, "Multiline sample did not overflow")
+        var macroPosition = source.indexOf("{{price}}")
+        check(Qt.colorEqual(UiInput.textFormatColor(input, macroPosition), Colors.error),
+              "Macro colour is missing from the input's actual text layout")
+        if (syntaxMode)
+            check(Qt.colorEqual(UiInput.textFormatColor(input, 0), editor.itemIdColor),
+                  "Syntax colour is missing while editing")
+        UiInput.dragSelect(input, input.width - input.rightPadding - 5,
+                           input.height - input.bottomPadding - 5,
+                           input.leftPadding + 5, input.topPadding + 5)
+        check(input.selectedText.length > 0, "Mouse drag failed to select long input: "
+              + editor.objectName + "/" + syntaxMode + " cursor=" + input.cursorPosition
+              + " origin=" + input.positionToRectangle(0))
+        check(Qt.colorEqual(UiInput.textFormatColor(input, macroPosition), Colors.error),
+              "Selecting text removed macro colours")
+        if (syntaxMode)
+            check(Qt.colorEqual(UiInput.textFormatColor(input, 0), editor.itemIdColor),
+                  "Selecting text removed syntax colours")
+        check(Qt.colorEqual(input.color, Colors.text), "Selection hid unselected text")
+        check(input.text === source, "Selection changed input contents")
+        input.deselect()
+        UiInput.settle(30)
+        input.cursorPosition = macroPosition
+        UiInput.settle(30)
+        var before = input.positionToRectangle(macroPosition)
+        var ranges = input.highlightRanges
+        input.highlightRanges = []
+        input.highlightMacros = false
+        UiInput.settle(30)
+        var plain = input.positionToRectangle(macroPosition)
+        check(Math.abs(before.x - plain.x) < 0.1 && Math.abs(before.y - plain.y) < 0.1,
+              "Highlighting moved the text layout or cursor")
+        input.highlightRanges = syntaxMode
+                ? Qt.binding(function() { return editor.createHighlightRanges(input.text) })
+                : ranges
+        input.highlightMacros = true
+        UiInput.preedit(input, "中")
+        UiInput.settle(30)
+        check(input.inputMethodComposing && input.text === source,
+              "Highlighting changed uncommitted input-method text")
+        UiInput.commitText(input, "中")
+        UiInput.settle(30)
+        check(input.text === source.slice(0, macroPosition) + "中" + source.slice(macroPosition),
+              "Input-method commit changed surrounding text")
+        check(Qt.colorEqual(UiInput.textFormatColor(input, macroPosition + 1), Colors.error),
+              "Macro colour was lost after editing")
+        input.undo()
+        UiInput.settle(30)
+        check(input.text === source, "Highlighting broke undo")
+    }
+    function checkWrappedLineEnds(editor, syntaxMode, width, fontSize) {
+        editor.width = width
+        editor.height = 320
+        if (editor.syntaxHighlightMode !== undefined)
+            editor.syntaxHighlightMode = syntaxMode
+        var input = editor.input
+        input.editorFontSize = fontSize
+        input.selectByMouse = true
+        var source = 'command_block[custom_name={"text":"执行函数实例","color":"white","italic":false},lore=[{"text":"调用菜单刷新函数","color":"gray","italic":false}]] 1'
+        editor.setContent(source)
+        input.forceActiveFocus()
+        input.cursorPosition = 0
+        UiInput.settle(150)
+        var rows = []
+        for (var i = 0; i + 1 < source.length; ++i) {
+            var before = input.positionToRectangle(i)
+            var after = input.positionToRectangle(i + 1)
+            if (before.y === after.y)
+                continue
+            // TextInput's positionToRectangle omits padding; TextEdit includes it.
+            if (input.autoScroll !== undefined) {
+                before.x += input.leftPadding
+                before.y += input.topPadding
+            }
+            wrapMetrics.font = input.font
+            wrapMetrics.text = source.charAt(i)
+            var right = before.x + wrapMetrics.advanceWidth
+            root.check(input.width - input.rightPadding - right < fontSize * 1.5,
+                       "Soft wrapping left a large unused gap: " + editor.objectName + "/" + width)
+            rows.push({start: i, end: i + 1, x: before.x, y: before.y + before.height / 2})
+        }
+        root.check(rows.length > 0, "Boundary sample did not wrap")
+        for (var row of rows) {
+            var rightEdge = input.width - 1
+            UiInput.click(input, rightEdge, row.y)
+            UiInput.settle(20)
+            root.check(input.cursorPosition === row.end,
+                       "Clicking beyond a soft line end missed its last character: " + editor.objectName)
+            UiInput.dragSelect(input, row.x + 0.5, row.y, rightEdge, row.y)
+            UiInput.settle(20)
+            root.check(input.selectedText === source.slice(row.start, row.end),
+                       "Mouse drag could not select just the final character: " + editor.objectName)
+            UiInput.key(input, Qt.Key_Backspace)
+            UiInput.settle(20)
+            root.check(input.text === source.slice(0, row.start) + source.slice(row.end),
+                       "Editing the final character changed a neighbouring character")
+            input.undo()
+            UiInput.settle(20)
+            root.check(input.text === source, "Line-end editing broke undo")
+            input.deselect()
+        }
     }
     function checkMacroFocus() {
         var firstName = macroInput(0, false), firstValue = macroInput(0, true)
@@ -322,6 +451,15 @@ Window {
                     Colors.setThemeColor("#2f8cff")
                     break
                 case 1:
+                    root.checkingFocus = true
+                    root.checkLongSelection(root.find("field"), 1)
+                    root.checkLongSelection(root.find("field"), 2)
+                    root.checkLongSelection(root.find("area"), 0)
+                    root.checkLongSelection(root.find("singleLineField"), 0)
+                    root.checkWrappedLineEnds(root.find("field"), 2, 500, 16)
+                    root.checkWrappedLineEnds(root.find("field"), 2, 1016, 22)
+                    root.checkWrappedLineEnds(root.find("area"), 0, 500, 16)
+                    root.checkingFocus = false
                     for (var name of ["field", "area"]) {
                         var editor = root.find(name)
                         editor.setContent("首行\n{{宏}}")

@@ -19,6 +19,14 @@ function highlight(source, mode, palette, modeHandlers, parser) {
     return handler ? handler.highlight(source, palette, parser) : invalidText(source, palette)
 }
 
+function ranges(source, mode, palette, modeHandlers, parser) {
+    if (mode === 0)
+        return []
+    var handler = modeHandlers[mode]
+    return handler ? handler.highlight(source, palette, parser, true)
+                   : [{start: 0, length: source.length, color: palette.invalid}]
+}
+
 // Keep validation tied to the highlighter's visible contract: a non-empty
 // value is considered erroneous exactly when the selected mode paints the
 // entire editor with the invalid color.

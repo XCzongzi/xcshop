@@ -5,10 +5,12 @@ import xcshop
 TextField{
     id: root
     height: 32
+    clip: true
 
     property bool isWrap: false // 默认为非自动换行
-    wrapMode: isWrap? TextEdit.Wrap : TextEdit.NoWrap // 自动换行((No)Warp)
+    wrapMode: isWrap ? TextInput.WrapAnywhere : TextInput.NoWrap
     property bool highlightMacros: false
+    property var highlightRanges: []
     property int editorFontSize: 16
     verticalAlignment: isWrap? TextInput.AlignTop : TextInput.AlignVCenter
 
@@ -29,9 +31,11 @@ TextField{
 
     font: EditorFonts.mixedFont(Global.editorChineseFont, Global.editorLatinFont, editorFontSize)
 
-    MacroTextOverlay {
+    EditorHighlighter {
         target: root
+        ranges: root.highlightRanges
         highlightMacros: root.highlightMacros
+        macroColor: Colors.error
     }
 
 }

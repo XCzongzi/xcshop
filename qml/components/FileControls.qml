@@ -106,21 +106,31 @@ PanelSurface {
             contentItem: Item {
                 Canvas {
                     anchors.centerIn: parent
-                    width: 12
-                    height: 14
+                    width: 16
+                    height: 18
                     property color glyphColor: quickBuildButton.enabled ? Colors.accentText : Colors.banned
                     opacity: quickBuildButton.enabled ? 1 : 0.45
                     onGlyphColorChanged: requestPaint()
                     onPaint: {
                         var context = getContext("2d")
                         context.clearRect(0, 0, width, height)
-                        context.fillStyle = glyphColor
+                        context.save()
+                        context.scale(width / 12, height / 14)
+                        context.strokeStyle = glyphColor
+                        context.lineWidth = 1.5
+                        context.lineJoin = "round"
+                        context.lineCap = "round"
                         context.beginPath()
-                        context.moveTo(2, 1)
-                        context.lineTo(11, 7)
-                        context.lineTo(2, 13)
+                        context.moveTo(3.2, 1.8)
+                        context.lineTo(10, 6.2)
+                        context.quadraticCurveTo(11.2, 7, 10, 7.8)
+                        context.lineTo(3.2, 12.2)
+                        context.quadraticCurveTo(2, 13, 2, 11.6)
+                        context.lineTo(2, 2.4)
+                        context.quadraticCurveTo(2, 1, 3.2, 1.8)
                         context.closePath()
-                        context.fill()
+                        context.stroke()
+                        context.restore()
                     }
                 }
             }

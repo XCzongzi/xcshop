@@ -5,12 +5,15 @@ import xcshop
 TextArea{
     id: root
     height: 32
+    clip: true
 
     signal accepted
     property bool highlightMacros: false
+    property var highlightRanges: []
     property int editorFontSize: 16
 
-    wrapMode: TextEdit.Wrap
+    wrapMode: TextEdit.WrapAnywhere
+    textFormat: TextEdit.PlainText
 
     color: Colors.text
     selectionColor: Colors.selection
@@ -28,9 +31,11 @@ TextArea{
 
     font: EditorFonts.mixedFont(Global.editorChineseFont, Global.editorLatinFont, editorFontSize)
 
-    MacroTextOverlay {
+    EditorHighlighter {
         target: root
+        ranges: root.highlightRanges
         highlightMacros: root.highlightMacros
+        macroColor: Colors.error
     }
 
     Keys.onPressed:event=>{

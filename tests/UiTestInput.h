@@ -10,6 +10,10 @@
 #include <QVariantMap>
 #include <QTextLayout>
 #include <QWheelEvent>
+#include <QInputMethodEvent>
+#include <QQuickTextDocument>
+#include <QTextBlock>
+#include <QtQuick/private/qquicktextinput_p_p.h>
 
 // Send actual window events so smoke tests exercise native control behavior.
 class UiTestInput : public QObject {
@@ -36,6 +40,49 @@ public:
     Q_INVOKABLE void key(QQuickItem *item, int key, int modifiers = 0) {
         if (item && item->window())
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
+    }
+    Q_INVOKABLE void dragSelect(QQuickItem *item, qreal fromX, qreal fromY,
+                                qreal toX, qreal toY) {
+        if (!item || !item->window()) return;
+        const auto start = item->mapToScene(QPointF(fromX, fromY));
+        const auto end = item->mapToScene(QPointF(toX, toY));
+        QTest::mousePress(item->window(), Qt::LeftButton, Qt::NoModifier, start.toPoint());
+        for (int step = 1; step <= 12; ++step) {
+            QTest::mouseMove(item->window(), (start + (end - start) * (step / 12.0)).toPoint());
+            QTest::qWait(15);
+        }
+        QTest::mouseRelease(item->window(), Qt::LeftButton, Qt::NoModifier, end.toPoint());
+    }
+    Q_INVOKABLE QColor textFormatColor(QObject *item, int position) {
+        if (!item) return {};
+        QList<QTextLayout::FormatRange> ranges;
+        if (auto *input = qobject_cast<QQuickTextInput *>(item)) {
+            ranges = QQuickTextInputPrivate::get(input)->m_textLayout.formats();
+        } else if (auto *document = qvariant_cast<QQuickTextDocument *>(item->property("textDocument"))) {
+            const auto block = document->textDocument()->findBlock(position);
+            if (!block.isValid()) return {};
+            ranges = block.layout()->formats();
+            position -= block.position();
+        }
+        QColor color;
+        for (const auto &range : ranges)
+            if (range.start <= position && position < range.start + range.length
+                && range.format.hasProperty(QTextFormat::ForegroundBrush))
+                color = range.format.foreground().color();
+        return color;
+    }
+    Q_INVOKABLE void preedit(QQuickItem *item, const QString &text) {
+        if (!item) return;
+        QTextCharFormat format;
+        format.setUnderlineStyle(QTextCharFormat::DashUnderline);
+        QInputMethodEvent event(text, {{QInputMethodEvent::TextFormat, 0, int(text.size()), format}});
+        QCoreApplication::sendEvent(item, &event);
+    }
+    Q_INVOKABLE void commitText(QQuickItem *item, const QString &text) {
+        if (!item) return;
+        QInputMethodEvent event;
+        event.setCommitString(text);
+        QCoreApplication::sendEvent(item, &event);
     }
     Q_INVOKABLE void wheel(QQuickItem *item, int delta) {
         if (!item || !item->window()) return;

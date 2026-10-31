@@ -22,6 +22,15 @@ function check(source, mode, invalid) {
     const rendered = highlighter.highlight(source, mode, palette, modes, parser);
     const escaped = rendered.replace(/<\/?font\b[^>]*>/g, '');
     assert.equal(escaped, parser.escapeHtml(source), 'Highlighting must preserve the original input');
+    const ranges = highlighter.ranges(source, mode, palette, modes, parser);
+    let position = 0;
+    const formatted = ranges.map(range => {
+        assert.equal(range.start, position, 'Native colours must address the original UTF-16 positions');
+        position += range.length;
+        return parser.colorText(source.slice(range.start, position), range.color);
+    }).join('');
+    assert.equal(position, source.length, 'Native ranges must cover the original text');
+    assert.equal(formatted, rendered, 'Native colours must agree with the syntax parser');
 }
 
 for (const mode of [1, 2]) {
@@ -36,6 +45,7 @@ for (const mode of [1, 2]) {
 }
 
 for (const source of ['minecraft:stone{Count:{{数量}}} {{总数}}',
+    'minecraft:stone{display:{Name:"中文🙂\t<>&",Lore:["首行\\n次行"]}}',
     '{{物品}}{display:{Name:\'{{名称}}\'},{{键}}:[{{值}},2]}',
     'minecraft:stone{display:{Name:\'{{含"引号的宏}}\'}}'])
     check(source, 1, false);
@@ -44,6 +54,7 @@ for (const source of ['{{item}}{Count:{{count}},}', '{{item}}{Count:}',
     check(source, 1, true);
 
 for (const source of ['minecraft:stone[minecraft:damage={{损伤}}] {{数量}}',
+    'minecraft:stone[minecraft:custom_name="中文🙂\t<>&"]',
     '{{item}}[{{component}}={{value}},minecraft:custom_data={key:[{{value}},2]}]',
     'minecraft:stone[minecraft:custom_name=\'{{名称}}\']'])
     check(source, 2, false);

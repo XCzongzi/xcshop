@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickPrivate QuickControls2 Network Concurrent)
 
 # Prefer system zlib; official Windows Qt kits expose their bundled copy.
 find_package(ZLIB QUIET)
@@ -110,7 +110,6 @@ qt_add_qml_module(appxcshop
         qml/components/base/TextButton.qml
         qml/components/base/XCText.qml
         qml/components/base/XCTextField.qml
-        qml/components/base/MacroTextOverlay.qml
         qml/components/base/XCCheckBox.qml
         qml/components/base/XCSlider.qml
         qml/components/base/BooleanSwitch.qml
@@ -216,6 +215,8 @@ qt_add_qml_module(appxcshop
 
         header/XCFile.h
         header/EditorFonts.h
+        header/EditorHighlighter.h
+        src/EditorHighlighter.cpp
         header/MinecraftAssetImporter.h
         header/MinecraftImportSupport.h
         header/ElementIO.h
@@ -233,7 +234,7 @@ set_target_properties(appxcshop PROPERTIES
 )
 
 target_link_libraries(appxcshop
-    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Concurrent xcshop_kit_archive
+    PRIVATE Qt6::Quick Qt6::QuickPrivate Qt6::QuickControls2 Qt6::Network Qt6::Concurrent xcshop_kit_archive
 )
 target_compile_definitions(appxcshop PRIVATE XCSHOP_VERSION="${PROJECT_VERSION}")
 

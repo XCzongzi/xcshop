@@ -15,9 +15,10 @@ function colorText(value, color) {
     return "<font color=\"" + color + "\">" + escapeHtml(value) + "</font>"
 }
 
-function highlight(source, palette, mode) {
+function highlight(source, palette, mode, asRanges) {
     function invalidText() {
-        return colorText(source, palette.invalid)
+        return asRanges ? [{start: 0, length: source.length, color: palette.invalid}]
+                        : colorText(source, palette.invalid)
     }
 
     // Macro values are only known at build time. Use same-length numeric
@@ -28,10 +29,13 @@ function highlight(source, palette, mode) {
             return macro
         return macro.replace(/[^\r\n]/g, "0")
     })
-    var state = { source: parseSource, position: 0, output: "", bracketDepth: 0, outputPosition: 0 }
+    var state = { source: parseSource, position: 0, output: "", ranges: [], bracketDepth: 0, outputPosition: 0 }
 
     function append(value, color) {
-        state.output += colorText(source.slice(state.outputPosition, state.outputPosition + value.length), color)
+        if (asRanges)
+            state.ranges.push({start: state.outputPosition, length: value.length, color: color})
+        else
+            state.output += colorText(source.slice(state.outputPosition, state.outputPosition + value.length), color)
         state.outputPosition += value.length
     }
 
@@ -242,10 +246,10 @@ function highlight(source, palette, mode) {
 
     var rest = state.source.slice(state.position)
     if (!rest.length)
-        return state.output
+        return asRanges ? state.ranges : state.output
     if (/^\s+$/.test(rest)) {
         append(rest, palette.plain)
-        return state.output
+        return asRanges ? state.ranges : state.output
     }
 
     var countMatch = rest.match(/^(\s+)(\d+)$/)
@@ -253,5 +257,5 @@ function highlight(source, palette, mode) {
         return invalidText()
     append(countMatch[1], palette.plain)
     append(countMatch[2], palette.quantity)
-    return state.output
+    return asRanges ? state.ranges : state.output
 }

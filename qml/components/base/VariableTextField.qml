@@ -18,7 +18,7 @@ ResizableEditor {
     property string placeholderText
     readonly property bool syntaxError: isSyntaxError(textField.text)
 
-    // 语法覆盖层独立适配浅/深背景：浅色使用更深的墨色，深色使用高亮但不过曝的粉彩。
+    // 浅色背景使用更深的墨色，深色背景使用粉彩。
     readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126
                                                + Colors.background_n.g * 0.7152
                                                + Colors.background_n.b * 0.0722) > 0.58
@@ -67,30 +67,11 @@ ResizableEditor {
                                                 ItemSyntaxParser)
     }
 
-    Text {
-        id: syntaxOverlay
-        visible: root.syntaxHighlightMode !== 0 && textField.text.length > 0
-        z: 1
-        x: textField.leftPadding
-        y: textField.topPadding
-        width: textField.width - textField.leftPadding - textField.rightPadding
-        height: textField.height - textField.topPadding - textField.bottomPadding
-        clip: true
-        text: root.createHighlightedText(textField.text)
-        textFormat: Text.RichText
-        wrapMode: Text.WrapAnywhere
-        color: Colors.text
-        font: textField.font
-    }
-
-    Rectangle {
-        visible: root.syntaxHighlightMode !== 0 && textField.activeFocus
-        z: 3
-        x: textField.x + textField.leftPadding + textField.positionToRectangle(textField.cursorPosition).x
-        y: textField.y + textField.topPadding + textField.positionToRectangle(textField.cursorPosition).y
-        width: 1
-        height: textField.font.pixelSize + 2
-        color: Colors.text
+    function createHighlightRanges(source) {
+        syntaxPaletteRevision
+        return ItemSyntaxHighlighter.ranges(source, syntaxHighlightMode,
+                                           syntaxPalette(), syntaxHighlighters,
+                                           ItemSyntaxParser)
     }
 
     XCTextField {
@@ -100,12 +81,8 @@ ResizableEditor {
         width: parent.width
         height: root.inputHeight
         placeholderText: root.placeholderText
-        color: root.syntaxHighlightMode === 0 ? Colors.text : Colors.transparent
-        onEditingFinished: root.commit()
-    }
-
-    MacroTextOverlay {
-        target: textField
+        highlightRanges: root.createHighlightRanges(text)
         highlightMacros: root.highlightMacros
+        onEditingFinished: root.commit()
     }
 }
