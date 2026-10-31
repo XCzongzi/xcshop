@@ -29,6 +29,8 @@ public:
     Q_INVOKABLE void toggleMaximized(int duration = 240);
     Q_INVOKABLE void finishTransition();
     Q_INVOKABLE void minimize();
+    Q_INVOKABLE void saveState(const QString &path);
+    Q_INVOKABLE void restoreState(const QString &path);
 
 signals:
     void windowChanged();

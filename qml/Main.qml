@@ -7,9 +7,16 @@ import xcshop 1.0
 
 XCWindow {
     id: mainWindow
+    visible: false
+    readonly property string windowStatePath: APP_DIRPATH + "/window-state.ini"
     property bool closeAfterBuild: false
     property bool closeQuestionShown: false
     property bool pendingUpdateNotice: false
+
+    Connections {
+        target: Qt.application
+        function onAboutToQuit() { mainWindow.saveWindowState(mainWindow.windowStatePath) }
+    }
 
     Connections {
         target: Updates
@@ -39,6 +46,9 @@ XCWindow {
     }
 
     Component.onCompleted: {
+        restoreWindowState(windowStatePath)
+        if (expanded) showMaximized()
+        else showNormal()
         Global.loadSettings()
         //连接信号
         SignalBus.sendToMain.connect(root.signalReceive)

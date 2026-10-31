@@ -28,6 +28,8 @@ Minecraft 版本适配由所选套件、构建器和资源格式共同决定。�
 
 ## 源码与许可证
 
+Copyright © 2026 XCzongzi. 版权所有。
+
 编辑器原创代码采用 **GNU GPL 第 3 版（GPL-3.0-only），附独立构建器互操作额外许可**。GPL 全文见 [LICENSE](LICENSE)，适用范围和额外许可见 [LICENSING.md](LICENSING.md)。
 
 独立的 `xcshop-builder` 构建器保持闭源，源码不包含在本仓库中，其使用与再分发以构建器单独提供的许可为准。Qt、Minecraft 素材、社媒标识及其他第三方内容保留各自的权利与许可，不会因为编辑器开源而成为本项目可自由再授权的原创内容。

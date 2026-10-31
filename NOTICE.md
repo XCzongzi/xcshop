@@ -1,5 +1,7 @@
 # xcshop 相关声明
 
+Copyright © 2026 XCzongzi. 版权所有。
+
 xcshop 是由 XCzongzi（小菜粽子）维护的社区工具，开发中大量使用 AI 辅助编写与修改。
 
 源码仓库：[XCzongzi/xcshop](https://github.com/XCzongzi/xcshop)。联系邮箱：[xczongzi@outlook.com](mailto:xczongzi@outlook.com)。正式版本下载页尚未准备好。

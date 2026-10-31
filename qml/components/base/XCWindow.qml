@@ -44,6 +44,14 @@ Window {
         windowState.finishTransition()
     }
 
+    function saveWindowState(path) {
+        windowState.saveState(path)
+    }
+
+    function restoreWindowState(path) {
+        windowState.restoreState(path)
+    }
+
     function minimize() {
         finishWindowTransition()
         windowState.minimize()

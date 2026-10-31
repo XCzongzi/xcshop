@@ -1,4 +1,5 @@
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include "WindowStateController.h"
@@ -10,6 +11,8 @@
 #include <QSurfaceFormat>
 #include <QTest>
 #include <QThread>
+#include <QTemporaryDir>
+#include <QSettings>
 #include <atomic>
 
 #ifdef Q_OS_WIN
@@ -131,6 +134,56 @@ private:
     }
 
 private slots:
+    void persistedWindowState()
+    {
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        const QString path = directory.filePath("window-state.ini");
+        const QRect available = m_window->screen()->availableGeometry();
+        const QRect normal(available.topLeft() + QPoint(40, 40), QSize(640, 400));
+        QWindow source;
+        WindowStateController controller;
+        controller.setWindow(&source);
+        source.setGeometry(normal);
+        source.show();
+        QTRY_COMPARE(source.visibility(), QWindow::Windowed);
+        controller.saveState(path);
+        {
+            QWindow restored;
+            WindowStateController state;
+            state.setWindow(&restored);
+            state.restoreState(path);
+            restored.setVisible(true);
+            QTRY_COMPARE(restored.geometry(), normal);
+            QCOMPARE(restored.visibility(), QWindow::Windowed);
+        }
+        source.showMaximized();
+        QTRY_COMPARE(source.visibility(), QWindow::Maximized);
+        controller.minimize();
+        QTRY_COMPARE(source.visibility(), QWindow::Minimized);
+        controller.saveState(path);
+        {
+            QWindow restored;
+            WindowStateController state;
+            state.setWindow(&restored);
+            state.restoreState(path);
+            restored.setVisible(true);
+            QTRY_COMPARE(restored.visibility(), QWindow::Maximized);
+            restored.showNormal();
+            QTRY_COMPARE(restored.geometry(), normal);
+        }
+        // A disconnected display must not leave the titlebar outside the desktop.
+        {
+            QSettings settings(path, QSettings::IniFormat);
+            settings.setValue("window/normalGeometry", QRect(-100000, -100000, 640, 400));
+            settings.setValue("window/maximized", false);
+        }
+        controller.restoreState(path);
+        source.show();
+        QTRY_COMPARE(source.visibility(), QWindow::Windowed);
+        QVERIFY(source.screen()->availableGeometry().contains(source.geometry()));
+    }
+
     void init()
     {
         QMetaObject::invokeMethod(m_window, "finishWindowTransition");
@@ -342,6 +395,10 @@ private slots:
 
 int runWindowFrameTests(QQmlApplicationEngine &engine)
 {
+    QTemporaryDir directory;
+    if (!directory.isValid())
+        return 1;
+    engine.rootContext()->setContextProperty("APP_DIRPATH", directory.path());
     engine.loadFromModule("xcshop", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;

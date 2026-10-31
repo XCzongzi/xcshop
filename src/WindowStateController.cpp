@@ -1,5 +1,7 @@
 ﻿#include "WindowStateController.h"
 #include <QScreen>
+#include <QGuiApplication>
+#include <QSettings>
 #include <QtMath>
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
@@ -80,6 +82,65 @@ void WindowStateController::rememberNormalGeometry()
         m_normalGeometry = m_window->geometry();
         rememberNativePlacement();
     }
+}
+
+void WindowStateController::saveState(const QString &path)
+{
+    if (!m_window || path.isEmpty())
+        return;
+    finishTransition();
+    rememberNormalGeometry();
+    if (!m_normalGeometry.isValid())
+        return;
+    QSettings settings(path, QSettings::IniFormat);
+    settings.setValue(QStringLiteral("window/normalGeometry"), m_normalGeometry);
+    settings.setValue(QStringLiteral("window/maximized"), maximized());
+    settings.sync();
+    if (settings.status() != QSettings::NoError)
+        qWarning("Failed to save window state: %s", qPrintable(path));
+}
+
+void WindowStateController::restoreState(const QString &path)
+{
+    if (!m_window || path.isEmpty())
+        return;
+    QSettings settings(path, QSettings::IniFormat);
+    QRect geometry = settings.value(QStringLiteral("window/normalGeometry")).toRect();
+    if (!geometry.isValid())
+        return;
+
+    // Select the screen containing most of the saved window. If it was removed,
+    // bring the window back onto the primary screen.
+    QScreen *screen = QGuiApplication::primaryScreen();
+    qint64 largestArea = 0;
+    for (auto *candidate : QGuiApplication::screens()) {
+        const QRect overlap = candidate->availableGeometry().intersected(geometry);
+        const qint64 area = qint64(overlap.width()) * overlap.height();
+        if (area > largestArea) {
+            largestArea = area;
+            screen = candidate;
+        }
+    }
+    if (screen) {
+        const QRect available = screen->availableGeometry();
+        geometry.setSize(geometry.size().boundedTo(available.size())
+                             .expandedTo(m_window->minimumSize()));
+        geometry.moveLeft(qBound(available.left(), geometry.x(),
+                                 qMax(available.left(), available.right() - geometry.width() + 1)));
+        geometry.moveTop(qBound(available.top(), geometry.y(),
+                                qMax(available.top(), available.bottom() - geometry.height() + 1)));
+        m_window->setScreen(screen);
+    }
+    finishTransition();
+    m_window->setWindowStates(Qt::WindowNoState);
+    m_window->setGeometry(geometry);
+    m_normalGeometry = geometry;
+    // Create the native surface at the normal geometry before maximizing so
+    // Windows also retains the correct restore placement after a restart.
+    m_window->create();
+    rememberNativePlacement();
+    if (settings.value(QStringLiteral("window/maximized"), false).toBool())
+        m_window->setWindowStates(Qt::WindowMaximized);
 }
 
 void WindowStateController::rememberNativePlacement()
