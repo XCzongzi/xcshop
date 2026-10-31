@@ -1,0 +1,63 @@
+name: Pack kits
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'kits/**'
+      - 'tools/pack_kits.py'
+      - 'tests/test_pack_kits.py'
+      - '.github/workflows/pack-kits.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pack-kits-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    # Only publish from the default branch, including manual runs.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Test the packer
+        run: python3 -B -m unittest discover -s tests -p 'test_pack_kits.py' -v
+
+      - name: Build and publish kits.zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3; do
+            # Regenerate from the latest sources if another push races this job.
+            git fetch --no-tags origin "$TARGET_BRANCH"
+            git checkout -B "$TARGET_BRANCH" FETCH_HEAD
+            python3 tools/pack_kits.py
+            git add -- kits.zip
+            if git diff --cached --quiet -- kits.zip; then
+              echo 'kits.zip already matches the tracked kit files.'
+              exit 0
+            fi
+            git commit -m 'chore: update kits.zip' -- kits.zip
+            if git push origin "HEAD:refs/heads/$TARGET_BRANCH"; then
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying from the latest branch."
+          done
+
+          echo 'Could not publish kits.zip. Check Actions write permissions and branch rules.' >&2
+          exit 1
