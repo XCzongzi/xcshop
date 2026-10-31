@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls as Controls
 import xcshop
 
 Item {
@@ -26,12 +25,15 @@ Item {
     XCFolderDialog {
         id: folderDialog
         onAccepted: {
-            var path = BuildKits.localPath(selectedFolder.toString())
-            if (dialogID === "import") {
-                var error = BuildKits.importKit(path)
-                root.feedback = error.length ? error : "套件已导入，相同内容的已有文件已复用。"
-            } else pathField.text = path
+            root.feedback = ""
+            BuildKits.acquire(selectedFolder.toString())
         }
+    }
+    XCFileDialog {
+        id: zipDialog
+        title: "导入构建套件"
+        nameFilters: ["构建套件压缩包 (*.zip)"]
+        onAccepted: { root.feedback = ""; BuildKits.acquire(selectedFile.toString()) }
     }
     function confirmRemoval() {
         var template = selectedTemplate
@@ -54,38 +56,45 @@ Item {
         anchors.fill: parent
 
         SettingsCard {
-            title: "本地构建套件"
-            description: "模板决定如何组合蓝图与材料包。按模板 ID 识别，不受文件重命名影响；创建项目直接读取这里的模板。"
-            contentHeight: pathForm.height
+            title: "获取套件"
+            description: "下载完整套件包并导入当前目录，也可导入本地 ZIP 或 kits 文件夹。同名同内容自动复用，不同内容会提示冲突。"
+            contentHeight: acquisitionColumn.height
             Column {
-                id: pathForm
+                id: acquisitionColumn
                 width: parent.width
                 spacing: 12
-                XCTextField { id: pathField; width: parent.width; text: BuildKits.kitsPath; enabled: !BuildKits.busy; placeholderText: "kits 根目录（内含 templates）" }
                 Flow {
                     width: parent.width
                     spacing: 8
-                    SettingsActionButton { text: "浏览…"; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("root", BuildKits.kitsPath) }
                     SettingsActionButton {
-                        text: "应用目录"; height: 32; radius: 6; textSize: 12; enabled: !BuildKits.busy
-                        primary: true
-                        onClicked: {
-                            BuildKits.kitsPath = pathField.text
-                            BuildKits.refresh()
-                            root.feedback = Global.saveSettings() ? "套件目录已保存" : "保存设置失败"
+                        objectName: "downloadBuildKits"
+                        text: "下载并导入"; primary: true; enabled: !BuildKits.busy
+                        onClicked: { root.feedback = ""; BuildKits.acquire() }
+                    }
+                    SettingsActionButton { text: "导入 ZIP…"; enabled: !BuildKits.busy; onClicked: zipDialog.openXC(false, "kits") }
+                    SettingsActionButton { text: "导入文件夹…"; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("import", BuildKits.kitsPath) }
+                    SettingsActionButton { text: "取消"; visible: BuildKits.acquiring; onClicked: BuildKits.cancelAcquisition() }
+                }
+                Rectangle {
+                    width: parent.width; height: 3; radius: 1.5
+                    visible: BuildKits.acquiring
+                    color: Colors.background_n
+                    Rectangle {
+                        width: parent.width * (BuildKits.acquisitionProgress < 0 ? 0.15 : BuildKits.acquisitionProgress / 100)
+                        height: parent.height; radius: parent.radius; color: Colors.themeColor
+                        SequentialAnimation on opacity {
+                            running: BuildKits.acquiring && BuildKits.acquisitionProgress < 0
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0.3; to: 1; duration: 600 }
+                            NumberAnimation { from: 1; to: 0.3; duration: 600 }
                         }
                     }
-                    SettingsActionButton { text: "重新扫描"; enabled: !BuildKits.busy; onClicked: BuildKits.refresh() }
-                    SettingsActionButton { text: "打开目录"; onClicked: file.revealInFileManager(BuildKits.kitsPath) }
-                    SettingsActionButton { text: "导入套件…"; primary: true; enabled: !BuildKits.busy; onClicked: folderDialog.openXC("import", BuildKits.kitsPath) }
-                    SettingsActionButton {
-                        text: "恢复默认目录"; enabled: !BuildKits.busy
-                        onClicked: { BuildKits.kitsPath = BuildKits.defaultKitsPath; pathField.text = BuildKits.kitsPath; Global.saveSettings() }
-                    }
                 }
-                XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcText: "导入时选择另一个 kits 根目录；模板、蓝图和材料一并导入，同名不同内容不会覆盖。当前编辑器数据版本：" + BuildKits.dataVersion }
-                XCText { width: parent.width; visible: root.feedback.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: root.feedback }
-                XCText { width: parent.width; visible: BuildKits.issues.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.error; xcText: BuildKits.issues.join("\n\n") }
+                XCText {
+                    width: parent.width; visible: BuildKits.acquisitionStatus.length > 0
+                    onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
+                    xcText: BuildKits.acquisitionStatus
+                }
             }
         }
         SettingsCard {
@@ -96,7 +105,9 @@ Item {
                 id: catalogColumn
                 width: parent.width
                 spacing: 12
-                XCText { visible: BuildKits.templates.length === 0; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: "尚无本地模板，请选择套件目录或导入本地套件。" }
+                XCText { width: parent.width; visible: root.feedback.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: root.feedback }
+                XCText { width: parent.width; visible: BuildKits.issues.length > 0; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.error; xcText: BuildKits.issues.join("\n\n") }
+                XCText { visible: BuildKits.templates.length === 0; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: "尚无本地模板，请在上方下载或导入套件。" }
                 Repeater {
                     model: BuildKits.templates
                     delegate: TextButton {
@@ -135,12 +146,6 @@ Item {
                     }
                 }
             }
-        }
-        SettingsCard {
-            title: "在线获取"
-            description: "在线模板仓库正在调整。此处保留在线目录、版本与下载入口，暂不请求旧仓库，也不修改本地套件。"
-            contentHeight: 38
-            SettingsActionButton { text: "在线模板目录（尚未接入）"; enabled: false }
         }
     }
 }

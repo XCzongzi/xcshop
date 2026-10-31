@@ -2,6 +2,8 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QFutureWatcher>
+#include "BuildKitArchive.h"
 
 // A catalog of templates in one builder-compatible kits/ root. Never executes kit scripts.
 class BuildKitManager : public QObject {
@@ -13,9 +15,14 @@ class BuildKitManager : public QObject {
     Q_PROPERTY(QStringList issues READ issues NOTIFY catalogChanged)
     Q_PROPERTY(bool identityValid READ identityValid NOTIFY catalogChanged)
     Q_PROPERTY(bool busy READ busy WRITE setBusy NOTIFY busyChanged)
+    Q_PROPERTY(bool acquiring READ acquiring NOTIFY acquisitionChanged)
+    Q_PROPERTY(int acquisitionProgress READ acquisitionProgress NOTIFY acquisitionChanged)
+    Q_PROPERTY(QString acquisitionStatus READ acquisitionStatus NOTIFY acquisitionChanged)
     Q_PROPERTY(int dataVersion READ dataVersion CONSTANT)
 public:
     explicit BuildKitManager(QObject *parent = nullptr);
+    BuildKitManager(const QUrl &downloadUrl, QObject *parent = nullptr);
+    ~BuildKitManager() override;
     QString kitsPath() const { return m_kitsPath; }
     QString defaultKitsPath() const;
     void setKitsPath(const QString &path);
@@ -24,7 +31,10 @@ public:
     QVariantList templates() const { return m_templates; }
     QStringList issues() const { return m_issues; }
     bool identityValid() const { return m_identityValid; }
-    bool busy() const { return m_busy; }
+    bool busy() const { return m_busy || acquiring(); }
+    bool acquiring() const { return m_acquiring; }
+    int acquisitionProgress() const { return m_acquisitionProgress; }
+    QString acquisitionStatus() const { return m_acquisitionStatus; }
     void setBusy(bool value);
     int dataVersion() const { return 0; } // 操作组工作区格式。
     Q_INVOKABLE void refresh();
@@ -33,6 +43,9 @@ public:
     // -1 unsupported, 0 explicitly supported, 1 newer and only tentatively supported.
     Q_INVOKABLE int versionSupport(const QString &id, const QString &version) const;
     Q_INVOKABLE QString importKit(const QString &sourceRoot);
+    // Empty source downloads the official bundle; otherwise accepts ZIP or a kit root.
+    Q_INVOKABLE void acquire(const QString &source = QString());
+    Q_INVOKABLE void cancelAcquisition();
     // Removes only the template descriptor, preserving potentially shared dependencies.
     Q_INVOKABLE QString removeTemplate(const QString &id);
     Q_INVOKABLE QString localPath(const QString &path) const;
@@ -41,9 +54,18 @@ signals:
     void preferredTemplateIdChanged();
     void catalogChanged();
     void busyChanged();
+    void acquisitionChanged();
+    void acquisitionFinished(bool success, const QString &message);
 private:
+    QString importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel = {});
     QString m_kitsPath, m_preferredTemplateId;
     QVariantList m_templates;
     QStringList m_issues;
     bool m_identityValid = false, m_busy = false;
+    bool m_acquiring = false;
+    int m_acquisitionProgress = 0;
+    QString m_acquisitionStatus;
+    QUrl m_downloadUrl;
+    BuildKitArchive::Cancellation m_cancel;
+    QFutureWatcher<QString> m_acquisitionWatcher;
 };

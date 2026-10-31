@@ -40,7 +40,7 @@ BasePage {
                 ++count
         return count
     }
-    readonly property bool canBuild: manifestLoaded && builderAvailable && !building && buildErrorCount === 0
+    readonly property bool canBuild: manifestLoaded && builderAvailable && !building && !BuildKits.acquiring && buildErrorCount === 0
 
     // Preserve the four-card dashboard; on short windows keep controls from being squeezed out.
     content_height: dashboard.height + 36

@@ -12,6 +12,18 @@ set(QT_QML_GENERATE_QMLLS_INI ON)   #图形效果
 
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Concurrent)
 
+# Prefer system zlib; official Windows Qt kits expose their bundled copy.
+find_package(ZLIB QUIET)
+if(ZLIB_FOUND)
+    set(XCSHOP_ZIP_LIBRARY ZLIB::ZLIB)
+else()
+    find_package(Qt6 REQUIRED COMPONENTS ZlibPrivate)
+    set(XCSHOP_ZIP_LIBRARY Qt6::ZlibPrivate Qt6::Core)
+endif()
+qt_add_library(xcshop_kit_archive STATIC src/BuildKitArchive.cpp header/BuildKitArchive.h)
+target_link_libraries(xcshop_kit_archive PRIVATE Qt6::Network ${XCSHOP_ZIP_LIBRARY})
+target_include_directories(xcshop_kit_archive PRIVATE header)
+
 qt_standard_project_setup(REQUIRES 6.8)
 
 include_directories(header)    # 头文件目录
@@ -252,7 +264,7 @@ set_target_properties(appxcshop PROPERTIES
 )
 
 target_link_libraries(appxcshop
-    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Concurrent
+    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Concurrent xcshop_kit_archive
 )
 target_compile_definitions(appxcshop PRIVATE XCSHOP_VERSION="${PROJECT_VERSION}")
 
@@ -274,13 +286,27 @@ option(XCSHOP_BUILD_TESTS "Build editor integration tests" OFF)
 if(XCSHOP_BUILD_TESTS)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
+    # Only ZIP fixture generation uses Qt's private writer.
+    if(Qt6_VERSION VERSION_GREATER_EQUAL "6.11")
+        find_package(Qt6 REQUIRED COMPONENTS CorePrivate)
+        set(XCSHOP_TEST_ZIP_LIBRARY Qt6::CorePrivate)
+    else()
+        find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
+        set(XCSHOP_TEST_ZIP_LIBRARY Qt6::GuiPrivate)
+    endif()
+    qt_add_executable(build_kit_acquisition_tests tests/BuildKitAcquisitionTests.cpp
+        src/BuildKitManager.cpp header/BuildKitManager.h)
+    target_link_libraries(build_kit_acquisition_tests PRIVATE Qt6::Test Qt6::Network Qt6::Concurrent
+        xcshop_kit_archive ${XCSHOP_TEST_ZIP_LIBRARY})
+    target_compile_definitions(build_kit_acquisition_tests PRIVATE XCSHOP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    add_test(NAME build_kit_acquisition_tests COMMAND build_kit_acquisition_tests)
     qt_add_executable(update_checker_tests tests/UpdateCheckerTests.cpp tests/UpdateFeedFixture.h
         src/UpdateChecker.cpp header/UpdateChecker.h)
     target_link_libraries(update_checker_tests PRIVATE Qt6::Network Qt6::Test)
     add_test(NAME update_checker_tests COMMAND update_checker_tests)
     qt_add_executable(editor_backend_tests tests/EditorBackendTests.cpp
         src/BuildKitManager.cpp header/BuildKitManager.h src/BuildManager.cpp header/BuildManager.h)
-    target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test)
+    target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent xcshop_kit_archive)
     qt_add_executable(builder_protocol_fixture tests/BuilderProtocolFixture.cpp)
     target_link_libraries(builder_protocol_fixture PRIVATE Qt6::Core)
     qt_add_executable(minecraft_import_tests tests/MinecraftImportTests.cpp
@@ -323,6 +349,11 @@ if(XCSHOP_BUILD_TESTS)
         TIMEOUT 30)
     add_test(NAME light_theme_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME background_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME build_kits_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(build_kits_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/BuildKitsUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "BUILD_KITS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 25)
     add_test(NAME about_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     set_tests_properties(about_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/AboutUiSmoke.qml"

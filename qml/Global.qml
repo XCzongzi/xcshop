@@ -319,6 +319,8 @@ QtObject{
             error = "xcshop.json 的根节点必须是对象，shops 必须是数组。"
         if (!error.length && !Builder.available)
             error = "构建器不可用，请在设置 → 构建器中检查可执行文件路径。"
+        if (!error.length && BuildKits.acquiring)
+            error = "正在获取构建套件，请完成或取消后再构建。"
         if (!error.length) {
             var problems = collectBuildProblems(data, data.shops || [])
             var errors = problems.filter(function(problem) { return problem.severity === "error" })

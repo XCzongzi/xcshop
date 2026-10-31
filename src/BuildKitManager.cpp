@@ -15,6 +15,9 @@
 #include <array>
 #include <optional>
 #include <limits>
+#include <QTemporaryDir>
+#include <QtConcurrent/QtConcurrentRun>
+#include <stdexcept>
 
 namespace {
 const QRegularExpression uuidPattern(QStringLiteral("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"));
@@ -161,7 +164,27 @@ QByteArray fileHash(const QString &path) {
 }
 }
 
-BuildKitManager::BuildKitManager(QObject *parent) : QObject(parent), m_kitsPath(defaultKitsPath()) { refresh(); }
+BuildKitManager::BuildKitManager(QObject *parent)
+    : BuildKitManager(QUrl("https://xczongzi.net/projects/xcshop/downloads/kits.zip"), parent) {}
+BuildKitManager::BuildKitManager(const QUrl &downloadUrl, QObject *parent)
+    : QObject(parent), m_kitsPath(defaultKitsPath()), m_downloadUrl(downloadUrl) {
+    connect(&m_acquisitionWatcher, &QFutureWatcher<QString>::finished, this, [this] {
+        const auto error = m_acquisitionWatcher.result();
+        m_acquiring = false;
+        m_cancel.reset();
+        m_acquisitionProgress = error.isEmpty() ? 100 : 0;
+        m_acquisitionStatus = error.isEmpty() ? "套件已导入，相同内容的已有文件已复用。" : error;
+        refresh();
+        emit acquisitionChanged();
+        emit busyChanged();
+        emit acquisitionFinished(error.isEmpty(), m_acquisitionStatus);
+    });
+    refresh();
+}
+BuildKitManager::~BuildKitManager() {
+    cancelAcquisition();
+    m_acquisitionWatcher.waitForFinished();
+}
 QString BuildKitManager::defaultKitsPath() const { return QCoreApplication::applicationDirPath() + "/kits"; }
 QString BuildKitManager::localPath(const QString &path) const {
     const QUrl url(path);
@@ -169,7 +192,7 @@ QString BuildKitManager::localPath(const QString &path) const {
     return value.isEmpty() ? QString() : QDir::cleanPath(QFileInfo(value).absoluteFilePath());
 }
 void BuildKitManager::setKitsPath(const QString &path) {
-    if (m_busy) return;
+    if (busy()) return;
     const auto next = localPath(path);
     if (next == m_kitsPath) return;
     m_kitsPath = next;
@@ -258,10 +281,59 @@ int BuildKitManager::versionSupport(const QString &id, const QString &version) c
 }
 
 QString BuildKitManager::importKit(const QString &sourceRoot) {
-    if (m_busy) return "构建期间不能更改套件。";
+    if (busy()) return "构建或获取套件期间不能更改套件。";
+    return importDirectory(sourceRoot);
+}
+
+void BuildKitManager::acquire(const QString &source) {
+    if (busy()) return;
+    m_acquiring = true;
+    m_acquisitionProgress = -1;
+    m_acquisitionStatus = "正在准备套件…";
+    m_cancel = std::make_shared<std::atomic_bool>(false);
+    emit busyChanged();
+    emit acquisitionChanged();
+    const auto target = m_kitsPath;
+    const auto path = source.isEmpty() ? QString() : localPath(source);
+    const auto url = m_downloadUrl;
+    const auto cancel = m_cancel;
+    m_acquisitionWatcher.setFuture(QtConcurrent::run([this, path, target, url, cancel] {
+        try {
+            QTemporaryDir staging;
+            if (!staging.isValid()) return QString("无法创建套件临时目录。");
+            const auto progress = [this](int value, const QString &status) {
+                QMetaObject::invokeMethod(this, [this, value, status] {
+                    m_acquisitionProgress = value;
+                    m_acquisitionStatus = status;
+                    emit acquisitionChanged();
+                }, Qt::QueuedConnection);
+            };
+            const auto root = BuildKitArchive::prepare(path, url, staging.path(), cancel, progress);
+            progress(90, "正在校验并导入套件…");
+            BuildKitManager worker;
+            worker.setKitsPath(target);
+            return worker.importDirectory(root, cancel);
+        } catch (const std::exception &error) {
+            return QString::fromUtf8(error.what());
+        }
+    }));
+}
+void BuildKitManager::cancelAcquisition() {
+    if (m_cancel) m_cancel->store(true);
+}
+
+QString BuildKitManager::importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel) {
+    const auto cancelled = [&] { return cancel && cancel->load(); };
+    if (cancelled()) return "已取消获取套件。";
     const auto source = QFileInfo(localPath(sourceRoot)).canonicalFilePath();
-    const auto target = QFileInfo(m_kitsPath).exists() ? QFileInfo(m_kitsPath).canonicalFilePath() : localPath(m_kitsPath);
+    const auto target = localPath(m_kitsPath);
     if (target.isEmpty()) return "请先设置有效的套件目录。";
+    // Resolve existing ancestors as well: a not-yet-created kit root must not
+    // silently write through a link/junction in its parent path.
+    for (auto ancestor = QFileInfo(target); ; ancestor = QFileInfo(ancestor.absolutePath())) {
+        if (ancestor.isSymLink() || ancestor.isJunction()) return "目标路径包含符号链接：" + ancestor.filePath();
+        if (ancestor.absoluteFilePath() == ancestor.absolutePath()) break;
+    }
     if (source.isEmpty() || source == target || within(source, target) || within(target, source))
         return "请选择与当前套件目录相互独立的构建套件根目录。";
     BuildKitManager incoming;
@@ -269,6 +341,7 @@ QString BuildKitManager::importKit(const QString &sourceRoot) {
     if (!incoming.identityValid() || incoming.templates().isEmpty() || !incoming.issues().isEmpty())
         return "待导入的套件无效：\n" + incoming.issues().join('\n');
     refresh();
+    if (!m_templates.isEmpty() && !m_identityValid) return "当前套件目录的模板 ID 无效或重复，请先修复后再导入。";
     for (const auto &value : incoming.templates()) {
         const auto item = value.toMap();
         const auto existing = findTemplate(item["id"].toString());
@@ -279,13 +352,14 @@ QString BuildKitManager::importKit(const QString &sourceRoot) {
     QStringList additions, directories;
     QDirIterator files(source, QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden, QDirIterator::Subdirectories);
     while (files.hasNext()) {
+        if (cancelled()) return "已取消获取套件。";
         const auto path = files.next();
         const auto info = files.fileInfo();
-        if (info.isSymLink()) return "不能导入包含符号链接的套件：" + path;
+        if (info.isSymLink() || info.isJunction()) return "不能导入包含符号链接的套件：" + path;
         const auto relative = QDir(source).relativeFilePath(path);
         const auto destination = QDir(target).filePath(relative);
         const auto existing = QFileInfo(destination);
-        if (existing.isSymLink()) return "目标目录包含符号链接：" + destination;
+        if (existing.isSymLink() || existing.isJunction()) return "目标目录包含符号链接：" + destination;
         if (info.isDir()) {
             if (existing.exists() && !existing.isDir()) return "目录与已有文件冲突：" + destination;
             if (!existing.exists()) directories << destination;
@@ -308,10 +382,12 @@ QString BuildKitManager::importKit(const QString &sourceRoot) {
         created << target;
     }
     for (const auto &directory : directories) {
+        if (cancelled()) { rollback(); return "已取消获取套件。"; }
         if (!QDir().mkdir(directory)) { rollback(); return "无法创建目录：" + directory; }
         created << directory;
     }
     for (const auto &relative : additions) {
+        if (cancelled()) { rollback(); return "已取消获取套件。"; }
         const auto destination = QDir(target).filePath(relative);
         if (!QFile::copy(QDir(source).filePath(relative), destination)) {
             rollback();
@@ -319,11 +395,12 @@ QString BuildKitManager::importKit(const QString &sourceRoot) {
         }
         copied << destination;
     }
+    if (cancelled()) { rollback(); return "已取消获取套件。"; }
     refresh();
     return {};
 }
 QString BuildKitManager::removeTemplate(const QString &id) {
-    if (m_busy) return "构建期间不能移除模板。";
+    if (busy()) return "构建或获取套件期间不能移除模板。";
     refresh();
     const auto item = findTemplate(id);
     if (item.isEmpty()) return "找不到该模板。";
