@@ -40,23 +40,6 @@
 !/assets/minecraft/gui/item_lore/background.png
 !/assets/minecraft/gui/item_lore/frame.png
 
-# Include the bundled Alpha r0 sources; keep other local kits out of Git.
-/kits/*
-!/kits/alpha-r0-README.md
-!/kits/templates/
-/kits/templates/*
-!/kits/templates/alpha-r0.xcshopT
-!/kits/blueprints/
-/kits/blueprints/*
-!/kits/blueprints/alpha-r0/
-/kits/blueprints/alpha-r0/*
-!/kits/blueprints/alpha-r0/*.xcshoper
-!/kits/materials/
-/kits/materials/*
-!/kits/materials/alpha-r0-26.3/
-/kits/materials/alpha-r0-26.3/*
-!/kits/materials/alpha-r0-26.3/*.xcontent
-!/kits/materials/alpha-r0-26.3/runtime.xclist
 
 # Project ideas / design notes (local only)
 /项目构思/
