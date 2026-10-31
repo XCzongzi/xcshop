@@ -118,13 +118,15 @@ XCWindow {
             id: popupBlurSource
             anchors.fill: parent
             ShaderEffectSource {
-                anchors.fill: parent
+                // Keep the backdrop viewport fixed to the whole window surface.
+                // Only page content moves down when the titlebar is reserved.
+                x: mainWindow.margins - root.x
+                y: mainWindow.margins - root.y
+                width: mainWindow.surfaceWidth
+                height: mainWindow.surfaceHeight
                 visible: GraphicsInfo.api !== GraphicsInfo.Software
                 sourceItem: mainWindow.backdrop
-                sourceRect: {
-                    root.x; root.y
-                    return popupBlurSource.mapToItem(mainWindow.backdrop, Qt.rect(0, 0, width, height))
-                }
+                sourceRect: Qt.rect(0, 0, width, height)
             }
         }
         
