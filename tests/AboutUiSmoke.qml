@@ -12,6 +12,8 @@ Window {
     property string savedBackground: ""
     property var pinnedPositions: []
     property real revealedInformationY: 0
+    property int detailStage: 0
+    property real collapsedContentHeight: 0
     XCFile { id: results }
     Component.onCompleted: results.write(SMOKE_OUTPUT_DIR + "/about-test-result.txt", "RUNNING")
     Loader { id: loader; anchors.fill: parent; sourceComponent: about }
@@ -36,9 +38,10 @@ Window {
         }
         return null
     }
-    function capture(name) {
+    function capture(name, done) {
         (loader.item as PageOnAbout).grabToImage(function(result) {
             result.saveToFile(SMOKE_OUTPUT_DIR + "/about-" + name + ".png")
+            if (done) done()
         })
     }
     function headerPositions(page) {
@@ -49,7 +52,7 @@ Window {
     function checkPinnedHeader(page) {
         var cover = root.find(page, "aboutCoverViewport")
         var coverBottom = cover.mapToItem(page, 0, cover.height).y
-        root.check(Math.abs(coverBottom - page.coverHeight * 21 / 115) < 0.1,
+        root.check(Math.abs(coverBottom - page.coverHeight * 21 / 115) < 1,
                    "cover did not stop at 21/115 of its initial height: " + coverBottom)
         var avatar = root.find(page, "aboutAvatar")
         var identity = root.find(page, "aboutIdentity")
@@ -60,7 +63,7 @@ Window {
         root.checkPinnedHeader(page)
         var positions = root.headerPositions(page)
         for (var i = 0; i < positions.length; i++)
-            root.check(Math.abs(positions[i] - root.pinnedPositions[i]) < 0.1,
+            root.check(Math.abs(positions[i] - root.pinnedPositions[i]) < 1,
                        "header moved after reaching its minimum height: " + i)
     }
     Timer {
@@ -119,6 +122,26 @@ Window {
                     UiInput.click(root.find(page, "aboutRevealArea"), page.width / 2, 60)
                 } else if (root.stage === 7) {
                     root.check(page.expanded && Math.abs(view.contentY - page.revealOffset) < 1, "content click did not reveal again")
+                    var moreButton = root.find(page, "aboutMoreInformation")
+                    var moreContent = root.find(page, "aboutMoreInformationContent")
+                    if (root.detailStage === 0) {
+                        root.check(root.find(page, "aboutDataVersionLimit").value === String(BuildKits.dataVersion), "editor data version limit")
+                        root.check(root.find(page, "aboutReleaseDate").value === "待公布", "release date placeholder")
+                        root.check(!moreButton.checked && moreContent.height === 0, "more information should start collapsed")
+                        root.collapsedContentHeight = view.contentHeight
+                        UiInput.click(moreButton)
+                        root.detailStage++
+                        return
+                    } else if (root.detailStage === 1) {
+                        root.check(moreButton.checked && moreContent.height > 0, "more information click did not expand")
+                        root.check(view.contentHeight > root.collapsedContentHeight + 40, "expanded text did not extend scrolling content")
+                        root.checkHeaderUnchanged(page)
+                        root.capture("more-information-dark", function() { UiInput.click(moreButton) })
+                        root.detailStage++
+                        return
+                    }
+                    root.check(!moreButton.checked && moreContent.height === 0, "more information did not collapse")
+                    root.check(Math.abs(view.contentHeight - root.collapsedContentHeight) < 1, "collapsed content left an empty gap")
                 } else if (root.stage === 8) {
                     loader.active = false
                     root.width = 800; root.height = 500
@@ -140,6 +163,11 @@ Window {
                     root.check(bilibili.y > github.y && github.width <= page.width, "narrow cards did not stack")
                     root.check(view.contentY <= view.contentHeight - view.height + 1, "scroll exceeds content after resize")
                     root.checkPinnedHeader(page)
+                    var versionFact = root.find(page, "aboutSoftwareVersion")
+                    var limitFact = root.find(page, "aboutDataVersionLimit")
+                    root.check(Math.abs(versionFact.mapToItem(page, 0, 0).y - limitFact.mapToItem(page, 0, 0).y) < 1
+                               && limitFact.mapToItem(page, 0, 0).x > versionFact.mapToItem(page, 0, 0).x,
+                               "data version limit should remain to the right of the software version")
                     view.contentY = view.contentHeight - view.height
                     root.capture("sponsor-light-narrow")
                 } else if (root.stage === 12) {

@@ -23,6 +23,7 @@ BasePage {
     readonly property real headerOffset: Math.max(0, view.contentY - revealOffset)
     readonly property real pagePadding: width < 700 ? 24 : 48
     readonly property real columnWidth: Math.max(0, Math.min(880, width - pagePadding * 2))
+    readonly property string releaseDate: "待公布"
     property bool expanded: false
     property string linkFeedback: ""
 
@@ -57,6 +58,17 @@ BasePage {
     component SectionTitle: AboutText {
         font.pixelSize: 18
         font.weight: Font.DemiBold
+    }
+
+    component AboutFact: Item {
+        id: fact
+        required property string label
+        required property string value
+        implicitHeight: Math.max(42, factValue.implicitHeight + 22)
+        height: implicitHeight
+        AboutText { y: 11; width: 90; text: fact.label; color: root.mutedInk }
+        AboutText { id: factValue; x: 104; y: 11; width: Math.max(0, parent.width - x); text: fact.value }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Colors.changeA(root.ink, 0.07) }
     }
 
     component LinkCard: Controls.AbstractButton {
@@ -266,20 +278,93 @@ BasePage {
                 SectionTitle { text: "软件信息" }
                 Column {
                     width: parent.width; spacing: 0
-                    Repeater {
-                        model: [
-                            { label: "软件版本", value: "v" + (Qt.application.version || "—") },
-                            { label: "软件用途", value: "Minecraft Java 版商店数据包编辑与构建" }
-                        ]
-                        delegate: Item {
-                            id: fact
-                            required property var modelData
-                            width: parent.width
-                            height: Math.max(42, factValue.implicitHeight + 22)
-                            AboutText { y: 11; width: 90; text: fact.modelData.label; color: root.mutedInk }
-                            AboutText { id: factValue; x: 104; y: 11; width: parent.width - x; text: fact.modelData.value }
-                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Colors.changeA(root.ink, 0.07) }
+                    Row {
+                        width: parent.width; spacing: 24
+                        AboutFact {
+                            objectName: "aboutSoftwareVersion"
+                            width: (parent.width - parent.spacing) / 2
+                            label: "软件版本"; value: "v" + (Qt.application.version || "—")
                         }
+                        AboutFact {
+                            objectName: "aboutDataVersionLimit"
+                            width: (parent.width - parent.spacing) / 2
+                            label: "数据版本上限"; value: String(BuildKits.dataVersion)
+                        }
+                    }
+                    AboutFact {
+                        objectName: "aboutReleaseDate"
+                        width: parent.width
+                        label: "发布时间"; value: root.releaseDate
+                    }
+                }
+
+                Controls.AbstractButton {
+                    id: moreInfoButton
+                    objectName: "aboutMoreInformation"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    implicitWidth: moreInfoLabel.implicitWidth + 24
+                    implicitHeight: 34
+                    checkable: true
+                    hoverEnabled: true
+                    Accessible.name: checked ? "收起更多信息" : "展开更多信息"
+                    background: Rectangle {
+                        radius: 7
+                        color: Colors.changeA(root.ink, moreInfoButton.down ? 0.10 : moreInfoButton.hovered ? 0.06 : 0)
+                        border.width: moreInfoButton.activeFocus ? 1 : 0
+                        border.color: Colors.changeA(root.ink, 0.35)
+                    }
+                    contentItem: Item {
+                        Row {
+                            id: moreInfoLabel
+                            anchors.centerIn: parent
+                            spacing: 7
+                            Canvas {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 12; height: 8
+                                property color strokeColor: root.mutedInk
+                                onStrokeColorChanged: requestPaint()
+                                rotation: moreInfoReveal.progress * 180
+                                onPaint: {
+                                    var ctx = getContext("2d")
+                                    ctx.reset()
+                                    ctx.clearRect(0, 0, width, height)
+                                    ctx.strokeStyle = strokeColor
+                                    ctx.lineWidth = 1.5
+                                    ctx.lineCap = "round"
+                                    ctx.lineJoin = "round"
+                                    ctx.beginPath(); ctx.moveTo(1, 1); ctx.lineTo(6, 6); ctx.lineTo(11, 1); ctx.stroke()
+                                }
+                            }
+                            AboutText { text: "更多信息"; color: root.mutedInk }
+                        }
+                    }
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
+                }
+
+                Item {
+                    id: moreInfoReveal
+                    objectName: "aboutMoreInformationContent"
+                    width: parent.width
+                    property real progress: moreInfoButton.checked ? 1 : 0
+                    height: (moreInfoText.implicitHeight + 16) * progress
+                    clip: true
+                    visible: height > 0
+                    enabled: moreInfoButton.checked
+                    Behavior on progress {
+                        NumberAnimation {
+                            duration: 280 / Global.animationSpeed
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    AboutText {
+                        id: moreInfoText
+                        y: 8
+                        width: parent.width
+                        color: root.mutedInk
+                        lineHeight: 1.6
+                        text: "这里是更多信息的临时说明，后续会替换为正式内容。\n\n"
+                              + "xcshop 用于编辑和构建 Minecraft Java 版商店数据包，可以组织商店布局、商品、代价与展示文本。\n\n"
+                              + "这里还可以补充项目介绍、版本变化与使用说明。感谢你使用 xcshop，欢迎分享建议与反馈。"
                     }
                 }
             }
@@ -287,8 +372,44 @@ BasePage {
             Column {
                 width: parent.width; spacing: 14
                 SectionTitle { text: "开发者" }
-                AboutText { text: "XCzongzi"; font.pixelSize: 16; font.weight: Font.DemiBold }
-                AboutText { text: "小菜粽子"; color: root.mutedInk }
+                Item {
+                    width: parent.width
+                    height: Math.max(developerIdentity.height, websiteRow.height)
+                    Column {
+                        id: developerIdentity
+                        spacing: 14
+                        AboutText { text: "XCzongzi"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                        AboutText { text: "小菜粽子"; color: root.mutedInk }
+                    }
+                    Row {
+                        id: websiteRow
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        spacing: 6
+                        AboutText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "个人网站："; color: root.mutedInk
+                        }
+                        Controls.AbstractButton {
+                            id: websiteLink
+                            objectName: "aboutWebsite"
+                            text: "xczongzi.net"
+                            implicitWidth: contentItem.implicitWidth
+                            implicitHeight: 24
+                            hoverEnabled: true
+                            Accessible.name: "个人网站：xczongzi.net，在浏览器中打开"
+                            onClicked: root.openLink("https://xczongzi.net")
+                            contentItem: AboutText {
+                                text: websiteLink.text
+                                color: Colors.accentText
+                                verticalAlignment: Text.AlignVCenter
+                                font.underline: websiteLink.hovered || websiteLink.down || websiteLink.activeFocus
+                            }
+                            background: Item {}
+                            HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        }
+                    }
+                }
                 Flow {
                     width: parent.width; spacing: 12
                     LinkCard {
