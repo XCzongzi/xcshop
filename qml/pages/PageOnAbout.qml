@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Controls.impl as Impl
+import Qt5Compat.GraphicalEffects
 import xcshop
 
 BasePage {
@@ -335,6 +336,71 @@ BasePage {
                 objectName: "aboutFooter"
                 width: parent.width; horizontalAlignment: Text.AlignHCenter
                 text: "Made by XCzongzi."; color: root.mutedInk; font.pixelSize: 11
+            }
+        }
+
+        Item {
+            id: contentEdge
+            objectName: "aboutContentEdge"
+            y: sheet.y + sheet.height - 1
+            z: 3
+            width: view.width
+            height: 40
+            opacity: Math.min(1, root.headerOffset / 24)
+            visible: opacity > 0
+            clip: true
+
+            // Sample only the scrolling content to avoid capturing this effect.
+            Loader {
+                anchors.fill: parent
+                active: contentEdge.visible && width > 0 && GraphicsInfo.api !== GraphicsInfo.Software
+                sourceComponent: Rectangle {
+                    id: edgeBlur
+                    readonly property int padding: 12
+                    color: root.sheetColor
+
+                    ShaderEffectSource {
+                        id: edgeCapture
+                        x: -edgeBlur.padding; y: -edgeBlur.padding
+                        width: contentEdge.width + edgeBlur.padding * 2
+                        height: contentEdge.height + edgeBlur.padding * 2
+                        sourceItem: information
+                        sourceRect: Qt.rect(-information.x + x,
+                                            contentEdge.y - information.y + y, width, height)
+                        visible: false
+                        live: true
+                    }
+                    Rectangle {
+                        id: blurMask
+                        width: edgeCapture.width; height: edgeCapture.height
+                        visible: false
+                        layer.enabled: true
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: "white" }
+                            GradientStop { position: edgeBlur.padding / blurMask.height; color: "white" }
+                            GradientStop { position: 1 - edgeBlur.padding / blurMask.height; color: "transparent" }
+                            GradientStop { position: 1; color: "transparent" }
+                        }
+                    }
+                    MaskedBlur {
+                        x: edgeCapture.x; y: edgeCapture.y
+                        width: edgeCapture.width; height: edgeCapture.height
+                        source: edgeCapture
+                        maskSource: blurMask
+                        radius: 12
+                        samples: 25
+                    }
+                }
+            }
+
+            // Match the fixed header and soften the edge on software renderers too.
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0; color: root.sheetColor }
+                    GradientStop { position: 0.35; color: Colors.changeA(root.sheetColor, 0.72) }
+                    GradientStop { position: 1; color: Colors.changeA(root.sheetColor, 0) }
+                }
             }
         }
 
