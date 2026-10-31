@@ -2,16 +2,74 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QSettings>
+#include <QPlatformSurfaceEvent>
 #include <QtMath>
+#include <functional>
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
+#include <QAbstractNativeEventFilter>
+
+namespace {
+bool isWindowSnapped(HWND handle)
+{
+    // Resolve at runtime for Qt kits whose SDK predates IsWindowArranged,
+    // and Windows versions that do not export it.
+    using IsWindowArrangedFunction = BOOL (WINAPI *)(HWND);
+    static const auto isArranged = reinterpret_cast<IsWindowArrangedFunction>(
+        GetProcAddress(GetModuleHandleW(L"user32.dll"), "IsWindowArranged"));
+    return isArranged && isArranged(handle);
+}
+
+class WindowsSnapFilter final : public QObject, public QAbstractNativeEventFilter
+{
+public:
+    WindowsSnapFilter(QWindow *window, QObject *parent, std::function<void()> changed)
+        : QObject(parent), m_window(window), m_changed(std::move(changed))
+    {
+        setObjectName(QStringLiteral("windowsSnapFilter"));
+        qApp->installNativeEventFilter(this);
+    }
+    ~WindowsSnapFilter() override { qApp->removeNativeEventFilter(this); }
+
+    bool nativeEventFilter(const QByteArray &, void *message, qintptr *result) override
+    {
+        const auto *msg = static_cast<MSG *>(message);
+        if (!m_window || !m_window->handle()
+            || msg->hwnd != reinterpret_cast<HWND>(m_window->winId()))
+            return false;
+        if (msg->message == WM_WINDOWPOSCHANGED || msg->message == WM_EXITSIZEMOVE
+            || msg->message == WM_SIZE)
+            m_changed();
+        if (msg->message != WM_NCCALCSIZE || !msg->wParam || !IsZoomed(msg->hwnd)
+            || m_window->windowStates().testFlag(Qt::WindowFullScreen))
+            return false;
+        MONITORINFO monitor = {};
+        monitor.cbSize = sizeof(monitor);
+        if (!GetMonitorInfo(MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST), &monitor))
+            return false;
+        // The native resizable style normally maximizes beyond the work area
+        // to hide its frame. Our frame is QML, so use the exact work area.
+        auto *client = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
+        client->rgrc[0] = monitor.rcWork;
+        *result = 0;
+        return true;
+    }
+
+private:
+    QPointer<QWindow> m_window;
+    std::function<void()> m_changed;
+};
+}
 #endif
 
 WindowStateController::WindowStateController(QObject *parent) : QObject(parent)
 {
     m_geometryCache.setSingleShot(true);
     m_geometryCache.setInterval(0);
-    connect(&m_geometryCache, &QTimer::timeout, this, &WindowStateController::rememberNormalGeometry);
+    connect(&m_geometryCache, &QTimer::timeout, this, [this] {
+        updateSnappedState();
+        rememberNormalGeometry();
+    });
     m_animation.setEasingCurve(QEasingCurve::InOutQuint);
     connect(&m_animation, &QVariantAnimation::valueChanged, this,
             [this](const QVariant &value) { animateGeometry(value.toReal()); });
@@ -23,13 +81,25 @@ void WindowStateController::setWindow(QWindow *window)
     if (m_window == window)
         return;
     finishTransition();
-    if (m_window)
+    if (m_window) {
+        m_window->removeEventFilter(this);
         disconnect(m_window, nullptr, this, nullptr);
+    }
     m_window = window;
+#ifdef Q_OS_WIN
+    delete findChild<QObject *>(QStringLiteral("windowsSnapFilter"));
+#endif
     m_normalGeometry = {};
     m_nativeNormalRect = {};
+    if (m_snapped) {
+        m_snapped = false;
+        emit snappedChanged();
+    }
     if (m_window) {
+        m_window->installEventFilter(this);
+        enableNativeSnapping();
         connect(m_window, &QWindow::windowStateChanged, this, [this] {
+            enableNativeSnapping();
             emit stateChanged();
             if (!m_transitioning)
                 emit frameProgressChanged();
@@ -49,6 +119,7 @@ void WindowStateController::setWindow(QWindow *window)
         connect(m_window, &QObject::destroyed, this, [this] {
             m_animation.stop();
             m_transitioning = false;
+            updateSnappedState();
             emit windowChanged();
             emit stateChanged();
             emit transitionChanged();
@@ -59,6 +130,51 @@ void WindowStateController::setWindow(QWindow *window)
     emit windowChanged();
     emit stateChanged();
     emit frameProgressChanged();
+}
+
+bool WindowStateController::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_window && event->type() == QEvent::PlatformSurface
+        && static_cast<QPlatformSurfaceEvent *>(event)->surfaceEventType()
+               == QPlatformSurfaceEvent::SurfaceCreated)
+        enableNativeSnapping();
+    return QObject::eventFilter(watched, event);
+}
+
+void WindowStateController::enableNativeSnapping()
+{
+#ifdef Q_OS_WIN
+    if (!m_window || !m_window->handle() || fullScreen()
+        || !m_window->flags().testFlag(Qt::FramelessWindowHint))
+        return;
+    if (!findChild<QObject *>(QStringLiteral("windowsSnapFilter")))
+        new WindowsSnapFilter(m_window, this, [this] { m_geometryCache.start(); });
+    const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+    const LONG_PTR style = GetWindowLongPtr(handle, GWL_STYLE);
+    // Windows needs a resizable captioned window for native Snap participation.
+    // Qt's FramelessWindowHint still handles WM_NCCALCSIZE, keeping our QML frame.
+    const LONG_PTR snapStyle = style | WS_THICKFRAME | WS_CAPTION;
+    if (style != snapStyle) {
+        SetWindowLongPtr(handle, GWL_STYLE, snapStyle);
+        SetWindowPos(handle, nullptr, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+#endif
+}
+
+void WindowStateController::updateSnappedState()
+{
+    if (m_transitioning || (m_window && m_window->windowStates().testFlag(Qt::WindowMinimized)))
+        return;
+    bool snapped = false;
+#ifdef Q_OS_WIN
+    if (m_window && m_window->handle() && !maximized() && !fullScreen())
+        snapped = isWindowSnapped(reinterpret_cast<HWND>(m_window->winId()));
+#endif
+    if (m_snapped != snapped) {
+        m_snapped = snapped;
+        emit snappedChanged();
+    }
 }
 
 bool WindowStateController::maximized() const

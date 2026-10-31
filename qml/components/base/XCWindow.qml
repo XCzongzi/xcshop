@@ -25,8 +25,9 @@ Window {
 
     property bool titleBarColorFilling: false
     readonly property bool expanded: windowState.maximized || windowState.fullScreen
-    readonly property real margins: Constants.margins * (1 - windowState.frameProgress)
-    readonly property real frameRadius: Constants.window_radius * (1 - windowState.frameProgress)
+    readonly property bool snapped: windowState.snapped
+    readonly property real margins: snapped ? 0 : Constants.margins * (1 - windowState.frameProgress)
+    readonly property real frameRadius: snapped ? 0 : Constants.window_radius * (1 - windowState.frameProgress)
     readonly property bool roundedFrame: margins > 0.01
     readonly property real titleButtonSize: 30 + 6 * windowState.frameProgress
     readonly property int surfaceWidth: windowSurface.width

@@ -15,6 +15,7 @@ class WindowStateController : public QObject
     Q_PROPERTY(QWindow *window READ window WRITE setWindow NOTIFY windowChanged REQUIRED)
     Q_PROPERTY(bool maximized READ maximized NOTIFY stateChanged)
     Q_PROPERTY(bool fullScreen READ fullScreen NOTIFY stateChanged)
+    Q_PROPERTY(bool snapped READ snapped NOTIFY snappedChanged)
     Q_PROPERTY(bool transitioning READ transitioning NOTIFY transitionChanged)
     Q_PROPERTY(qreal frameProgress READ frameProgress NOTIFY frameProgressChanged)
 
@@ -24,6 +25,7 @@ public:
     void setWindow(QWindow *window);
     bool maximized() const;
     bool fullScreen() const;
+    bool snapped() const { return m_snapped; }
     bool transitioning() const { return m_transitioning; }
     qreal frameProgress() const;
     Q_INVOKABLE void toggleMaximized(int duration = 240);
@@ -37,8 +39,14 @@ signals:
     void stateChanged();
     void transitionChanged();
     void frameProgressChanged();
+    void snappedChanged();
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
+    void enableNativeSnapping();
+    void updateSnappedState();
     void rememberNormalGeometry();
     void rememberNativePlacement();
     void restoreNativePlacement();
@@ -57,4 +65,5 @@ private:
     bool m_transitioning = false;
     bool m_maximizing = false;
     bool m_committing = false;
+    bool m_snapped = false;
 };

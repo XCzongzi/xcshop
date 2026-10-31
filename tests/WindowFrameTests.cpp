@@ -89,6 +89,10 @@ private:
         QTRY_VERIFY(m_window->isActive());
         QTest::qWait(150);
         const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        const LONG_PTR style = GetWindowLongPtr(handle, GWL_STYLE);
+        QVERIFY2((style & (WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX))
+                     == (WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX),
+                 "Native dragging must expose the window styles required by Windows Snap");
         RECT originalRect;
         QVERIFY(GetWindowRect(handle, &originalRect));
         POINT originalCursor;
@@ -361,6 +365,112 @@ private slots:
     {
         verifyTransparentFrame();
         verifyNativeMove();
+    }
+
+    void dragToTopSnapsNatively()
+    {
+#ifdef Q_OS_WIN
+        BOOL arranging = FALSE;
+        if (!SystemParametersInfo(SPI_GETWINARRANGING, 0, &arranging, 0) || !arranging)
+            QSKIP("Window snapping is disabled in Windows settings");
+        const QRect normal = m_window->geometry();
+        m_window->raise();
+        m_window->requestActivate();
+        QTRY_VERIFY(m_window->isActive());
+        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        MONITORINFO monitor = {};
+        monitor.cbSize = sizeof(monitor);
+        QVERIFY(GetMonitorInfo(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), &monitor));
+        POINT originalCursor;
+        QVERIFY(GetCursorPos(&originalCursor));
+        POINT press = {};
+        QVERIFY(ClientToScreen(handle, &press));
+        const qreal scale = m_window->devicePixelRatio();
+        const int margin = m_window->property("margins").toInt();
+        press.x += qRound((margin + 200) * scale);
+        press.y += qRound((margin + 18) * scale);
+        const POINT target = {(monitor.rcWork.left + monitor.rcWork.right) / 2,
+                              monitor.rcWork.top};
+        auto *drag = QThread::create([=] {
+            SetCursorPos(press.x, press.y);
+            INPUT button = {};
+            button.type = INPUT_MOUSE;
+            button.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            SendInput(1, &button, sizeof(button));
+            QThread::msleep(150);
+            for (int step = 1; step <= 30; ++step) {
+                SetCursorPos(press.x + (target.x - press.x) * step / 30,
+                             press.y + (target.y - press.y) * step / 30);
+                QThread::msleep(20);
+            }
+            QThread::msleep(650);
+            button.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            SendInput(1, &button, sizeof(button));
+            SetCursorPos(originalCursor.x, originalCursor.y);
+        });
+        drag->start();
+        QTRY_VERIFY_WITH_TIMEOUT(drag->isFinished(), 5000);
+        drag->wait();
+        delete drag;
+        QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        m_window->showNormal();
+        QTRY_COMPARE(m_window->geometry(), normal);
+#endif
+    }
+
+    void snappedWindowHasNoShadowMargins()
+    {
+#ifdef Q_OS_WIN
+        BOOL arranging = FALSE;
+        if (!SystemParametersInfo(SPI_GETWINARRANGING, 0, &arranging, 0) || !arranging)
+            QSKIP("Window snapping is disabled in Windows settings");
+        const QRect normal = m_window->geometry();
+        const qreal normalMargin = m_window->property("margins").toReal();
+        const qreal normalRadius = m_window->property("frameRadius").toReal();
+        QVERIFY(normalMargin > 0);
+        m_window->raise();
+        m_window->requestActivate();
+        QTRY_VERIFY(m_window->isActive());
+        INPUT keys[4] = {};
+        for (auto &key : keys) key.type = INPUT_KEYBOARD;
+        keys[0].ki.wVk = VK_LWIN;
+        keys[1].ki.wVk = VK_LEFT;
+        keys[1].ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
+        keys[2].ki.wVk = VK_LEFT;
+        keys[2].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+        keys[3].ki.wVk = VK_LWIN;
+        keys[3].ki.dwFlags = KEYEVENTF_KEYUP;
+        QCOMPARE(SendInput(4, keys, sizeof(INPUT)), UINT(4));
+        QTRY_VERIFY(m_window->property("snapped").toBool());
+        QCOMPARE(m_window->visibility(), QWindow::Windowed);
+        QCOMPARE(m_window->property("margins").toReal(), 0.0);
+        QCOMPARE(m_window->property("frameRadius").toReal(), 0.0);
+        QCOMPARE(m_window->property("surfaceWidth").toInt(), m_window->width());
+        QCOMPARE(m_window->property("surfaceHeight").toInt(), m_window->height());
+        QTest::qWait(200);
+        const QImage snapped = m_window->grabWindow();
+        QVERIFY(!snapped.isNull());
+        QVERIFY(snapped.pixelColor(2, snapped.height() / 2).alpha() > 250);
+        QVERIFY(snapped.pixelColor(snapped.width() - 3, snapped.height() / 2).alpha() > 250);
+        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        SendMessage(handle, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+        QTRY_COMPARE(m_window->visibility(), QWindow::Minimized);
+        QVERIFY(m_window->property("snapped").toBool());
+        nativeRestore();
+        QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
+        QTRY_VERIFY(m_window->property("snapped").toBool());
+        SendMessage(handle, WM_SYSCOMMAND, SC_RESTORE, 0);
+        QTRY_VERIFY(!m_window->property("snapped").toBool());
+        QTRY_COMPARE(m_window->property("margins").toReal(), normalMargin);
+        QCOMPARE(m_window->property("frameRadius").toReal(), normalRadius);
+        QTRY_COMPARE(m_window->geometry(), normal);
+        // Merely moving a free window against an edge must retain its shadow.
+        m_window->setPosition(m_window->screen()->availableGeometry().topLeft());
+        QTest::qWait(100);
+        QVERIFY(!m_window->property("snapped").toBool());
+        QCOMPARE(m_window->property("margins").toReal(), normalMargin);
+        m_window->setGeometry(normal);
+#endif
     }
 
     void resizeBorderAndFullScreen()
