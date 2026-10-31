@@ -38,7 +38,6 @@ Rectangle{
         if (noAnimation)
             colorAnimationEnableTimer.start()
     }
-    function setColor_banned(){}
 
 
     ButtonStateOverlay {

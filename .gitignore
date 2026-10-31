@@ -1,6 +1,8 @@
 # CMake / Qt build output
 /build/
 /build-mingw-debug/
+/build-*/
+/cmake-build-*/
 /out/
 /CMakeFiles/
 /CMakeCache.txt
@@ -10,6 +12,7 @@
 
 # IDE and local tooling
 /.tmp/
+/.local/
 /.vs/
 /.idea/
 /.vscode/*
@@ -17,11 +20,24 @@
 /.qmlls.ini
 *.user
 *.user.*
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
 
 # Local application data
 /settings.json
 /update-state.ini
 /item-mappings.json
+/projects/
+/backgrounds/
+/builder/
+.xcshop-relay.json
 
 # Keep generated Minecraft assets and caches local; include only bundled GUI images.
 /assets/minecraft/*
@@ -39,6 +55,27 @@
 /assets/minecraft/gui/item_lore/*
 !/assets/minecraft/gui/item_lore/background.png
 !/assets/minecraft/gui/item_lore/frame.png
+
+# Publish only the bundled Alpha r0 kit sources.
+/kits/*
+!/kits/alpha-r0-README.md
+!/kits/templates/
+/kits/templates/*
+!/kits/templates/alpha-r0.xcshopT
+!/kits/blueprints/
+/kits/blueprints/*
+!/kits/blueprints/alpha-r0/
+/kits/blueprints/alpha-r0/*
+!/kits/blueprints/alpha-r0/*.xcshoper
+!/kits/materials/
+/kits/materials/*
+!/kits/materials/alpha-r0-26.3/
+/kits/materials/alpha-r0-26.3/*
+!/kits/materials/alpha-r0-26.3/*.xcontent
+!/kits/materials/alpha-r0-26.3/*.xclist
+
+# Editable design source kept locally.
+/assets/gui/typeBar/UI.psd
 
 
 # Project ideas / design notes (local only)

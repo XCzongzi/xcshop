@@ -15,7 +15,6 @@ ResizableEditor {
         1: SyntaxMode1,
         2: SyntaxMode2
     })
-    property int syntaxHighlighterRevision: 0
     property string placeholderText
     readonly property bool syntaxError: isSyntaxError(textField.text)
 
@@ -55,7 +54,6 @@ ResizableEditor {
     }
 
     function createHighlightedText(source) {
-        syntaxHighlighterRevision
         syntaxPaletteRevision
         return ItemSyntaxHighlighter.highlight(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
@@ -63,25 +61,10 @@ ResizableEditor {
     }
 
     function isSyntaxError(source) {
-        syntaxHighlighterRevision
         syntaxPaletteRevision
         return ItemSyntaxHighlighter.isInvalid(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
                                                 ItemSyntaxParser)
-    }
-
-    function registerSyntaxHighlighter(mode, highlighter) {
-        if (mode > 0 && highlighter && typeof highlighter.highlight === "function") {
-            syntaxHighlighters[mode] = highlighter
-            syntaxHighlighterRevision++
-        }
-    }
-
-    function unregisterSyntaxHighlighter(mode) {
-        if (mode > 2 && syntaxHighlighters[mode]) {
-            delete syntaxHighlighters[mode]
-            syntaxHighlighterRevision++
-        }
     }
 
     Text {

@@ -8,8 +8,6 @@ Item{
 
     property string keyText : "键"
     property string fieldText : "请输入值"
-    property int fieldX : field.x
-    //property string context : field.text
     height: propertyText.height + field.height + 2
     
 

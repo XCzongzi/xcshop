@@ -18,14 +18,10 @@ QtObject {
     property color paletteMutedText: "#bbbbbb"
     property color banned: softenLightInk(imageMode ? surfaceColor("imageMuted", paletteMutedText) : paletteMutedText, 0.12)
 
-    property string gui_theme: "dark"
-
     readonly property color error: isLight ? (imageMode ? "#4f0b17" : "#961c2e") : "#FF0000"
     readonly property color warning: isLight ? (imageMode ? "#3d2005" : "#6d400c") : "#e0a33b"
 
     readonly property color transparent: "transparent"
-    readonly property color nest_light: "#10ffffff"
-    readonly property color mask: "#33000000"
 
     // 主题配色状态与调色板统一由 Colors 管理。
     property color themeColor: "#2f8cff"
@@ -35,8 +31,6 @@ QtObject {
 
     readonly property var colorSchemes: ThemeCatalog.choices()
 
-    // gui_theme names the icon variant, so "dark" there means dark icons on a
-    // light surface. Derive the UI mode from the palette instead.
     readonly property bool isLight: !!ThemeCatalog.lightSurfaces[colorScheme]
     readonly property bool imageMode: isLight && Global.backgroundMode === "image"
     readonly property var lightPalette: ThemeCatalog.lightSurfaces[colorScheme] || ({})
@@ -91,7 +85,7 @@ QtObject {
     }
 
     function isMonochromeUiIcon(source) {
-        return /^qrc:\/assets\/gui\/(?:typeBar\/(?:(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)|Total|UI|Item|Cost|Display)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)(?:_(?:dark|light))?\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
+        return /^qrc:\/assets\/gui\/(?:typeBar\/(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)_(?:dark|light)\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
     }
 
     function whiteUiIconSource(source) {
@@ -139,7 +133,6 @@ QtObject {
         paletteText = palette.text
         paletteMutedText = palette.banned
         glass_highlight = palette.highlight
-        gui_theme = palette.gui_theme
 
         var accent = accentForColorScheme(colorScheme)
         if (accent.length)

@@ -48,7 +48,7 @@ Window {
             anchors.fill: parent
             Image {
                 anchors.fill: parent
-                source: "qrc:/assets/gui/png/background1.png"
+                source: "qrc:/assets/backgrounds/望夜城.png"
                 fillMode: Image.PreserveAspectCrop
                 visible: Global.backgroundMode === "image"
                 layer.enabled: Global.backgroundBlur > 0 && GraphicsInfo.api !== GraphicsInfo.Software

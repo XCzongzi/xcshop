@@ -2,13 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(xcshop VERSION 0.1.0 LANGUAGES CXX)
 
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(QT_QML_GENERATE_QMLLS_INI ON)   #图形效果
-
-
-
+set(QT_QML_GENERATE_QMLLS_INI ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Concurrent)
 
@@ -28,34 +24,31 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 include_directories(header)    # 头文件目录
 
-#QT策略
+# Generate implicit imports for QML files in subdirectories.
 qt_policy(
-    SET QTP0004 NEW #为了解决模块化问题（我也不知道具体干什么的
+    SET QTP0004 NEW
 )
 
-
-set(CMAKE_AUTORCC ON)   #解决资源文件问题，一定要放在qt_add_executable前边
+set(CMAKE_AUTORCC ON)
 qt_add_executable(appxcshop
-    src/main.cpp
-    src/XCFile.cpp
-    src/MinecraftAssetImporter.cpp
     src/MinecraftGameData.cpp
     src/MinecraftItemRenderer.cpp
-    src/ElementIO.cpp
     src/BuildKitManager.cpp
     src/BuildManager.cpp
     src/WindowStateController.cpp
     src/UpdateChecker.cpp
     header/UpdateChecker.h
+    gui.qrc
+    about.qrc
+    gui_light.qrc
+    container.qrc
 )
 
-
-set_source_files_properties(appxcshop
+set_source_files_properties(
     qml/Colors.qml
     qml/Constants.qml
     qml/Global.qml
     qml/SignalBus.qml
-    qml/Temp/Console.qml    # 控制台，临时
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 set_source_files_properties(
@@ -70,8 +63,6 @@ set_source_files_properties(
     js/syntax/mode-2.js
     PROPERTIES QT_QML_SKIP_QMLDIR_ENTRY TRUE)
 
-
-
 qt_add_qml_module(appxcshop
     URI xcshop
     VERSION 1.0
@@ -81,7 +72,6 @@ qt_add_qml_module(appxcshop
         qml/Constants.qml
         qml/Global.qml
         qml/SignalBus.qml
-
 
         qml/components/base/ActionButton.qml
         qml/components/base/XCComboBox.qml
@@ -137,7 +127,6 @@ qt_add_qml_module(appxcshop
         qml/components/popup/PopupJsonTextEditor.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
-        qml/components/base/BranchBar.qml
         qml/components/base/VariableTextField.qml
         qml/components/base/VariableTextArea.qml
         qml/components/base/ScrollBar.qml
@@ -162,7 +151,6 @@ qt_add_qml_module(appxcshop
         qml/components/FileSystem/XCFileTreeBar.qml
         qml/components/FileSystem/FileButton.qml
         qml/components/FileSystem/FileCtrlBar.qml
-
 
         qml/pages/Controls/_Item/Item_triggerBar.qml
         qml/pages/Controls/_Item/Item_operationCard.qml
@@ -194,7 +182,6 @@ qt_add_qml_module(appxcshop
         qml/pages/PageWithEmpty.qml
         qml/pages/PageOnStart.qml
         qml/pages/PageOnCreating.qml
-        qml/pages/PageOnOpening.qml
         qml/pages/PageOnTotal.qml
         qml/pages/PageOnUI.qml
         qml/pages/PageOnItem.qml
@@ -208,8 +195,6 @@ qt_add_qml_module(appxcshop
         qml/pages/settings/SettingsItems.qml
         qml/pages/PageOnAbout.qml
 
-
-        assets/js/request.js
         js/syntax/ItemSyntaxHighlighter.js
         js/ThemeCatalog.js
         js/MinecraftTextColors.js
@@ -220,16 +205,7 @@ qt_add_qml_module(appxcshop
         js/syntax/mode-1.js
         js/syntax/mode-2.js
 
-
-        qml/Temp/Console.qml
-
     RESOURCES
-        gui.qrc
-        about.qrc
-        gui_dark.qrc
-        gui_light.qrc
-        container.qrc
-        js.qrc
         js/ElementRelayState.js
     SOURCES
         src/XCFile.cpp
@@ -248,19 +224,11 @@ qt_add_qml_module(appxcshop
         header/WindowStateController.h
 )
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 set_target_properties(appxcshop PROPERTIES
-#    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.appxcshop
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
-
-    # AUTOMOC TRUE
-    # AUTORCC TRUE
-    # AUTOUIC TRUE
 )
 
 target_link_libraries(appxcshop
@@ -280,7 +248,10 @@ install(TARGETS appxcshop
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(DIRECTORY kits/ DESTINATION ${CMAKE_INSTALL_BINDIR}/kits)
+# Install the same bundled inputs as the post-build seed step.
+install(CODE "set(KITS_SOURCE \"${CMAKE_CURRENT_SOURCE_DIR}/kits\")
+    set(KITS_TARGET \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/kits\")
+    include(\"${CMAKE_CURRENT_SOURCE_DIR}/tools/SeedBuildKits.cmake\")")
 
 option(XCSHOP_BUILD_TESTS "Build editor integration tests" OFF)
 if(XCSHOP_BUILD_TESTS)

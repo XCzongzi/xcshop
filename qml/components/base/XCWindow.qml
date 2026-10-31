@@ -74,7 +74,7 @@ Window {
             Image {
                 id: backgroundImage
                 anchors.fill: parent
-                source: root.backgroundSource.length ? root.backgroundSource : "qrc:/assets/gui/png/background1.png"
+                source: root.backgroundSource.length ? root.backgroundSource : "qrc:/assets/backgrounds/望夜城.png"
                 visible: root.backgroundMode === "image"
                 fillMode: Image.PreserveAspectCrop
                 layer.enabled: root.backgroundBlur > 0

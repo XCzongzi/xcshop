@@ -71,12 +71,8 @@ QtObject{
 
     property var current_fileLocation: ["","","","",""] //用列表来存储每个元素的当前文件信息，即可通过数字访问
     property var current_fileName: ["","","","",""]
-    readonly property string current_file: current_fileLocation[current_enum] + "/" + current_fileName[current_enum] + ".xcse" + current_element    //动态计算当前整体文件路径
     function get_fileName(){
         return current_fileName[current_enum]
-    }
-    function get_fileLocation(containPrefix){    //获取文件路径，但不包含文件名
-        return containPrefix ? "file:" + current_fileLocation[current_enum] : current_fileLocation[current_enum]
     }
     function get_filePath(){    //获取文件路径，包含文件名
         return current_fileLocation[current_enum] + "/" + current_fileName[current_enum] + ".xcse" + current_element

@@ -45,7 +45,6 @@ XCWindow {
         
         typeBar.opacity = false
         typeBar.isEnabled = false
-        //mainWindow.showFilePage = true //临时的
         Global.mainWindow_background = mainWindow.background
         Global.mainWindow_backdrop = mainWindow.backdrop
         Global.mainWindow_popupBackdrop = popupBlurSource
@@ -197,7 +196,6 @@ XCWindow {
             visible: root.workspaceChromeVisible
             barWidth: Global.elementExplorerWidth
             onStartedChanged:{
-                Console.output("ElementExplorer started to be changed to " + elementExplorer.started)
                 // 打开或删除当前类型的文件都会改变 started。两种情况都
                 // 必须刷新页面，才能在删除后切回 PageWithEmpty。
                 if (Global.project_location != "")
@@ -413,7 +411,6 @@ XCWindow {
                 break
                 case "switched_file":
                     if(pageLoader.sourceComponent === Constants.pageWithEmpty)return
-                    Console.output("switched")
                     var tempcom = pageLoader.sourceComponent
                     pageLoader.sourceComponent = undefined
                     pageLoader.pageSwitch(tempcom)

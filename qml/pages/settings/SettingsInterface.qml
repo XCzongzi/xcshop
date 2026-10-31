@@ -66,12 +66,6 @@ Item {
         Colors.applyColorScheme(schemeId)
         Global.saveSettings()
     }
-    function colorSchemeData(schemeId) {
-        for (var i = 0; i < colorChoices.length; ++i)
-            if (colorChoices[i].id === schemeId)
-                return colorChoices[i]
-        return colorChoices[0]
-    }
 
     XCFileDialog {
         id: imageFileDialog

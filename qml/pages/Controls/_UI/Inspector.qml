@@ -10,7 +10,6 @@ ContentSurface {
     property int minimumWidth: 260
     property int maximumWidth: minimumWidth
     property var uiPage: null
-    property alias selectedSection: propertyEditor.selected
 
     signal widthRequested(int width)
     signal widthResizeFinished()

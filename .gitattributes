@@ -1,0 +1,7 @@
+# Keep source archives, resource hashes and kit ZIP inputs consistent across OSes.
+* text=auto eol=lf
+
+*.png binary
+*.psd binary
+*.zip binary
+*.xlsx binary

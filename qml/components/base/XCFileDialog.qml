@@ -6,7 +6,6 @@ FileDialog{
     id: root
 
     property bool isSave: false
-    property bool isFloder: false
     property string dialogID: ""
     fileMode: isSave? FileDialog.SaveFile : FileDialog.OpenFile
     
