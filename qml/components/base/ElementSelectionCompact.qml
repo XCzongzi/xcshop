@@ -152,7 +152,14 @@ ElementSelectionBase {
         width: 28
         height: 28
         radius: 6
-        text: "×"
+        text: ""
+        ThemedIcon {
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+            iconSource: "qrc:/assets/gui/controls/delete.svg"
+            tintColor: Colors.banned
+        }
         textSize: 17
         boldFont: false
         textColor: Colors.banned

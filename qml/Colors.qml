@@ -79,7 +79,7 @@ QtObject {
     }
 
     function isMonochromeUiIcon(source) {
-        return /^qrc:\/assets\/gui\/(?:typeBar\/(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)_(?:dark|light)\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
+        return String(source) === "qrc:/assets/gui/controls/delete.svg" || /^qrc:\/assets\/gui\/(?:typeBar\/(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)_(?:dark|light)\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
     }
 
     function whiteUiIconSource(source) {

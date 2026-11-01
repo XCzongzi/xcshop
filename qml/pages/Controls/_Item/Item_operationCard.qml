@@ -141,7 +141,7 @@ Item {
                 objectName: "removeOperationButton"
                 btnSize: 32
                 imgSize: 16
-                imageSource: "qrc:/assets/gui/titleBar/close.png"
+                imageSource: "qrc:/assets/gui/controls/delete.svg"
                 radius: frame.radius
                 topLeftRadius: 0
                 topRightRadius: radius

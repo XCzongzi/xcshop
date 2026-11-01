@@ -137,7 +137,14 @@ ContentSurface {
             width: 26
             height: 26
             radius: 6
-            text: "×"
+            text: ""
+            ThemedIcon {
+                anchors.centerIn: parent
+                width: 16
+                height: 16
+                iconSource: "qrc:/assets/gui/controls/delete.svg"
+                tintColor: Colors.text
+            }
             textSize: 17
             boldFont: false
             enabled: root.itemCount > 0

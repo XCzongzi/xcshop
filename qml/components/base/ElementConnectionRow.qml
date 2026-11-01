@@ -32,6 +32,8 @@ Item {
             objectName: "removeCostButton"
             anchors.verticalCenter: parent.verticalCenter
             btnSize: 32
+            imgSize: 18
+            imageSource: "qrc:/assets/gui/controls/delete.svg"
             radius: 8
             btnbackground: Colors.changeA(Colors.error, 0.72)
             btnfired: Colors.changeA(Colors.error, 0.90)

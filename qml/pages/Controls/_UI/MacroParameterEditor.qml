@@ -142,7 +142,14 @@ Item {
                     width: 32
                     height: parent.height
                     radius: 7
-                    text: "×"
+                    text: ""
+                    ThemedIcon {
+                        anchors.centerIn: parent
+                        width: 16
+                        height: 16
+                        iconSource: "qrc:/assets/gui/controls/delete.svg"
+                        tintColor: Colors.banned
+                    }
                     textSize: 18
                     boldFont: false
                     textColor: Colors.banned

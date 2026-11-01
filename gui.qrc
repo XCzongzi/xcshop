@@ -18,6 +18,7 @@
         <file>assets/gui/element/Display.png</file>
         <file>assets/gui/controls/expand_up.png</file>
         <file>assets/gui/controls/expand_down.png</file>
+        <file>assets/gui/controls/delete.svg</file>
         <file>assets/gui/png/logo.png</file>
         <file>assets/gui/controls/new_project.png</file>
         <file>assets/gui/controls/open_project.png</file>

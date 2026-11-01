@@ -168,7 +168,14 @@ Item {
             width: 24
             height: 24
             radius: 6
-            text: "×"
+            text: ""
+            ThemedIcon {
+                anchors.centerIn: parent
+                width: 16
+                height: 16
+                iconSource: "qrc:/assets/gui/controls/delete.svg"
+                tintColor: Colors.error
+            }
             textSize: 18
             textColor: Colors.error
             buttonColor: Colors.transparent
