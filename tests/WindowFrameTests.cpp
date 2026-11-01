@@ -246,7 +246,12 @@ private slots:
             QSignalSpy frames(m_window, &QQuickWindow::frameSwapped);
             bool sawIntermediate = false;
             bool fixedControlMetrics = true;
+            bool monotonicWidth = true;
+            int previousWidth = sourceGeometry.width();
             const auto monitor = connect(m_window, &QWindow::widthChanged, this, [&](int width) {
+                monotonicWidth = monotonicWidth && (expected == QWindow::Maximized
+                    ? width >= previousWidth : width <= previousWidth);
+                previousWidth = width;
                 if (width != sourceGeometry.width() && width != targetGeometry.width()) {
                     sawIntermediate = true;
                     const QPointF unit = title->mapToScene(QPointF(1, 0)) - title->mapToScene(QPointF(0, 0));
@@ -258,9 +263,11 @@ private slots:
             });
             QVERIFY(QMetaObject::invokeMethod(m_window, "toggleMaximized"));
             QVERIFY(controller->transitioning());
+            QCOMPARE(m_window->geometry(), sourceGeometry);
             QCOMPARE(m_window->opacity(), 1.0);
             QTRY_VERIFY(!controller->transitioning());
             disconnect(monitor);
+            QVERIFY2(monotonicWidth, "The window must not jump backwards during maximize/restore");
             QVERIFY2(sawIntermediate, "The real window must pass through intermediate geometry");
             QVERIFY2(fixedControlMetrics, "Controls and text must keep their real size throughout resizing");
             QCOMPARE(m_window->visibility(), expected);

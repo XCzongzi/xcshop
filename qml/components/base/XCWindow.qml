@@ -101,7 +101,9 @@ Window {
             // the original backdrop from the normal scene composition.
             hideSource: true
             live: true
-            layer.enabled: root.roundedFrame
+            // Keep the render graph alive across maximize/restore. Recreating
+            // the mask and shadow layers at the endpoints stalls or flashes.
+            layer.enabled: true
             layer.effect: OpacityMask{
                 maskSource: Rectangle{
                     width: root.surfaceWidth
@@ -110,9 +112,10 @@ Window {
                 }
             }
         }
-        layer.enabled: root.roundedFrame
+        layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
+            shadowOpacity: 1 - windowState.frameProgress
             shadowColor: "#d0000000"
             shadowBlur: 0.9
             shadowHorizontalOffset: 4

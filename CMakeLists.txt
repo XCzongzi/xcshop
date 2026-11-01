@@ -237,6 +237,9 @@ target_link_libraries(appxcshop
     PRIVATE Qt6::Quick Qt6::QuickPrivate Qt6::QuickControls2 Qt6::Network Qt6::Concurrent xcshop_kit_archive
 )
 target_compile_definitions(appxcshop PRIVATE XCSHOP_VERSION="${PROJECT_VERSION}")
+if(WIN32)
+    target_link_libraries(appxcshop PRIVATE dwmapi)
+endif()
 
 # Seed bundled kits without replacing templates already installed/edited by the user.
 add_custom_command(TARGET appxcshop POST_BUILD

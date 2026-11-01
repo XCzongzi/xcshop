@@ -3,13 +3,39 @@
 #include <QGuiApplication>
 #include <QSettings>
 #include <QPlatformSurfaceEvent>
+#include <QScopedValueRollback>
 #include <QtMath>
 #include <functional>
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
+#include <dwmapi.h>
 #include <QAbstractNativeEventFilter>
 
 namespace {
+class ScopedNativeTransitionSuppression
+{
+public:
+    explicit ScopedNativeTransitionSuppression(QWindow *window)
+        : m_handle(reinterpret_cast<HWND>(window->winId()))
+    {
+        const BOOL disabled = TRUE;
+        m_disabled = SUCCEEDED(DwmSetWindowAttribute(m_handle, DWMWA_TRANSITIONS_FORCEDISABLED,
+                                                     &disabled, sizeof(disabled)));
+    }
+    ~ScopedNativeTransitionSuppression()
+    {
+        if (m_disabled) {
+            const BOOL disabled = FALSE;
+            DwmSetWindowAttribute(m_handle, DWMWA_TRANSITIONS_FORCEDISABLED,
+                                  &disabled, sizeof(disabled));
+        }
+    }
+
+private:
+    HWND m_handle;
+    bool m_disabled = false;
+};
+
 bool isWindowSnapped(HWND handle)
 {
     // Resolve at runtime for Qt kits whose SDK predates IsWindowArranged,
@@ -31,12 +57,38 @@ public:
     }
     ~WindowsSnapFilter() override { qApp->removeNativeEventFilter(this); }
 
+    void restoreInPlace()
+    {
+        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        RECT client = {};
+        POINT origin = {};
+        if (!GetClientRect(handle, &client) || !ClientToScreen(handle, &origin))
+            return;
+        // Preserve the visible client, rather than the outer maximized frame:
+        // Windows' invisible resize borders disappear when leaving maximized.
+        m_restoreGeometry = QRect(origin.x, origin.y, client.right, client.bottom);
+        const ScopedNativeTransitionSuppression suppressNativeTransition(m_window);
+        const QScopedValueRollback preserveGeometry(m_preservingGeometry, true);
+        m_window->setWindowStates(Qt::WindowNoState);
+    }
+
     bool nativeEventFilter(const QByteArray &, void *message, qintptr *result) override
     {
         const auto *msg = static_cast<MSG *>(message);
         if (!m_window || !m_window->handle()
             || msg->hwnd != reinterpret_cast<HWND>(m_window->winId()))
             return false;
+        if (msg->message == WM_WINDOWPOSCHANGING && m_preservingGeometry) {
+            // Clear the maximized state without visiting the saved restore
+            // rectangle. The live animation owns position and size.
+            auto *position = reinterpret_cast<WINDOWPOS *>(msg->lParam);
+            position->x = m_restoreGeometry.x();
+            position->y = m_restoreGeometry.y();
+            position->cx = m_restoreGeometry.width();
+            position->cy = m_restoreGeometry.height();
+            position->flags &= ~(SWP_NOMOVE | SWP_NOSIZE);
+            position->flags |= SWP_NOZORDER | SWP_NOACTIVATE;
+        }
         if (msg->message == WM_WINDOWPOSCHANGED || msg->message == WM_EXITSIZEMOVE
             || msg->message == WM_SIZE)
             m_changed();
@@ -58,6 +110,8 @@ public:
 private:
     QPointer<QWindow> m_window;
     std::function<void()> m_changed;
+    QRect m_restoreGeometry;
+    bool m_preservingGeometry = false;
 };
 }
 #endif
@@ -327,12 +381,10 @@ void WindowStateController::toggleMaximized(int duration)
     m_transitioning = true;
     emit transitionChanged();
 #ifdef Q_OS_WIN
-    if (!maximizeNext) {
-        // Clear only the native zoom constraint, without restoring/moving the
-        // window first. Qt keeps its state until the live resize has finished.
-        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
-        const LONG_PTR style = GetWindowLongPtr(handle, GWL_STYLE);
-        SetWindowLongPtr(handle, GWL_STYLE, style & ~LONG_PTR(WS_MAXIMIZE));
+    if (!maximizeNext && maximized()) {
+        if (auto *filter = static_cast<WindowsSnapFilter *>(
+                findChild<QObject *>(QStringLiteral("windowsSnapFilter"))))
+            filter->restoreInPlace();
     }
 #else
     if (!maximizeNext) {
@@ -364,6 +416,11 @@ void WindowStateController::finishTransition()
     if (!m_window || !m_transitioning || m_committing)
         return;
     m_committing = true;
+#ifdef Q_OS_WIN
+    // The live geometry animation has already reached its destination. Do not
+    // let ShowWindow/SetWindowPlacement play a second system transition here.
+    const ScopedNativeTransitionSuppression suppressNativeTransition(m_window);
+#endif
     m_animation.stop();
     m_frameProgress = m_toFrameProgress;
     emit frameProgressChanged();
