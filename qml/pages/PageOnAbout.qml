@@ -401,8 +401,8 @@ BasePage {
                         width: parent.width
                         color: root.mutedInk
                         lineHeight: 1.6
-                        text: "xcshop是一款面向Minecraft JE的数据包生成工具，基于Minecraft原版容器界面快速生成具有商店、菜单交互功能的数据包。\n\n"
-                              + "本产品非 MINECRAFT官方产品。未经 MOJANG 或 MICROSOFT 批准，且与其无关联。\n\n"
+                        text: "xcshop（UI商店生成器）是一款面向Minecraft JE的数据包生成工具，基于Minecraft原版容器界面快速生成具有商店、菜单交互功能的数据包。\n\n"
+                              + "本产品非 MINECRAFT 官方产品。未经 MOJANG 或 MICROSOFT 批准，且与其无关联。\n\n"
                               + "本编辑器代码以 GNU GPLv3(GPL-3.0-only) 许可证开源，并附构建器互操作额外许可。源码及完整许可说明见项目仓库。独立构建器不在开源范围内。\n"
                               + "https://github.com/XCzongzi/xcshop\n\n"
                               + "Copyright © 2026 XCzongzi. 版权所有。"

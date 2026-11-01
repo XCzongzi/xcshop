@@ -18,23 +18,19 @@ ResizableEditor {
     property string placeholderText
     readonly property bool syntaxError: isSyntaxError(textField.text)
 
-    // 浅色背景使用更深的墨色，深色背景使用粉彩。
-    readonly property bool lightSyntaxTheme: (Colors.background_n.r * 0.2126
-                                               + Colors.background_n.g * 0.7152
-                                               + Colors.background_n.b * 0.0722) > 0.58
-    readonly property int syntaxPaletteRevision: lightSyntaxTheme ? 1 : 0
-    readonly property string itemIdColor: syntaxInk("#704600", "#ffe08a")
-    readonly property string keyColor: syntaxInk("#004c88", "#a5e8ff")
-    readonly property string stringColor: syntaxInk("#13552d", "#b9fbc8")
-    readonly property string numberColor: syntaxInk("#853000", "#ffc58a")
-    readonly property string quantityColor: syntaxInk("#56308b", "#e5c5ff")
-    readonly property string punctuationColor: syntaxInk("#344350", "#e2e8f0")
-    readonly property string booleanColor: syntaxInk("#005a49", "#99f6e4")
-    readonly property string invalidColor: syntaxInk("#9e1e2b", "#ff8a93")
+    // 浅色主题使用高饱和度配色，让不同语法标记保持鲜明的色相差异。
+    readonly property string itemIdColor: syntaxInk("#916000", "#ffe08a")
+    readonly property string keyColor: syntaxInk("#005bd6", "#a5e8ff")
+    readonly property string stringColor: syntaxInk("#087624", "#b9fbc8")
+    readonly property string numberColor: syntaxInk("#b34200", "#ffc58a")
+    readonly property string quantityColor: syntaxInk("#8429d6", "#e5c5ff")
+    readonly property string punctuationColor: syntaxInk("#394456", "#e2e8f0")
+    readonly property string booleanColor: syntaxInk("#006f75", "#99f6e4")
+    readonly property string invalidColor: syntaxInk("#cb1644", "#ff8a93")
 
     function syntaxInk(lightColor, darkColor) {
-        if (!lightSyntaxTheme) return darkColor
-        return Qt.darker(lightColor, Colors.imageMode ? 1.4 : 1.15).toString()
+        if (!Colors.isLight) return darkColor
+        return lightColor
     }
 
     function syntaxPalette() {
@@ -48,27 +44,23 @@ ResizableEditor {
             "punctuation": punctuationColor,
             "boolean": booleanColor,
             "invalid": invalidColor,
-            "brackets": lightSyntaxTheme ? [keyColor, quantityColor, itemIdColor]
-                                         : ["#a5e8ff", "#e5c5ff", "#ffe08a"]
+            "brackets": [keyColor, quantityColor, itemIdColor]
         }
     }
 
     function createHighlightedText(source) {
-        syntaxPaletteRevision
         return ItemSyntaxHighlighter.highlight(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
                                                 ItemSyntaxParser)
     }
 
     function isSyntaxError(source) {
-        syntaxPaletteRevision
         return ItemSyntaxHighlighter.isInvalid(source, syntaxHighlightMode,
                                                 syntaxPalette(), syntaxHighlighters,
                                                 ItemSyntaxParser)
     }
 
     function createHighlightRanges(source) {
-        syntaxPaletteRevision
         return ItemSyntaxHighlighter.ranges(source, syntaxHighlightMode,
                                            syntaxPalette(), syntaxHighlighters,
                                            ItemSyntaxParser)
@@ -81,6 +73,13 @@ ResizableEditor {
         width: parent.width
         height: root.inputHeight
         placeholderText: root.placeholderText
+        background: InputBackground {
+            focused: textField.activeFocus
+            idleOpacity: 0.50
+            color: Colors.changeA(Colors.isLight && root.syntaxHighlightMode !== 0
+                                  ? Qt.tint(Colors.input, "#33ffffff") : Colors.input,
+                                  focused ? 0.72 : idleOpacity)
+        }
         highlightRanges: root.createHighlightRanges(text)
         highlightMacros: root.highlightMacros
         onEditingFinished: root.commit()
