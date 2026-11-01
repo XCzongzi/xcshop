@@ -179,6 +179,7 @@ Window {
                     root.savedBackground = root.appWindow.backgroundSource
                     appLoader.item.pageEvent("Start.", { object: "about" })
                 } else if (root.stage === 14) {
+                    if (root.find(root.appWindow.contentItem, "workspaceEntrance").busy) return
                     var aboutLoader = root.find(root.appWindow.contentItem, "mainPageLoader")
                     root.check(aboutLoader.sourceComponent === Constants.pageOnAbout, "start-page navigation")
                     root.check(aboutLoader.item.width === root.appWindow.surfaceWidth

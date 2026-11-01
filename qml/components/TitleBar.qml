@@ -38,7 +38,7 @@ Rectangle {
         id: titleText
         objectName: "windowTitle"
         x:8
-        xcText: "【小菜粽子】UI商店生成器"
+        xcText: "xcshop"
         xcFontSize: 16
     }
     

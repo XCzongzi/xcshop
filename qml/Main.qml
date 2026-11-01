@@ -117,7 +117,6 @@ XCWindow {
         Item {
             id: popupBlurSource
             anchors.fill: parent
-            opacity: workspaceEntrance.contentOpacity
             ShaderEffectSource {
                 // Keep the backdrop viewport fixed to the whole window surface.
                 // Only page content moves down when the titlebar is reserved.
@@ -129,11 +128,17 @@ XCWindow {
                 sourceItem: mainWindow.backdrop
                 sourceRect: Qt.rect(0, 0, width, height)
             }
+            Item {
+                id: workspaceForeground
+                objectName: "workspaceForeground"
+                anchors.fill: parent
+                opacity: workspaceEntrance.contentOpacity
+            }
         }
         
         TypeBar{
             id: typeBar
-            parent: popupBlurSource
+            parent: workspaceForeground
             z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
             onTypeBtnClicked: typeName=>root.typeSwitch(typeName,false)
             bottomLeftRadius: mainWindow.frameRadius
@@ -204,7 +209,7 @@ XCWindow {
 
         ElementExplorer{
             id: elementExplorer
-            parent: popupBlurSource
+            parent: workspaceForeground
             z:97
             visible: root.workspaceChromeVisible
             barWidth: Global.elementExplorerWidth
@@ -218,7 +223,7 @@ XCWindow {
 
         ElementRelayBar {
             id: elementRelayBar
-            parent: popupBlurSource
+            parent: workspaceForeground
             z: 99
             x: root.pageX
             y: root.height - height
@@ -236,7 +241,7 @@ XCWindow {
             }
         }
         RelaySelectionMask{
-            parent: popupBlurSource
+            parent: workspaceForeground
         }
 
         PopupLoader {
@@ -280,7 +285,7 @@ XCWindow {
         // }
         FileControls {
             id: fileControlsBar
-            parent: popupBlurSource
+            parent: workspaceForeground
             visible: root.workspaceChromeVisible
             x: root.pageX
             onLocateCurrentElementRequested: elementExplorer.locateCurrentElement()
@@ -292,6 +297,8 @@ XCWindow {
 
         WorkspaceEntrance {
             id: workspaceEntrance
+            property Component destinationPage: null
+            showAboutBrand: destinationPage === Constants.pageOnAbout
             parent: mainWindow.contentItem
             x: mainWindow.margins
             y: mainWindow.margins
@@ -300,6 +307,11 @@ XCWindow {
             z: 98
             onCovered: {
                 opcAnim.stop()
+                if (destinationPage) {
+                    mainWindow.titleBarColorFilling = destinationPage === Constants.pageOnSettings
+                    pageLoader.sourceComponent = destinationPage
+                    return
+                }
                 if (closing) {
                     // Unload the workspace before clearing its backing state.
                     pageLoader.sourceComponent = null
@@ -327,6 +339,7 @@ XCWindow {
                 pageLoader.sourceComponent = Constants.pageOnTotal
             }
             onFinished: {
+                destinationPage = null
                 typeBar.freeze = false
                 freeze.visible = false
                 if (pageLoader.item) pageLoader.item.forceActiveFocus()
@@ -336,7 +349,7 @@ XCWindow {
         Loader{
             id:pageLoader
             objectName: "mainPageLoader"
-            parent: popupBlurSource
+            parent: workspaceForeground
             
             readonly property bool aboutPage: sourceComponent === Constants.pageOnAbout
             x: aboutPage ? 0 : Math.max(root.pageX, Constants.typeBarWidth)
@@ -372,6 +385,13 @@ XCWindow {
                 }
             }
             function pageSwitch(page_){
+                if (workspaceEntrance.busy) return
+                if ((pageLoader.sourceComponent === Constants.pageOnStart && page_ === Constants.pageOnSettings)
+                        || (page_ === Constants.pageOnAbout && pageLoader.sourceComponent !== page_)) {
+                    workspaceEntrance.destinationPage = page_
+                    workspaceEntrance.start(false, "")
+                    return
+                }
                 if(pageLoader.sourceComponent === page_)return    //防止重复切换
                 typeBar.freeze = true
                 freeze.visible = true
