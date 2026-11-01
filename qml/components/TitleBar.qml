@@ -38,7 +38,7 @@ Rectangle {
         id: titleText
         objectName: "windowTitle"
         x:8
-        xcText: "xcshop"
+        xcText: "Minecraft xcshop"
         xcFontSize: 16
     }
     
