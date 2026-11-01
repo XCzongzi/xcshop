@@ -58,6 +58,7 @@ XCWindow {
         Global.mainWindow_background = mainWindow.background
         Global.mainWindow_backdrop = mainWindow.backdrop
         Global.mainWindow_popupBackdrop = popupBlurSource
+        Global.mainWindow_popupHost = root
     }
     WindowSurface{
         id: root

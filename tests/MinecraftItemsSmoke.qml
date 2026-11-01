@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Window
 import xcshop
 
-Window {
+XCWindow {
     id: root
     visible: true
     width: 1180
@@ -27,8 +27,20 @@ Window {
         id: frame
         anchors.fill: parent
         anchors.margins: 24
+        anchors.topMargin: root.margins + root.titleBarHeight
         color: Colors.transparent
         NumberAnimation on opacity { from: 0.999; to: 1; duration: 500; loops: Animation.Infinite }
+    }
+    Item {
+        id: popupHost
+        anchors.fill: frame
+        z: 1000
+    }
+    function checkPickerBelowTitleBar(name) {
+        var picker = find(root.contentItem, name)
+        check(picker && picker.visible, "Version picker opens")
+        check(picker.mapToItem(root.contentItem, 0, 0).y >= root.margins + root.titleBarHeight,
+              "Version picker must leave the titlebar visible and accessible")
     }
     function check(condition, message) { if (!condition) throw new Error(message) }
     function find(item, name) {
@@ -42,6 +54,19 @@ Window {
     }
     Component.onCompleted: {
         Global.loadSettings()
+        Global.mainWindow_popupHost = popupHost
+        Global.recentProjects = []
+        for (var i = 0; i < 11; ++i)
+            Global.rememberProject("/recent/" + i, {name: "Project " + i})
+        check(Global.recentProjects.length === 9 && Global.recentProjects[8].path === "/recent/2",
+              "Keep the nine most recent projects")
+        Global.rememberProject("/recent/5", {name: "Project 5"})
+        check(Global.recentProjects.length === 9 && Global.recentProjects[0].path === "/recent/5",
+              "Reopening a project moves it to the front without duplication")
+        Global.recentProjects = []
+        Global.loadSettings()
+        check(Global.recentProjects.length === 9 && Global.recentProjects[0].path === "/recent/5",
+              "All nine recent projects survive restarting")
         var base = APP_DIRPATH + "/assets/minecraft/items"
         var relative = "packs/" + "a".repeat(40) + "-r2-1234"
         var catalog = {schemaVersion: 2, gameVersion: "1.13", itemCount: 3, rendered: 1, approximate: 1, missing: 1,
@@ -128,6 +153,7 @@ Window {
                     root.find(root.page, "minecraftDownloadSourceButton").clicked()
                     root.find(root.page, "minecraftVersionPickerButton").clicked()
                 } else if (root.step === 6) {
+                    root.checkPickerBelowTitleBar("minecraftOnlineVersionPicker")
                     root.check(root.find(root.contentItem, "minecraftVersionChoice_1.13"), "Historical version choice is visible")
                     root.check(root.contentItem.grabToImage(function(result) {
                         root.pickerCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-version-picker.png")
@@ -149,6 +175,7 @@ Window {
                     root.find(root.page, "minecraftSwitchVersionButton").clicked()
                     root.check(root.page.importedVersions.length === 2, "Imported version list comes from completed packs")
                 } else if (root.step === 9) {
+                    root.checkPickerBelowTitleBar("minecraftImportedVersionPicker")
                     root.check(!root.find(root.contentItem, "minecraftImportedChoice_1.13").enabled, "Current imported version is marked")
                     root.check(root.contentItem.grabToImage(function(result) {
                         root.switchCaptured = result.saveToFile(SMOKE_OUTPUT_DIR + "/minecraft-switch-version.png")

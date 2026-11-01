@@ -13,6 +13,7 @@ QtObject{
     property Image mainWindow_background
     property Item mainWindow_backdrop: null
     property Item mainWindow_popupBackdrop: null
+    property Item mainWindow_popupHost: null
 
     property real animationSpeed: 1.0
     property string backgroundMode: "color" // color / image
@@ -22,6 +23,7 @@ QtObject{
     property string editorChineseFont: "Microsoft YaHei"
     property string editorLatinFont: "Consolas"
     property var recentProjects: []
+    readonly property int recentProjectLimit: 9
     property int elementRelayHeight: 160
     // 工作区内可拖动的面板尺寸统一保存在 settings.json。
     property int elementExplorerWidth: 150
@@ -372,7 +374,7 @@ QtObject{
                 backgroundMode = saved.backgroundMode === "imageBlur" ? "image" : saved.backgroundMode
             if (saved.backgroundImage) backgroundImage = saved.backgroundImage
             if (saved.backgroundBlur !== undefined) backgroundBlur = saved.backgroundBlur
-            if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, 6)
+            if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, recentProjectLimit)
             if (saved.elementRelayHeight !== undefined)
                 elementRelayHeight = Math.max(126, Math.min(420, Number(saved.elementRelayHeight)))
             if (saved.elementExplorerWidth !== undefined)
@@ -537,7 +539,7 @@ QtObject{
             namespace: projectInfo && projectInfo.namespace ? projectInfo.namespace : "",
             version: projectInfo && projectInfo.version ? projectInfo.version : ""
         })
-        recentProjects = records.slice(0, 6)
+        recentProjects = records.slice(0, recentProjectLimit)
         saveSettings()
     }
     function removeRecentProject(location){

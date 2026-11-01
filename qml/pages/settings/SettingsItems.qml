@@ -408,7 +408,9 @@ Item {
     }
     PopupFrame {
         id: importedPicker
-        parent: Controls.Overlay.overlay
+        objectName: "minecraftImportedVersionPicker"
+        parent: Global.mainWindow_popupHost || Controls.Overlay.overlay
+        z: 1000
         visible: false
         manageVisibility: true
         closeOnScrim: true
@@ -459,7 +461,9 @@ Item {
     }
     PopupFrame {
         id: versionPicker
-        parent: Controls.Overlay.overlay
+        objectName: "minecraftOnlineVersionPicker"
+        parent: Global.mainWindow_popupHost || Controls.Overlay.overlay
+        z: 1000
         visible: false
         manageVisibility: true
         closeOnScrim: true
