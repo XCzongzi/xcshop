@@ -154,7 +154,7 @@ ContentSurface {
             xcText: "基本"
             xcFontSize: 12
             boldFont: false
-            textColor: !root.nestedPreview ? Colors.accentText : Colors.text
+            textColor: Colors.text
         }
 
         MouseArea {
@@ -268,7 +268,7 @@ ContentSurface {
                             xcFontSize: 12
                             boldFont: false
                             elide: Text.ElideRight
-                            textColor: groupTabDelegate.selected ? Colors.accentText : Colors.text
+                            textColor: Colors.text
                         }
 
                         MouseArea {

@@ -178,7 +178,6 @@ Window {
         for (var surface of [canvas, card, field, focused, panel]) {
             readable(Colors.text, surface, "primary text")
             readable(Colors.banned, surface, "secondary text")
-            readable(Colors.changeA(Colors.accentText, 0.86), surface, "link")
         }
         readable(Colors.changeA(Colors.placeholder, 0.78), field, "placeholder")
         readable(Colors.changeA(Colors.placeholder, 0.78), focused, "focused placeholder")
@@ -193,7 +192,8 @@ Window {
             readable(Colors.accentContent, over(Qt.rgba(1, 1, 1, 0.14), Colors.accentFill), "hovered action")
             readable(Colors.selectionContent, over(Colors.changeA(Colors.border, 0.66), card), "style toggle " + accent + " ink=" + Colors.selectionContent)
             readable(Colors.selectionContent, over(Colors.changeA(Colors.border, 0.90), card), "checkbox " + accent + " ink=" + Colors.selectionContent)
-            readable(Colors.changeA(Colors.accentText, 0.86), panel, "custom accent link")
+            check(Qt.colorEqual(Colors.accentText, accent) && Qt.colorEqual(Colors.accentFill, accent),
+                  "selected accent changed: " + accent)
         }
         Colors.setThemeColor(original)
         // Colors must not alter the pre-existing material transparency.

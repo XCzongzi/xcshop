@@ -45,15 +45,9 @@ QtObject {
     readonly property color selection: surfaceColor("selection", fired)
     readonly property color selectedRow: surfaceColor("selection", banned)
     readonly property color ambientAccent: surfaceColor("ambient", border)
-    readonly property color accentText: {
-        if (!isLight) return border
-        var backgrounds = [background_n, panel, Qt.color(lightPalette.input || background_n),
-                           Qt.color(lightPalette.selection || background_n)]
-        if (imageMode) backgrounds.push(Qt.color("#8c8c8c"))
-        var ink = ThemeCatalog.readableAccent(border, backgrounds)
-        return Qt.rgba(ink.r, ink.g, ink.b, border.a)
-    }
-    readonly property color accentFill: isLight ? accentText : border
+    // 深浅主题共用用户选择的强调色，不根据背景压暗。
+    readonly property color accentText: border
+    readonly property color accentFill: border
     readonly property color accentContent: contrastingText(accentFill)
     readonly property color selectionContent: isLight
             ? contrastingText(Qt.tint(Qt.tint(background_n, changeA(card, 0.38)), changeA(border, 0.78)))

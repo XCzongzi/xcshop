@@ -52,28 +52,6 @@ var lightSurfaces = {
     }
 }
 
-function luminance(color) {
-    function linear(v) { return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
-    return 0.2126 * linear(color.r) + 0.7152 * linear(color.g) + 0.0722 * linear(color.b)
-}
-
-function contrast(a, b) {
-    var first = luminance(a), second = luminance(b)
-    return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
-}
-
-// Accent choices stay user-owned. Derive ink for small links and filled actions
-// without changing the stored accent or its use in decorative highlights.
-function readableAccent(accent, backgrounds) {
-    var ink = { r: accent.r, g: accent.g, b: accent.b }
-    for (var step = 0; step < 64; ++step) {
-        if (backgrounds.every(function(background) { return contrast(ink, background) >= 6 }))
-            break
-        ink = { r: ink.r * 0.95, g: ink.g * 0.95, b: ink.b * 0.95 }
-    }
-    return ink
-}
-
 function opaque(value) { return value.length === 9 ? "#" + value.substring(3) : value }
 function choices() {
     return Object.keys(palettes).map(function(id) {
