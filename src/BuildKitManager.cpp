@@ -2,12 +2,14 @@
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
+#include <QDateTime>
 #include <QDirIterator>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QRegularExpression>
+#include <QSettings>
 #include <QUrl>
 #include <algorithm>
 #include <QHash>
@@ -167,7 +169,23 @@ QByteArray fileHash(const QString &path) {
 BuildKitManager::BuildKitManager(QObject *parent)
     : BuildKitManager(QUrl("https://xczongzi.net/projects/xcshop/downloads/kits.zip"), parent) {}
 BuildKitManager::BuildKitManager(const QUrl &downloadUrl, QObject *parent)
-    : QObject(parent), m_kitsPath(defaultKitsPath()), m_downloadUrl(downloadUrl) {
+    : BuildKitManager(downloadUrl, QCoreApplication::applicationDirPath() + "/kits-download-state.ini",
+                      60000, parent) {}
+BuildKitManager::BuildKitManager(const QUrl &downloadUrl, const QString &downloadStatePath,
+                                 int downloadCooldownMs, QObject *parent)
+    : QObject(parent), m_kitsPath(defaultKitsPath()), m_downloadUrl(downloadUrl),
+      m_downloadStatePath(downloadStatePath), m_downloadCooldownMs(qMax(1, downloadCooldownMs)) {
+    // Persist across restarts, then use a monotonic deadline while running.
+    // Bound the restored wait if the system clock was moved backwards.
+    QSettings state(m_downloadStatePath, QSettings::IniFormat);
+    const auto lastAttempt = state.value("downloads/lastAttemptMs", 0).toLongLong();
+    if (lastAttempt > 0) {
+        const auto elapsed = qMax(qint64(0), QDateTime::currentMSecsSinceEpoch() - lastAttempt);
+        m_downloadCooldown = QDeadlineTimer(qMax(qint64(0), m_downloadCooldownMs - elapsed));
+    }
+    m_downloadCooldownTimer.setInterval(250);
+    connect(&m_downloadCooldownTimer, &QTimer::timeout, this, &BuildKitManager::updateDownloadCooldown);
+    updateDownloadCooldown();
     connect(&m_acquisitionWatcher, &QFutureWatcher<QString>::finished, this, [this] {
         const auto error = m_acquisitionWatcher.result();
         m_acquiring = false;
@@ -285,8 +303,35 @@ QString BuildKitManager::importKit(const QString &sourceRoot) {
     return importDirectory(sourceRoot);
 }
 
+void BuildKitManager::updateDownloadCooldown() {
+    const int seconds = int((m_downloadCooldown.remainingTime() + 999) / 1000);
+    if (seconds != m_downloadCooldownSeconds) {
+        m_downloadCooldownSeconds = seconds;
+        emit downloadCooldownChanged();
+    }
+    if (seconds > 0) m_downloadCooldownTimer.start();
+    else m_downloadCooldownTimer.stop();
+}
+
 void BuildKitManager::acquire(const QString &source) {
     if (busy()) return;
+    if (source.isEmpty()) {
+        updateDownloadCooldown();
+        if (m_downloadCooldownSeconds > 0) {
+            m_acquisitionStatus = QString("下载过于频繁，请在 %1 秒后重试。").arg(m_downloadCooldownSeconds);
+            emit acquisitionChanged();
+            emit acquisitionFinished(false, m_acquisitionStatus);
+            return;
+        }
+        // Start at the attempt, so failures and cancellations also respect the limit.
+        m_downloadCooldown = QDeadlineTimer(m_downloadCooldownMs);
+        QSettings state(m_downloadStatePath, QSettings::IniFormat);
+        state.setValue("downloads/lastAttemptMs", QDateTime::currentMSecsSinceEpoch());
+        state.sync();
+        if (state.status() != QSettings::NoError)
+            qWarning("Could not save kit download cooldown to kits-download-state.ini");
+        updateDownloadCooldown();
+    }
     m_acquiring = true;
     m_acquisitionProgress = -1;
     m_acquisitionStatus = "正在准备套件…";

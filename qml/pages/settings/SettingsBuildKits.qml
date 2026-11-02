@@ -68,7 +68,10 @@ Item {
                     spacing: 8
                     SettingsActionButton {
                         objectName: "downloadBuildKits"
-                        text: "下载并导入"; primary: true; enabled: !BuildKits.busy
+                        text: BuildKits.downloadCooldownSeconds > 0
+                              ? "下载并导入（" + BuildKits.downloadCooldownSeconds + " 秒）" : "下载并导入"
+                        primary: true
+                        enabled: !BuildKits.busy && BuildKits.downloadCooldownSeconds === 0
                         onClicked: { root.feedback = ""; BuildKits.acquire() }
                     }
                     SettingsActionButton { text: "导入 ZIP…"; enabled: !BuildKits.busy; onClicked: zipDialog.openXC(false, "kits") }

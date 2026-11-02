@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QVariantList>
 #include <QFutureWatcher>
+#include <QDeadlineTimer>
+#include <QTimer>
 #include "BuildKitArchive.h"
 
 // A catalog of templates in one builder-compatible kits/ root. Never executes kit scripts.
@@ -18,10 +20,13 @@ class BuildKitManager : public QObject {
     Q_PROPERTY(bool acquiring READ acquiring NOTIFY acquisitionChanged)
     Q_PROPERTY(int acquisitionProgress READ acquisitionProgress NOTIFY acquisitionChanged)
     Q_PROPERTY(QString acquisitionStatus READ acquisitionStatus NOTIFY acquisitionChanged)
+    Q_PROPERTY(int downloadCooldownSeconds READ downloadCooldownSeconds NOTIFY downloadCooldownChanged)
     Q_PROPERTY(int dataVersion READ dataVersion CONSTANT)
 public:
     explicit BuildKitManager(QObject *parent = nullptr);
     BuildKitManager(const QUrl &downloadUrl, QObject *parent = nullptr);
+    BuildKitManager(const QUrl &downloadUrl, const QString &downloadStatePath,
+                    int downloadCooldownMs = 60000, QObject *parent = nullptr);
     ~BuildKitManager() override;
     QString kitsPath() const { return m_kitsPath; }
     QString defaultKitsPath() const;
@@ -35,6 +40,7 @@ public:
     bool acquiring() const { return m_acquiring; }
     int acquisitionProgress() const { return m_acquisitionProgress; }
     QString acquisitionStatus() const { return m_acquisitionStatus; }
+    int downloadCooldownSeconds() const { return m_downloadCooldownSeconds; }
     void setBusy(bool value);
     int dataVersion() const { return 0; } // 操作组工作区格式。
     Q_INVOKABLE void refresh();
@@ -55,8 +61,10 @@ signals:
     void catalogChanged();
     void busyChanged();
     void acquisitionChanged();
+    void downloadCooldownChanged();
     void acquisitionFinished(bool success, const QString &message);
 private:
+    void updateDownloadCooldown();
     QString importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel = {});
     QString m_kitsPath, m_preferredTemplateId;
     QVariantList m_templates;
@@ -66,6 +74,11 @@ private:
     int m_acquisitionProgress = 0;
     QString m_acquisitionStatus;
     QUrl m_downloadUrl;
+    QString m_downloadStatePath;
+    int m_downloadCooldownMs;
+    int m_downloadCooldownSeconds = 0;
+    QDeadlineTimer m_downloadCooldown{0};
+    QTimer m_downloadCooldownTimer;
     BuildKitArchive::Cancellation m_cancel;
     QFutureWatcher<QString> m_acquisitionWatcher;
 };

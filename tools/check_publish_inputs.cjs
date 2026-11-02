@@ -53,7 +53,7 @@ const privatePaths = [
     'kits/11', 'kits/private/local.xcshopT', 'kits/templates/private.xcshopT',
     'kits/blueprints/private/main.xcshoper', 'kits/blueprints/alpha-r0/private.json',
     'kits/materials/private/tick.xcontent', 'kits/materials/alpha-r0-26.3/private.json',
-    'settings.json', 'update-state.ini', 'item-mappings.json',
+    'settings.json', 'update-state.ini', 'kits-download-state.ini', 'item-mappings.json',
     'projects/local/xcshop.json', 'backgrounds/custom.png', 'builder/xcshop-builder.exe',
     'projects/local/.xcshop-relay.json', '重要文件/private.md', '项目构思/private.md',
     'assets/gui/typeBar/UI.psd', '.local/check.log', '.tmp/check.log',

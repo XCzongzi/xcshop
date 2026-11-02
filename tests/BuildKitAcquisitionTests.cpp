@@ -7,6 +7,8 @@
 #endif
 #include <QtTest>
 #include <QDirIterator>
+#include <QDateTime>
+#include <QSettings>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTemporaryDir>
@@ -187,7 +189,7 @@ private slots:
         const auto archive = temp.filePath("kits.zip"); makeZip(archive);
         Feed feed;
         QVERIFY(feed.server.isListening());
-        BuildKitManager kits(feed.url());
+        BuildKitManager kits(feed.url(), temp.filePath("download-state.ini"), 1000);
         kits.setKitsPath(temp.filePath("target"));
         QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
         feed.status = 404; feed.body = "missing";
@@ -195,20 +197,103 @@ private slots:
         QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
         QVERIFY(!done[0][0].toBool());
         QVERIFY(!QFileInfo::exists(kits.kitsPath()));
+        kits.acquire();
+        QCOMPARE(done.size(), 2);
+        QVERIFY(!done[1][0].toBool());
+        QVERIFY(done[1][1].toString().contains("频繁"));
+        QVERIFY(!kits.acquiring());
+        QCOMPARE(feed.requests, 1);
+        QTRY_COMPARE_WITH_TIMEOUT(kits.downloadCooldownSeconds(), 0, 3000);
         feed.status = 200; feed.stall = true;
         kits.acquire();
         QTRY_COMPARE(feed.requests, 2);
+        kits.acquire(); // The in-flight guard also prevents duplicate downloads.
+        QCOMPARE(done.size(), 2);
         kits.cancelAcquisition();
-        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 2, 10000);
-        QVERIFY(!done[1][0].toBool());
-        QVERIFY(done[1][1].toString().contains("取消"));
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 3, 10000);
+        QVERIFY(!done[2][0].toBool());
+        QVERIFY(done[2][1].toString().contains("取消"));
         QVERIFY(!QFileInfo::exists(kits.kitsPath()));
+        kits.acquire();
+        QCOMPARE(done.size(), 4);
+        QVERIFY(!done[3][0].toBool());
+        QCOMPARE(feed.requests, 2);
+        QTRY_COMPARE_WITH_TIMEOUT(kits.downloadCooldownSeconds(), 0, 3000);
         feed.stall = false; feed.body = read(archive);
         kits.acquire();
-        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 3, 10000);
-        QVERIFY2(done[2][0].toBool(), qPrintable(done[2][1].toString()));
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 5, 10000);
+        QVERIFY2(done[4][0].toBool(), qPrintable(done[4][1].toString()));
         QCOMPARE(kits.options().size(), 1);
+        kits.acquire();
+        QCOMPARE(done.size(), 6);
+        QVERIFY(!done[5][0].toBool());
         QCOMPARE(feed.requests, 3);
+    }
+    void downloadCooldownSurvivesRestart() {
+        QTemporaryDir temp;
+        const auto statePath = temp.filePath("download-state.ini");
+        Feed feed;
+        QVERIFY(feed.server.isListening());
+        feed.status = 503; feed.body = "unavailable";
+        {
+            BuildKitManager kits(feed.url(), statePath);
+            QCOMPARE(kits.downloadCooldownSeconds(), 0);
+            QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+            kits.acquire();
+            QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+            QVERIFY(!done[0][0].toBool());
+            QVERIFY(kits.downloadCooldownSeconds() > 0);
+            QVERIFY(kits.downloadCooldownSeconds() <= 60);
+        }
+        BuildKitManager restored(feed.url(), statePath);
+        restored.setKitsPath(temp.filePath("target"));
+        QVERIFY(restored.downloadCooldownSeconds() > 0);
+        QVERIFY(restored.downloadCooldownSeconds() <= 60);
+        QSignalSpy done(&restored, &BuildKitManager::acquisitionFinished);
+        for (int i = 0; i < 5; ++i) restored.acquire();
+        QCOMPARE(done.size(), 5);
+        QCOMPARE(feed.requests, 1);
+        QVERIFY(!restored.busy());
+        // A download cooldown must not block either local import entry point.
+        const auto archive = temp.filePath("kits.zip"); makeZip(archive);
+        restored.acquire(archive);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 6, 10000);
+        QVERIFY2(done[5][0].toBool(), qPrintable(done[5][1].toString()));
+        const auto source = restored.kitsPath();
+        restored.setKitsPath(temp.filePath("second-target"));
+        restored.acquire(source);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 7, 10000);
+        QVERIFY2(done[6][0].toBool(), qPrintable(done[6][1].toString()));
+        QCOMPARE(feed.requests, 1);
+        QVERIFY(restored.downloadCooldownSeconds() > 0);
+    }
+    void restoredDownloadCooldown_data() {
+        QTest::addColumn<qint64>("ageMs");
+        QTest::addColumn<int>("expectedSeconds");
+        QTest::newRow("expired") << qint64(61000) << 0;
+        QTest::newRow("partly-elapsed") << qint64(30000) << 30;
+        QTest::newRow("clock-moved-backwards") << qint64(-3600000) << 60;
+    }
+    void restoredDownloadCooldown() {
+        QFETCH(qint64, ageMs);
+        QFETCH(int, expectedSeconds);
+        QTemporaryDir temp;
+        const auto statePath = temp.filePath("download-state.ini");
+        {
+            QSettings state(statePath, QSettings::IniFormat);
+            state.setValue("downloads/lastAttemptMs", QDateTime::currentMSecsSinceEpoch() - ageMs);
+        }
+        Feed feed;
+        BuildKitManager kits(feed.url(), statePath);
+        QVERIFY(kits.downloadCooldownSeconds() <= expectedSeconds);
+        QVERIFY(kits.downloadCooldownSeconds() >= qMax(0, expectedSeconds - 1));
+        if (expectedSeconds == 0) {
+            feed.status = 503;
+            QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+            kits.acquire();
+            QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+            QCOMPARE(feed.requests, 1);
+        }
     }
     void repositoryBundle() {
         QTemporaryDir temp;
