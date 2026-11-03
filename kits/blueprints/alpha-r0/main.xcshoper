@@ -6,6 +6,7 @@ cd "xcshop" "function"
 build "runtime.xclist"
 build "load-start.xcontent"
 string declaredObjectives = "|__xcshop__|__xcshop.drop__|";
+build "objectives.xcshoper"
 foreach (Shop[]) {
     string shopName = registrationName;
     string shopJson = json(registrationName);

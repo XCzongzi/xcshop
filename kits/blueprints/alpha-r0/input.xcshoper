@@ -1,9 +1,5 @@
-string objectiveName = result.scoreboard;
-build "objective.xcshoper"
 string inputClause = "";
 if (filter.scoreboard != "") {
-    objectiveName = filter.scoreboard;
-    build "objective.xcshoper"
     inputClause = "if score " + filter.target + " " + filter.scoreboard + " matches " + filter.score + " ";
 }
 build "input-entry.xcontent"

@@ -10,8 +10,6 @@ foreach (cost[]) {
     if (type.kind == "item_count") { build "cost-check-item.xcontent" }
     else if (type.kind == "experience_level") { build "cost-check-level.xcontent" }
     else if (type.kind == "scoreboard") {
-        string objectiveName = type.value;
-        build "objective.xcshoper"
         build "cost-check-score.xcontent"
     } else {
         string rejectedCondition = "if" + substr(type.value, 6);

@@ -17,15 +17,14 @@ if (placeholderItem != "") { build "placeholder-call.xcontent" }
 foreach (slots[]) {
     int slotNumber = index;
     if (@parent[0].placeholderItem != "") { build "placeholder.xcontent" }
+    else if (items.length > 0) { build "slot-clear.xcontent" }
     build "modifier-slot.xcontent"
     foreach (items[]) {
         int productNumber = @index;
         string productPath = shopPath + "/" + slotNumber + "/" + productNumber;
         string filterClause = "";
-        if (filter.scoreboard != "") {
-            filterClause = "if score " + filter.target + " " + filter.scoreboard + " matches " + filter.score + " ";
-            string objectiveName = filter.scoreboard;
-            build "objective.xcshoper"
+        foreach (filters[]) {
+            filterClause += "if score " + target + " " + scoreboard + " matches " + score + " ";
         }
         build "item.xcshoper"
     }

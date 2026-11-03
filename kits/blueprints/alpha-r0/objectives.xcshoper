@@ -1,0 +1,25 @@
+string objectiveName = "";
+foreach (Shop[]) {
+    foreach (slots[]) {
+        foreach (items[]) {
+            foreach (filters[]) {
+                objectiveName = scoreboard;
+                build "objective.xcshoper"
+            }
+            foreach (operations[]) {
+                foreach (cost[]) {
+                    if (type.kind == "scoreboard") {
+                        objectiveName = type.value;
+                        build "objective.xcshoper"
+                    }
+                }
+            }
+        }
+    }
+    foreach (layoutInputGroups[]) {
+        objectiveName = filter.scoreboard;
+        build "objective.xcshoper"
+        objectiveName = result.scoreboard;
+        build "objective.xcshoper"
+    }
+}
