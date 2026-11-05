@@ -3,6 +3,10 @@ name: Sync release versions
 on:
   release:
     types: [published, edited, deleted, unpublished, released, prereleased]
+  # Old release tags may predate this workflow, so their events cannot run it.
+  # Reconcile from the default branch even when a release event is missed.
+  schedule:
+    - cron: '17,47 * * * *'
   push:
     branches:
       - '**'

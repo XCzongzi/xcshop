@@ -4,7 +4,8 @@
 
 ## 自动同步
 
-- 发布、编辑、删除、取消发布 Release，或切换正式/预发布状态时同步。
+- 发布、编辑、删除、取消发布 Release，或切换正式/预发布状态时，通过 Release 事件同步；对应标签的提交中需要已包含此工作流。
+- 每小时第 17、47 分钟（UTC）从默认分支兜底同步，补齐旧标签、附件变化等未触发 Release 工作流的变更。GitHub 定时任务可能延迟，不保证在半小时内完成。
 - 向默认分支推送生成脚本、对应测试或工作流的改动时同步，首次推送即可补齐历史记录。
 - 可在 **Actions → Sync release versions → Run workflow** 选择默认分支手动同步。
 
@@ -12,7 +13,7 @@
 
 使用 GitHub 自动提供的 `GITHUB_TOKEN`，工作流已声明 `contents: write`，通常不需要配置额外令牌。若分支保护或组织策略禁止机器人直接提交，需要允许对应写入。
 
-先把工作流推送到默认分支，再创建新版本标签并发布 Release。更新旧标签对应的 Release、或在发布后单独增删附件时，如未触发同步，可手动运行工作流。如果以后使用另一条 Actions 工作流通过 `GITHUB_TOKEN` 创建 Release，该事件不会再触发本工作流；应在发布流程完成后显式触发本工作流的 `workflow_dispatch`，或直接调用生成脚本并提交结果。
+先把工作流推送到默认分支，再基于包含工作流的提交创建新版本标签并发布 Release。Release 事件使用标签对应提交中的工作流；即使默认分支已存在工作流，旧标签对应提交中没有它时，也无法触发同步。更新或删除旧 Release、或在发布后单独增删附件时，可等待定时兜底，或手动运行工作流立即同步。如果以后使用另一条 Actions 工作流通过 `GITHUB_TOKEN` 创建 Release，该事件不会再触发本工作流；如需立即同步，应在发布流程完成后显式触发本工作流的 `workflow_dispatch`，或直接调用生成脚本并提交结果。
 
 以上事件和令牌行为见 [GitHub 工作流事件说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release)和 [GITHUB_TOKEN 触发限制](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)。
 
