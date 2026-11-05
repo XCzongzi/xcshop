@@ -30,6 +30,8 @@ QtObject{
     readonly property Component popupJsonTextEditor: Qt.createComponent("components/popup/PopupJsonTextEditor.qml")
     
 
+    readonly property Component popupOperationInheritance: Qt.createComponent("components/popup/PopupOperationInheritance.qml")
+
     // 数据
     //存储容器中，槽位的相对位置(x,y)
     readonly property var containerCount: [27,54,9,5,5,3]

@@ -222,6 +222,15 @@ Item {
                         root.edited();
                     }
                 }
+                XCCheckBox {
+                    objectName: "operationUniqueTrigger"
+                    text: "同条件唯一触发"
+                    checked: root.operation.uniqueTrigger === true
+                    onToggled: function (value) {
+                        root.operation.uniqueTrigger = value;
+                        root.edited();
+                    }
+                }
             }
             Grid {
                 id: operationFields

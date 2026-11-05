@@ -5,11 +5,11 @@ function textStyle() {
 }
 function item() {
     return {item: "", itemSyntaxError: false,
-        display: {mode: "original", element: ""}, operations: []}
+        display: {mode: "original", element: ""}, operationsFrom: "", operations: []}
 }
 function operation(title) {
     return {title: title === undefined ? "" : String(title), showInDisplay: true,
-        successHint: true, failHint: true, returnOnSuccess: false, cost: [],
+        successHint: true, failHint: true, returnOnSuccess: false, uniqueTrigger: false, cost: [],
         trigger: {mode: {kind: "take_item", filter: {kind: "none"}},
             execute: {kind: "grant_item"}}}
 }

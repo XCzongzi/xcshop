@@ -38,7 +38,7 @@ Item {
         RadioGroup {
             id: triggerKind
             objectName: "triggerKind"
-            text: "触发方式"
+            text: "触发条件"
             options: ["取得商品", "掷出商品"]
             onClicked: {
                 root.modelData.mode = selected === 0 ? {

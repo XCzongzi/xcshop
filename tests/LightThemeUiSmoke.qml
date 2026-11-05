@@ -121,7 +121,7 @@ Window {
                         XCCheckBox { text: "不可用"; enabled: false }
                         BooleanSwitch { objectName: "styleSwitch"; label: "B"; checked: true }
                     }
-                    RadioGroup { text: "触发方式"; options: ["取得商品", "掷出商品"]; initialOption: 0 }
+                    RadioGroup { text: "触发条件"; options: ["取得商品", "掷出商品"]; initialOption: 0 }
                     XCComboBox {
                         id: sampleCombo
                         objectName: "sampleCombo"

@@ -488,6 +488,55 @@ Item {
         return items
     }
 
+    function requestOperationInheritance(paths) {
+        var targets = paths.slice()
+        pendingOperation = true
+        SignalBus.sendToMain("Popup.show", {
+            component: Constants.popupOperationInheritance,
+            properties: {targetPaths: targets},
+            callback: function(result) {
+                if (result !== null && result !== undefined)
+                    root.applyOperationInheritance(targets, String(result))
+                root.finishOperation()
+            }
+        })
+    }
+
+    function applyOperationInheritance(paths, source) {
+        var error = Global.operationInheritanceError(source, paths)
+        var changes = []
+        try {
+            for (var i = 0; !error.length && i < paths.length; ++i) {
+                var element = Global.parseElementPath(paths[i])
+                var data = JSON.parse(fileOperations.read(paths[i]))
+                if (!element || element.type !== "Item" || !Array.isArray(data.operations))
+                    throw new Error("选中的文件不是有效的 Item 操作组格式")
+                data.operationsFrom = Global.projectRelativeElementPath(source)
+                changes.push({path: paths[i], data: data})
+            }
+        } catch (failure) {
+            error = "无法读取所选元素：" + failure
+        }
+        if (error.length) {
+            showNotice("无法继承操作组", error)
+            return
+        }
+        var failed = 0
+        var reload = false
+        for (var change of changes) {
+            if (!fileOperations.writeAtomic(change.path, JSON.stringify(change.data))) {
+                ++failed
+                continue
+            }
+            SignalBus.elementDataSaved("Item", change.path)
+            reload = reload || root.isOpened(change.path)
+        }
+        if (reload)
+            SignalBus.sendToMain("switched_file", {})
+        if (failed)
+            showNotice("继承未完全成功", failed + " 个元素无法保存，请检查文件是否可写。")
+    }
+
     function contextMenuItems(paths) {
         var targets = paths.slice()
         var single = targets.length === 1
@@ -503,6 +552,11 @@ Item {
         items.push({ "text": "删除", "shortcutKey": Qt.Key_Delete,
                      "action": function() { root.requestDelete(targets) } })
         items.push({ "separator": true })
+        if (Global.current_element === "Item" && targets.length) {
+            items.push({ "text": "将操作组继承至…",
+                         "action": function() { root.requestOperationInheritance(targets) } })
+            items.push({ "separator": true })
+        }
         items.push({ "text": "添加到中转区", "children": relayGroupItems(targets) })
         if (single) {
             items.push({ "separator": true })

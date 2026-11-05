@@ -17,6 +17,8 @@ BaseIOPage {
             eledata.itemSyntaxError = itemSyntaxError;
             root.updateDataOut();
         }
+        inheritanceEnabled.checked = !!eledata.operationsFrom;
+        inheritanceElement.setElement(eledata.operationsFrom || "", false);
         displayMode.selected = eledata.display.mode === "additional" ? 1 : 0;
         displayElement.setElement(eledata.display.element, false);
         for (var i = 0; i < eledata.operations.length; ++i)
@@ -25,6 +27,19 @@ BaseIOPage {
             displayBar.expand();
             operationsBar.expand();
         });
+    }
+    function setOperationsFrom(path) {
+        var error = Global.operationInheritanceError(path, [Global.get_filePath()]);
+        if (error.length) {
+            inheritanceElement.setElement(eledata.operationsFrom || "", false);
+            SignalBus.sendToMain("Popup.show", {
+                component: Constants.popupNotice,
+                properties: {title: "无法继承操作组", content: error}
+            });
+            return;
+        }
+        eledata.operationsFrom = Global.projectRelativeElementPath(path);
+        updateDataOut();
     }
     function addOperation(animate) {
         if (operationDeleting || operationAdding || operationMoving)
@@ -155,10 +170,43 @@ BaseIOPage {
         width: root.width - 32
         title: "操作组"
         contentHeight: cards.y + cards.height + 16
+        Row {
+            id: inheritanceRow
+            anchors.right: parent.right
+            anchors.rightMargin: 16
+            y: 10
+            spacing: 8
+            XCCheckBox {
+                id: inheritanceEnabled
+                objectName: "operationInheritanceEnabled"
+                text: "继承自"
+                anchors.verticalCenter: parent.verticalCenter
+                onToggled: function (value) {
+                    if (!value) {
+                        inheritanceElement.clearElement(false);
+                        root.eledata.operationsFrom = "";
+                        root.updateDataOut();
+                    }
+                }
+            }
+            ElementSelectionCompact {
+                id: inheritanceElement
+                objectName: "operationInheritanceElement"
+                selectionId: "item"
+                visible: inheritanceEnabled.checked
+                width: Math.max(120, Math.min(380, operationsBar.width - inheritanceEnabled.width - 124))
+                height: 36
+                onElementSelected: function (path) { root.setOperationsFrom(path); }
+                onSelectionCleared: {
+                    root.eledata.operationsFrom = "";
+                    root.updateDataOut();
+                }
+            }
+        }
         Column {
             id: cards
             x: 16
-            y: 54
+            y: 62
             width: parent.width - 32
             spacing: 12
             height: implicitHeight - operationRemoval.offset

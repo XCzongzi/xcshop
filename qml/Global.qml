@@ -239,6 +239,31 @@ QtObject{
         return parsed ? parsed.relativePath : normalizeElementPath(filePath)
     }
 
+    // 共用于单个连接与批量继承；写入前沿来源链检查失效引用和循环。
+    function operationInheritanceError(targetPath, ownerPaths) {
+        var owners = ownerPaths.map(function(path) { return resolveElementPath(path) })
+        var visited = []
+        var current = resolveElementPath(targetPath)
+        while (current.length) {
+            if (owners.indexOf(current) >= 0 || visited.indexOf(current) >= 0)
+                return "操作组不能继承自身或形成循环，请选择其它 Item 元素。"
+            visited.push(current)
+            var element = parseElementPath(current)
+            if (!element || element.type !== "Item" || !xcfile.exists(current))
+                return "继承来源不是项目内存在的 Item 元素。"
+            try {
+                var data = JSON.parse(xcfile.read(current))
+                if (!data || !Array.isArray(data.operations)
+                        || (data.operationsFrom !== undefined && typeof data.operationsFrom !== "string"))
+                    return "继承来源不是有效的操作组格式。"
+                current = resolveElementPath(data.operationsFrom || "")
+            } catch (error) {
+                return "无法读取继承来源：" + error
+            }
+        }
+        return ""
+    }
+
     function outputFolderError(value) {
         if (value === undefined || value === null || value === "")
             return ""

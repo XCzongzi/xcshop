@@ -125,6 +125,7 @@ qt_add_qml_module(appxcshop
         qml/components/popup/PopupProjectSettings.qml
         qml/components/popup/PopupShopSettings.qml
         qml/components/popup/PopupJsonTextEditor.qml
+        qml/components/popup/PopupOperationInheritance.qml
         qml/components/base/ContentBar.qml
         qml/components/base/RadioGroup.qml
         qml/components/base/VariableTextField.qml

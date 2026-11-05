@@ -9,6 +9,7 @@ Window {
     width: 1200; height: 900
     color: Colors.background
     property var page: null
+    property var explorer: null
     property int step: 0
     property double phaseStart: 0
     property var activeCard: null
@@ -29,6 +30,15 @@ Window {
         anchors.fill: parent
         color: Colors.background
         NumberAnimation on opacity { from: 0.999; to: 1; duration: 500; loops: Animation.Infinite }
+    }
+    Component { id: fileTree; XCFileTreeBar {} }
+    PopupLoader { id: inheritancePopup; anchors.fill: parent }
+    Connections {
+        target: SignalBus
+        function onSendToMain(signalType, parameters) {
+            if (signalType === "Popup.show")
+                inheritancePopup.open(parameters.component, parameters.properties, parameters.callback)
+        }
     }
     Component { id: itemPage; PageOnItem {} }
     Component { id: displayPage; PageOnDisplay {} }
@@ -68,7 +78,8 @@ Window {
         page.height = Qt.binding(function() { return frame.height })
     }
     function screenshot(name) {
-        frame.grabToImage(function(result) { result.saveToFile(APP_DIRPATH + "/ui-operations-" + name + ".png") })
+        var target = name === "inheritance-dialog" ? root.contentItem : frame
+        target.grabToImage(function(result) { result.saveToFile(APP_DIRPATH + "/ui-operations-" + name + ".png") })
     }
     function checkButtonColors(item) {
         if (item.buttonColor !== undefined && typeof item.setSelected === "function") {
@@ -147,6 +158,8 @@ Window {
                     find(card, "operationShowInDisplay").toggled(false)
                     find(card, "operationSuccessHint").toggle()
                     find(card, "operationReturnOnSuccess").toggle()
+                    check(!find(card,"operationUniqueTrigger").checked,"unique trigger must default off")
+                    find(card,"operationUniqueTrigger").toggle()
                     check(!find(card,"operationSuccessHint").checked && find(card,"operationFailHint").checked, "feedback switches are not independent")
                     find(find(page,"operationCard1"), "operationFailHint").toggle()
                     card.addCost(); card.addCost(); card.removeCost(0)
@@ -156,6 +169,7 @@ Window {
                     check(saved.operations[0].successHint === false && saved.operations[0].failHint === true
                         && saved.operations[1].successHint === true && saved.operations[1].failHint === false, "feedback switches save")
                     check(saved.operations[0].returnOnSuccess === true && saved.operations[1].returnOnSuccess === false,"return-on-success save")
+                    check(saved.operations[0].uniqueTrigger === true,"unique trigger save")
                     check(saved.cost === undefined && saved.trigger === undefined, "legacy roots persisted")
                     page.removeOperation(1)
                     screenshot("item-wide")
@@ -171,7 +185,7 @@ Window {
                     check(page.content_height > page.height, "scroll height missing")
                     var card = find(page,"operationCard0")
                     var options = find(card,"operationOptions")
-                    for (var control of ["operationShowInDisplay","operationSuccessHint","operationFailHint","operationReturnOnSuccess"]) {
+                    for (var control of ["operationShowInDisplay","operationSuccessHint","operationFailHint","operationReturnOnSuccess","operationUniqueTrigger"]) {
                         var checkbox = find(card,control)
                         check(checkbox.x + checkbox.width <= options.width + 1 && checkbox.y + checkbox.height <= options.height + 1, "feedback checkbox overflows narrow card")
                     }
@@ -564,6 +578,78 @@ Window {
                     if (Date.now()-phaseStart < 650) { --root.step; return }
                     check(page.eledata.operations[0].title==="第三项" && page.eledata.operations[1].title==="上方已编辑","reopening lost moved order")
                     check(find(find(page,"operationCard1"),"operationReturnOnSuccess").checked,"reopening moved operation lost return switch")
+                    Global.animationSpeed = 20
+                    timer.interval = 300
+                    var source = Schema.item()
+                    source.item = "diamond"
+                    source.operations = [Schema.operation("继承操作")]
+                    check(file.writeAtomic(project+"/Item/source.xcseItem",JSON.stringify(source)),"inheritance source seed")
+                    check(file.writeAtomic(project+"/Item/second.xcseItem",JSON.stringify(Schema.item())),"second item seed")
+                    var enabled = find(page,"operationInheritanceEnabled")
+                    enabled.toggle()
+                    var selector = find(page,"operationInheritanceElement")
+                    selector.setElement("Item/source.xcseItem",true)
+                    check(page.eledata.operationsFrom === "Item/source.xcseItem","header inheritance save")
+                    check(page.eledata.operations.length === 2,"inherited operations were copied into local list")
+                    check(Global.operationInheritanceError("Item/moving.xcseItem",[project+"/Item/source.xcseItem"]).length > 0,"indirect cycle accepted")
+                    show(itemPage,"Item","moving")
+                    break
+                case 39:
+                    check(find(page,"operationInheritanceEnabled").checked,"inheritance toggle did not reopen")
+                    check(find(page,"operationInheritanceElement").selectedElementPath.endsWith("/Item/source.xcseItem"),"inheritance source did not reopen")
+                    root.width=440
+                    break
+                case 40:
+                    var selector = find(page,"operationInheritanceElement")
+                    var enabled = find(page,"operationInheritanceEnabled")
+                    check(selector.visible && selector.mapToItem(page,0,0).x >= 90,"inheritance overlaps narrow header title")
+                    screenshot("inheritance-narrow")
+                    break
+                case 41:
+                    var enabled = find(page,"operationInheritanceEnabled")
+                    enabled.toggle()
+                    check(JSON.parse(file.read(project+"/Item/moving.xcseItem")).operationsFrom === "","disabling inheritance did not clear source")
+                    root.width=1200
+                    explorer=fileTree.createObject(frame,{width:250,height:500,visible:false})
+                    check(explorer,"file tree creation")
+                    var targets=[project+"/Item/moving.xcseItem",project+"/Item/second.xcseItem"]
+                    var menu=explorer.contextMenuItems(targets)
+                    var entry=menu.find(function(item) { return item.text === "将操作组继承至…" })
+                    check(entry && !entry.children,"inheritance must be an independent multi-select menu action")
+                    entry.action()
+                    break
+                case 42:
+                    check(inheritancePopup.item && inheritancePopup.item.opened,"inheritance dialog did not open: active="+inheritancePopup.active+" status="+inheritancePopup.status+" component="+Constants.popupOperationInheritance.status+" error="+Constants.popupOperationInheritance.errorString())
+                    var selector=find(inheritancePopup.item,"inheritanceDialogSelection")
+                    check(selector.height === 224,"dialog must use the full element selector")
+                    check(!find(inheritancePopup.item,"confirmOperationInheritance").enabled,"empty dialog allowed confirm")
+                    selector.setElement("Display/example.xcseDisplay",true)
+                    check(!selector.hasSelection,"dialog accepted a non-Item element")
+                    selector.setElement("Item/moving.xcseItem",true)
+                    inheritancePopup.item.submit()
+                    check(inheritancePopup.item.validationMessage.length > 0,"batch self inheritance accepted")
+                    selector.requestElementSelection()
+                    SignalBus.elementSelectionResolved("Item/source.xcseItem")
+                    screenshot("inheritance-dialog")
+                    break
+                case 43:
+                    find(inheritancePopup.item,"confirmOperationInheritance").clicked()
+                    break
+                case 44:
+                    check(!inheritancePopup.active,"inheritance dialog did not close: "+(inheritancePopup.item ? inheritancePopup.item.title+" "+inheritancePopup.item.validationMessage : ""))
+                    for (var name of ["moving","second"])
+                        check(JSON.parse(file.read(project+"/Item/"+name+".xcseItem")).operationsFrom === "Item/source.xcseItem","batch inheritance omitted "+name)
+                    check(JSON.parse(file.read(project+"/Item/moving.xcseItem")).operations[1].returnOnSuccess,"batch inheritance overwrote local operations")
+                    explorer.requestOperationInheritance([project+"/Item/second.xcseItem"])
+                    break
+                case 45:
+                    inheritancePopup.item.close(null)
+                    break
+                case 46:
+                    check(JSON.parse(file.read(project+"/Item/second.xcseItem")).operationsFrom === "Item/source.xcseItem","cancel changed inheritance")
+                    Global.current_element="Cost"
+                    check(!explorer.contextMenuItems([project+"/Cost/test.xcseCost"]).some(function(item) {return item.text === "将操作组继承至…"}),"inheritance action leaked into other workspaces")
+                    explorer.destroy()
                     console.log("OPERATIONS_UI_SMOKE_PASSED")
                     Qt.exit(0)
                 }
