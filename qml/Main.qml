@@ -238,7 +238,8 @@ XCWindow {
                 })
             }
             onElementActivated: function(filePath) {
-                root.openElementFromRelay(filePath)
+                if (!popup.usesGlobalElementRelay)
+                    root.openElementFromRelay(filePath)
             }
         }
         RelaySelectionMask{
@@ -248,6 +249,7 @@ XCWindow {
         PopupLoader {
             id: popup
             anchors.fill: parent
+            elementRelay: elementRelayBar
         }
 
         //右键菜单

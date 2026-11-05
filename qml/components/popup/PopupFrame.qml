@@ -11,6 +11,8 @@ Item {
     property string title: ""
     property real dialogWidth: 520
     property real dialogHeight: 330
+    property bool useGlobalElementRelay: false
+    property real bottomInset: 0
     property bool closeOnScrim: false
     property var cancelResult: null
     property var result: null
@@ -98,8 +100,9 @@ Item {
         objectName: "popupPanel"
         z: 1
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: -root.bottomInset / 2
         width: Math.min(root.dialogWidth, Math.max(0, root.width - 48))
-        height: Math.min(root.dialogHeight, Math.max(0, root.height - 48))
+        height: Math.min(root.dialogHeight, Math.max(0, root.height - root.bottomInset - 48))
         radius: 0
         topLeftRadius: 6
         topRightRadius: 6

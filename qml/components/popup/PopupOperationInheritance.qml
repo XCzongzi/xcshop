@@ -6,7 +6,9 @@ PopupFrame {
     id: root
     title: "将操作组继承至…"
     dialogWidth: 640
-    dialogHeight: 540
+    dialogHeight: 400
+    useGlobalElementRelay: true
+    onAboutToOpen: selection.requestElementSelection()
     property var targetPaths: []
     property string validationMessage: ""
     function submit() {
@@ -27,19 +29,9 @@ PopupFrame {
         onElementSelected: root.validationMessage = ""
         onSelectionCleared: root.validationMessage = ""
     }
-    // 弹窗内复用中转区，使完整选择器的选择与拖放无需穿过遮罩。
-    ElementRelayBar {
-        x: 24
-        y: selection.y + selection.height + 12
-        width: parent.width - 48
-        workspaceActive: true
-        minPanelHeight: 100
-        maxPanelHeight: 100
-        panelHeight: 100
-    }
     XCText {
         x: 24
-        y: 434
+        y: selection.y + selection.height + 10
         width: parent.width - 48
         xcText: root.validationMessage
         xcFontSize: 12

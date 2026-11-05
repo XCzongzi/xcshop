@@ -32,7 +32,14 @@ Window {
         NumberAnimation on opacity { from: 0.999; to: 1; duration: 500; loops: Animation.Infinite }
     }
     Component { id: fileTree; XCFileTreeBar {} }
-    PopupLoader { id: inheritancePopup; anchors.fill: parent }
+    ElementRelayBar {
+        id: globalRelay
+        parent: frame
+        y: root.height - height
+        width: root.width
+        workspaceActive: root.step >= 41
+    }
+    PopupLoader { id: inheritancePopup; anchors.fill: parent; elementRelay: globalRelay }
     Connections {
         target: SignalBus
         function onSendToMain(signalType, parameters) {
@@ -42,6 +49,11 @@ Window {
     }
     Component { id: itemPage; PageOnItem {} }
     Component { id: displayPage; PageOnDisplay {} }
+    function relayCount(item) {
+        var count = item.selectionMode !== undefined && typeof item.beginSelection === "function" ? 1 : 0
+        for (var child of item.children || []) count += relayCount(child)
+        return count
+    }
     function check(ok, message) { if (!ok) throw new Error(message) }
     function find(item, name) {
         if (item.objectName === name) return item
@@ -616,10 +628,17 @@ Window {
                     var menu=explorer.contextMenuItems(targets)
                     var entry=menu.find(function(item) { return item.text === "将操作组继承至…" })
                     check(entry && !entry.children,"inheritance must be an independent multi-select menu action")
+                    globalRelay.addElementsToGroup([project+"/Item/source.xcseItem"],"favorites")
+                    globalRelay.selectGroup("favorites")
                     entry.action()
                     break
                 case 42:
                     check(inheritancePopup.item && inheritancePopup.item.opened,"inheritance dialog did not open: active="+inheritancePopup.active+" status="+inheritancePopup.status+" component="+Constants.popupOperationInheritance.status+" error="+Constants.popupOperationInheritance.errorString())
+                    check(relayCount(root.contentItem) === 1,"inheritance created a duplicate relay")
+                    check(globalRelay.parent === inheritancePopup.parent && globalRelay.z > inheritancePopup.z,"global relay stayed behind the modal scrim")
+                    check(globalRelay.selectionMode && globalRelay.currentGroupKey === "favorites","global relay lost its group or selection mode")
+                    var panel=find(inheritancePopup.item,"popupPanel")
+                    check(panel.y + panel.height <= globalRelay.y,"inheritance dialog overlaps the global relay")
                     var selector=find(inheritancePopup.item,"inheritanceDialogSelection")
                     check(selector.height === 224,"dialog must use the full element selector")
                     check(!find(inheritancePopup.item,"confirmOperationInheritance").enabled,"empty dialog allowed confirm")
@@ -629,7 +648,9 @@ Window {
                     inheritancePopup.item.submit()
                     check(inheritancePopup.item.validationMessage.length > 0,"batch self inheritance accepted")
                     selector.requestElementSelection()
-                    SignalBus.elementSelectionResolved("Item/source.xcseItem")
+                    UiInput.settle(50)
+                    UiInput.click(globalRelay,80,70)
+                    check(selector.selectedElementPath.endsWith("/Item/source.xcseItem"),"global relay click was blocked by the scrim")
                     screenshot("inheritance-dialog")
                     break
                 case 43:
@@ -637,6 +658,8 @@ Window {
                     break
                 case 44:
                     check(!inheritancePopup.active,"inheritance dialog did not close: "+(inheritancePopup.item ? inheritancePopup.item.title+" "+inheritancePopup.item.validationMessage : ""))
+                    check(globalRelay.parent === frame && globalRelay.z === 0,"global relay parent or stacking was not restored")
+                    check(globalRelay.currentGroupKey === "favorites" && globalRelay.maxPanelHeight === 420,"global relay group or height binding was not restored")
                     for (var name of ["moving","second"])
                         check(JSON.parse(file.read(project+"/Item/"+name+".xcseItem")).operationsFrom === "Item/source.xcseItem","batch inheritance omitted "+name)
                     check(JSON.parse(file.read(project+"/Item/moving.xcseItem")).operations[1].returnOnSuccess,"batch inheritance overwrote local operations")
@@ -647,6 +670,7 @@ Window {
                     break
                 case 46:
                     check(JSON.parse(file.read(project+"/Item/second.xcseItem")).operationsFrom === "Item/source.xcseItem","cancel changed inheritance")
+                    check(!globalRelay.selectionMode && globalRelay.parent === frame,"cancel left the global relay in modal selection mode")
                     Global.current_element="Cost"
                     check(!explorer.contextMenuItems([project+"/Cost/test.xcseCost"]).some(function(item) {return item.text === "将操作组继承至…"}),"inheritance action leaked into other workspaces")
                     explorer.destroy()
