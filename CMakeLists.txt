@@ -214,6 +214,7 @@ qt_add_qml_module(appxcshop
         src/ElementIO.cpp
 
         header/XCFile.h
+        header/ElementSortModel.h
         header/EditorFonts.h
         header/EditorHighlighter.h
         src/EditorHighlighter.cpp

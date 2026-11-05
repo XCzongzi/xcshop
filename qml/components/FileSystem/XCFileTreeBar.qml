@@ -18,8 +18,10 @@ Item {
     property bool operationMode: false
     property bool pendingOperation: false
     property bool contextMenuActive: false
-    property FolderListModel folderFileModel: null
-    property FolderListModel folderDirectoryModel: null
+    property ElementSortModel folderFileModel: null
+    property ElementSortModel folderDirectoryModel: null
+    readonly property ElementSortModel sortedFileModel: folderFileModel
+    readonly property ElementSortModel sortedDirectoryModel: folderDirectoryModel
 
     signal floderSwitched()
     signal fileSwitched()
@@ -587,8 +589,8 @@ Item {
             folderFileModel.destroy()
         if (folderDirectoryModel)
             folderDirectoryModel.destroy()
-        folderFileModel = fileModelFactory.createObject(root)
-        folderDirectoryModel = directoryModelFactory.createObject(root)
+        folderFileModel = fileModelFactory.createObject(root, { "folderUrl": Qt.resolvedUrl(root.filePath) })
+        folderDirectoryModel = directoryModelFactory.createObject(root, { "folderUrl": Qt.resolvedUrl(root.filePath) })
     }
     Component.onCompleted: resetFolderModels()
 
@@ -636,22 +638,31 @@ Item {
 
     Component {
         id: fileModelFactory
-        FolderListModel {
-            folder: Qt.resolvedUrl(root.filePath)
-            showDirs: false
-            showFiles: true
-            showHidden: false
-            nameFilters: ["*.xcse" + Global.current_element]
+        ElementSortModel {
+            id: fileModel
+            required property url folderUrl
+            stripExtension: true
+            sourceModel: FolderListModel {
+                folder: fileModel.folderUrl
+                showDirs: false
+                showFiles: true
+                showHidden: false
+                nameFilters: ["*.xcse" + Global.current_element]
+            }
         }
     }
 
     Component {
         id: directoryModelFactory
-        FolderListModel {
-            folder: Qt.resolvedUrl(root.filePath)
-            showDirs: true
-            showFiles: false
-            showHidden: false
+        ElementSortModel {
+            id: directoryModel
+            required property url folderUrl
+            sourceModel: FolderListModel {
+                folder: directoryModel.folderUrl
+                showDirs: true
+                showFiles: false
+                showHidden: false
+            }
         }
     }
 

@@ -88,6 +88,59 @@ Window {
         tree = find(explorer, "explorerFileTree")
         controls = find(explorer, "explorerFileControls")
         check(tree && controls, "Explorer controls missing")
+        // Names stay grouped; numbers within a name use their numeric value.
+        var sortingFolder = project + "/Item/sorting"
+        var expected = ["wenjian - 1", "wenjian - 2", "wenjian - 3", "wenjian - 5",
+                        "wenjian - 10", "wenjian - 11", "文件 - 9"]
+        for (var name of expected) {
+            check(files.writeAtomic(sortingFolder + "/" + name + ".xcseItem", "{}"), "Seed sort file")
+            check(files.folder(sortingFolder + "/" + name), "Seed sort directory")
+        }
+        tree.currentFolder = "/sorting"
+        UiInput.settle(250)
+        check(tree.sortedFileModel.count === expected.length, "Sorted file count incorrect")
+        check(tree.sortedDirectoryModel.count === expected.length, "Sorted directory count incorrect")
+        for (var i = 0; i < expected.length; ++i) {
+            check(tree.sortedFileModel.get(i, "fileName") === expected[i] + ".xcseItem", "File numeric order incorrect at " + i)
+            check(tree.sortedDirectoryModel.get(i, "fileName") === expected[i], "Directory numeric order incorrect at " + i)
+        }
+        tree.selectOnly(sortingFolder + "/wenjian - 5.xcseItem", 3)
+        tree.selectRange(5)
+        check(tree.selectedPaths.join("|") === ["wenjian - 5", "wenjian - 10", "wenjian - 11"].map(function(name) {
+            return sortingFolder + "/" + name + ".xcseItem"
+        }).join("|"), "Range selection does not follow numeric order")
+        check(files.rename(sortingFolder + "/wenjian - 11.xcseItem",
+                           sortingFolder + "/wenjian - 4.xcseItem"), "Rename sorted file")
+        UiInput.settle(250)
+        check(tree.sortedFileModel.get(3, "fileName") === "wenjian - 4.xcseItem", "Rename did not update numeric order")
+
+        // Reproduce numeric base names mixed with copies of a text base name.
+        sortingFolder = project + "/Item/numeric-bases"
+        expected = ["1"]
+        for (var number = 1; number <= 16; ++number)
+            expected.push("1 - " + number)
+        expected.push("1 - 9007199254740992", "1 - 9007199254740993",
+                      "awaegafadwa", "sb", "sb - 1", "sb - 2", "sb - 3", "sb - 4",
+                      "ww", "ww - 1", "ww - 2", "ww - 3", "ww - 4")
+        for (var name of expected) {
+            check(files.writeAtomic(sortingFolder + "/" + name + ".xcseItem", "{}"), "Seed numeric base file")
+            check(files.folder(sortingFolder + "/" + name), "Seed numeric base directory")
+        }
+        tree.currentFolder = "/numeric-bases"
+        UiInput.settle(250)
+        check(tree.sortedFileModel.count === expected.length, "Numeric base file count incorrect")
+        check(tree.sortedDirectoryModel.count === expected.length, "Numeric base directory count incorrect")
+        for (var i = 0; i < expected.length; ++i) {
+            check(tree.sortedFileModel.get(i, "fileName") === expected[i] + ".xcseItem", "Numeric base file order incorrect at " + i)
+            check(tree.sortedDirectoryModel.get(i, "fileName") === expected[i], "Numeric base directory order incorrect at " + i)
+        }
+        tree.selectOnly(sortingFolder + "/sb - 1.xcseItem", expected.indexOf("sb - 1"))
+        tree.selectRange(expected.indexOf("sb - 3"))
+        check(tree.selectedPaths.join("|") === ["sb - 1", "sb - 2", "sb - 3"].map(function(name) {
+            return sortingFolder + "/" + name + ".xcseItem"
+        }).join("|"), "Numeric base range selection incorrect")
+        tree.currentFolder = ""
+        tree.finishOperation()
         check(files.folder(project + "/Item/rename-probe"), "Seed rename probe")
         check(files.rename(project + "/Item/rename-probe", project + "/Item/renamed-probe"), "Backend directory rename failed")
         var source = project + "/Item/原目录.v1"
