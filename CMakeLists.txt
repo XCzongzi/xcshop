@@ -109,6 +109,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/ThemedIcon.qml
         qml/components/base/TextButton.qml
         qml/components/base/XCText.qml
+        qml/components/base/XCToolTip.qml
         qml/components/base/XCTextField.qml
         qml/components/base/XCCheckBox.qml
         qml/components/base/XCSlider.qml

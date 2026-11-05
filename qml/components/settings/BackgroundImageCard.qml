@@ -100,8 +100,11 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.themeChosen(swatch.modelData)
                 }
-                ToolTip.visible: swatchMouse.containsMouse
-                ToolTip.text: "应用“" + scheme.name + "”主题及强调色"
+                XCToolTip {
+                    active: swatchMouse.containsMouse
+                    delay: 0
+                    text: "应用“" + swatch.scheme.name + "”主题及强调色"
+                }
             }
         }
     }

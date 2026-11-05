@@ -372,9 +372,11 @@ Item {
                         MouseArea {
                             id: tooltipArea; anchors.fill: parent; acceptedButtons: Qt.NoButton; hoverEnabled: true
                         }
-                        Controls.ToolTip.visible: tooltipArea.containsMouse && row.modelData.iconReason.length > 0
-                        Controls.ToolTip.text: row.modelData.iconReason
-                        Controls.ToolTip.delay: 400
+                        XCToolTip {
+                            active: tooltipArea.containsMouse && row.modelData.iconReason.length > 0
+                            text: row.modelData.iconReason
+                            delay: 400
+                        }
                         SettingsActionButton {
                             anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter
                             text: "删除"; height: 28; visible: !row.modelData.builtIn; enabled: !root.busy

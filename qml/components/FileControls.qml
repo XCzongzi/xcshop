@@ -56,9 +56,10 @@ PanelSurface {
             cursorShape: Qt.PointingHandCursor
             onClicked: root.locateCurrentElementRequested()
         }
-        ToolTip.visible: pathPointer.containsMouse
-        ToolTip.delay: 500
-        ToolTip.text: Global.get_filePath() + "\n单击定位到元素所在目录"
+        XCToolTip {
+            active: pathPointer.containsMouse
+            text: Global.get_filePath() + "\n单击定位到元素所在目录"
+        }
     }
 
     Row {
@@ -90,9 +91,10 @@ PanelSurface {
                 radius: 5
                 color: buildStatus.down ? Colors.pressed : buildStatus.hovered ? Colors.fired : Colors.transparent
             }
-            ToolTip.visible: hovered && enabled
-            ToolTip.delay: 500
-            ToolTip.text: Builder.summary + "\n点击查看构建详情" + (Builder.running ? "，可在构建框中取消构建" : "")
+            XCToolTip {
+                active: buildStatus.hovered && buildStatus.enabled
+                text: Builder.summary + "\n点击查看构建详情" + (Builder.running ? "，可在构建框中取消构建" : "")
+            }
         }
 
         ToolButton {
@@ -141,9 +143,10 @@ PanelSurface {
                 border.width: quickBuildButton.activeFocus ? 1 : 0
                 border.color: Colors.border
             }
-            ToolTip.visible: hovered
-            ToolTip.delay: 500
-            ToolTip.text: "构建当前项目"
+            XCToolTip {
+                active: quickBuildButton.hovered
+                text: "构建当前项目"
+            }
         }
     }
 }

@@ -125,9 +125,10 @@ Item{
         btnSize: 24
         btnRadius: 3
         imageSource: "qrc:/assets/gui/element/Bar/newMenu_light.png"
-        ToolTip.visible: newFolderButton.hovered
-        ToolTip.delay: 500
-        ToolTip.text: "新建文件夹（管理器中 Ctrl+Shift+N）"
+        XCToolTip {
+            active: newFolderButton.hovered
+            text: "新建文件夹（管理器中 Ctrl+Shift+N）"
+        }
         onClicked: root.requestCreate(true)
     }
     ImageButton {
@@ -137,9 +138,10 @@ Item{
         btnSize: 24
         btnRadius: 3
         imageSource: "qrc:/assets/gui/element/Bar/newFile_light.png"
-        ToolTip.visible: newElementButton.hovered
-        ToolTip.delay: 500
-        ToolTip.text: "新建元素（管理器中 Ctrl+N）"
+        XCToolTip {
+            active: newElementButton.hovered
+            text: "新建元素（管理器中 Ctrl+N）"
+        }
         onClicked: root.requestCreate(false)
     }
     

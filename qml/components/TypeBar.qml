@@ -82,25 +82,11 @@ PanelSurface {
             setColor()
             typeBar.typeBtnClicked(typeValue)
         }
-        Rectangle{
-            id: typeLore
-            visible: typeButton.hovered
-            height: 20
-            width: loreText.width + 16
-            anchors.verticalCenter: parent.verticalCenter
-            x: parent.width + 4
-            radius: 4
-            color: Colors.background_n
-            border.width: 1
-            border.color: Colors.border
-            XCText{
-                id: loreText
-                x: 8
-                y: 2
-                text: typeButton.typeValue
-                font.pixelSize: 12
-                color: Colors.text
-            }
+        XCToolTip {
+            active: typeButton.hovered
+            text: typeButton.typeValue
+            delay: 0
+            beside: true
         }
     }
 

@@ -12,6 +12,8 @@ Item {
     readonly property real contentHeight: body.y + body.height + 20
     property bool deleting: false
     property bool costDeleting: false
+    property int pendingCostInsertions: 0
+    readonly property bool costAdding: pendingCostInsertions > 0
     signal edited
     signal removalStarted
     signal removeRequested
@@ -20,18 +22,21 @@ Item {
     height: contentHeight * insertionProgress
     clip: insertionProgress < 1
     function requestRemove() {
-        if (deleting || costDeleting || appearing)
+        if (deleting || costDeleting || costAdding || appearing)
             return;
         deleting = true;
         removalStarted();
         deleteAnimation.start();
     }
     function addCost() {
+        if (deleting || costDeleting || appearing)
+            return;
         operation.cost.push({
             element: "",
             amount: "1"
         });
-        costRows.add(operation.cost[operation.cost.length - 1]);
+        ++pendingCostInsertions;
+        costRows.add(operation.cost[operation.cost.length - 1], true);
         edited();
     }
     function removeCost(row) {
@@ -266,6 +271,7 @@ Item {
                             objectName: "operationCostRow" + index
                             required index
                             required property string objectKey
+                            required animateInsertion
                             width: parent.width
                             z: -index
                             modelData: costRows.value(objectKey)
@@ -273,6 +279,7 @@ Item {
                             onDeletionStarted: root.costDeleting = true
                             onDeleteClicked: costRemoval.begin(index, height + costColumn.spacing)
                             onUpdateData: root.edited()
+                            onInsertionFinished: --root.pendingCostInsertions
                         }
                     }
                     TextButton {
@@ -280,6 +287,7 @@ Item {
                             y: -costRemoval.offset
                         }
                         text: "＋ 添加代价"
+                        widthBorderSize: 12
                         height: 32
                         radius: 6
                         textSize: 13
@@ -292,7 +300,7 @@ Item {
         MouseArea {
             anchors.fill: parent
             z: 1000
-            visible: root.deleting || root.costDeleting
+            visible: root.deleting || root.costDeleting || root.costAdding
             acceptedButtons: Qt.AllButtons
             hoverEnabled: true
             onVisibleChanged: if (visible)

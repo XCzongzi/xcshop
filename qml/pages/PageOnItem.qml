@@ -59,7 +59,7 @@ BaseIOPage {
             return;
         for (var i = 0; i < operationRows.count; ++i) {
             var card = operationCards.itemAt(i);
-            if (card.deleting || card.costDeleting || card.appearing)
+            if (card.deleting || card.costDeleting || card.costAdding || card.appearing)
                 return;
         }
         operationSwap.begin(index, operationCards.itemAt(index - 1).height + cards.spacing,

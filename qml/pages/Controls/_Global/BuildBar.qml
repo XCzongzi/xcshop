@@ -126,9 +126,11 @@ ContentBar {
                 if (enabled && !root.folderError.length)
                     root.outputFolderSubmitted(text)
             }
-            Controls.ToolTip.visible: (activeFocus && root.folderError.length > 0) || folderHover.hovered
-            Controls.ToolTip.delay: root.folderError.length ? 0 : 500
-            Controls.ToolTip.text: root.folderError || "生成文件夹名称，留空使用项目名称"
+            XCToolTip {
+                active: (folderField.activeFocus && root.folderError.length > 0) || folderHover.hovered
+                delay: root.folderError.length ? 0 : 500
+                text: root.folderError || "生成文件夹名称，留空使用项目名称"
+            }
             HoverHandler { id: folderHover }
         }
 
@@ -142,9 +144,10 @@ ContentBar {
             textSize: 12
             enabled: root.configuredOutputPath.length > 0 && !root.building
             onClicked: root.revealRequested()
-            Controls.ToolTip.visible: revealHover.hovered
-            Controls.ToolTip.delay: 500
-            Controls.ToolTip.text: root.configuredOutputPath
+            XCToolTip {
+                active: revealHover.hovered
+                text: root.configuredOutputPath
+            }
             HoverHandler { id: revealHover }
         }
     }
@@ -385,12 +388,13 @@ ContentBar {
                                 cursorShape: problemRow.problem.file ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: root.problemActivated(problemRow.problem)
                             }
-                            Controls.ToolTip.visible: problemMouse.containsMouse
-                            Controls.ToolTip.delay: 500
-                            Controls.ToolTip.text: String(problemRow.problem.reason || problemRow.problem.message || "")
-                                                   + "\n" + String(problemRow.problem.file || "")
-                                                   + "\n" + String(problemRow.problem.property || "")
-                                                   + (problemRow.problem.solution ? "\n解决办法：" + problemRow.problem.solution : "")
+                            XCToolTip {
+                                active: problemMouse.containsMouse
+                                text: String(problemRow.problem.reason || problemRow.problem.message || "")
+                                      + "\n" + String(problemRow.problem.file || "")
+                                      + "\n" + String(problemRow.problem.property || "")
+                                      + (problemRow.problem.solution ? "\n解决办法：" + problemRow.problem.solution : "")
+                            }
                         }
 
                         XCText {

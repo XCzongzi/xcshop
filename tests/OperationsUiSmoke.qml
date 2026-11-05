@@ -16,6 +16,7 @@ Window {
     property var activeInput: null
     property bool observedMotion: false
     property bool observedInsertion: false
+    property bool observedCostInsertion: false
     property bool observedResizeFrame: false
     property bool trackingExecution: false
     property int executionAnimationFrames: 0
@@ -376,7 +377,23 @@ Window {
                     phaseStart = Date.now()
                     break
                 case 16:
-                    if (Date.now() - phaseStart < 80) { --root.step; return }
+                    var costElapsed = Date.now() - phaseStart
+                    if (costElapsed > 20 && costElapsed < 180) {
+                        for (var costIndex = 0; costIndex < 2; ++costIndex) {
+                            var costRow = find(activeCard,"operationCostRow" + costIndex)
+                            check(costRow.appearing && costRow.height > 0 && costRow.height < costRow.implicitHeight,
+                                  "new cost row did not expand")
+                            check(costRow.opacity > 0 && costRow.opacity < 1, "new cost row did not fade in")
+                        }
+                        activeCard.requestRemove()
+                        check(!activeCard.deleting && activeCard.costAdding, "cost insertion did not guard card deletion")
+                        page.moveOperationUp(1)
+                        check(!page.operationMoving, "operation moved during cost insertion")
+                        observedCostInsertion = true
+                    }
+                    if (costElapsed < 280) { --root.step; return }
+                    check(observedCostInsertion && !activeCard.costAdding, "cost insertion did not finish")
+                    check(find(activeCard,"operationCostRow0").height === 48, "cost insertion left incorrect row height")
                     find(find(activeCard,"operationCostRow0"),"removeCostButton").clicked()
                     phaseStart = Date.now()
                     break
