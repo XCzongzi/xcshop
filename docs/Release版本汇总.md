@@ -17,6 +17,16 @@
 
 以上事件和令牌行为见 [GitHub 工作流事件说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release)和 [GITHUB_TOKEN 触发限制](https://docs.github.com/en/actions/concepts/security/github_token#when-github_token-triggers-workflow-runs)。
 
+## 新建 Release 后仍未同步
+
+先在 Actions 页面查看是否出现 `release` 触发的 **Sync release versions** 运行记录。没有记录时，应核对标签指向的提交，而不是只看 Release 页面中的目标分支。
+
+删除 Release 不会自动删除同名 Git 标签。重新发布并选择已有标签时，仍然使用旧标签对应的提交；即使目标分支显示 `main`，已有标签也不会自动移动到 `main` 的最新提交。如果那个提交中没有同步工作流，新建 Release 依然无法触发任务，而且自动生成的源码归档仍然来自旧提交。
+
+后续发布应从包含工作流的最新提交创建一个尚未使用的新版本标签。如果需要保留当前已有 Release，可以在 **Actions → Sync release versions → Run workflow** 选择 `main` 手动同步索引；此操作只更新索引，不改变 Release 的标签、源码或附件。不应为了触发索引同步而直接移动已经发布的标签。
+
+自动生成的提交只更新 GitHub 上的默认分支；本地工作区需要拉取后才能看到。实际文件名为 `versions.json`（带 `s`）。
+
 ## 文件格式
 
 ```json

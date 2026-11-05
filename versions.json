@@ -3,6 +3,24 @@
   "repository": "XCzongzi/xcshop",
   "releases": [
     {
+      "id": 435172753,
+      "tag_name": "v0.0.2",
+      "name": "非正式版更新",
+      "published_at": "2026-11-05T12:26:56Z",
+      "prerelease": false,
+      "html_url": "https://github.com/XCzongzi/xcshop/releases/tag/v0.0.2",
+      "body": "修复了一些BUG，优化了一些功能\r\n初步加入初始化界面，待后续完善\r\n\r\n可从以下链接直接开始下载：\r\nhttps://xczongzi.net/projects/xcshop/releases/v0.0.2",
+      "assets": [
+        {
+          "name": "xcshop-v0.0.2.zip",
+          "size": 96980160,
+          "content_type": "application/x-zip-compressed",
+          "browser_download_url": "https://github.com/XCzongzi/xcshop/releases/download/v0.0.2/xcshop-v0.0.2.zip",
+          "digest": "sha256:c879dddd71bf594afc49d41d9b97fe195e886b2cdde1137afa4bc3e9f21eb248"
+        }
+      ]
+    },
+    {
       "id": 431557994,
       "tag_name": "v0.0.1",
       "name": "测试发布",
