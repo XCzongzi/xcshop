@@ -34,10 +34,13 @@ int main(int argc, char *argv[])
     std::unique_ptr<QTemporaryDir> updateTestDirectory;
     std::unique_ptr<UpdateFeedFixture> updateFeed;
     std::unique_ptr<UpdateChecker> testUpdates;
-    if (app.arguments().contains("--update-ui-smoke")) {
+    if (app.arguments().contains("--update-ui-smoke") || app.arguments().contains("--initialization-ui-smoke")) {
         updateTestDirectory = std::make_unique<QTemporaryDir>();
         updateFeed = std::make_unique<UpdateFeedFixture>();
-        testUpdates = std::make_unique<UpdateChecker>(updateFeed->url(), updateTestDirectory->filePath("state.ini"));
+        const auto initializationMode = qEnvironmentVariable("XCSHOP_INITIALIZATION_TEST_MODE");
+        if (initializationMode == "current") updateFeed->setVersion(app.applicationVersion());
+        if (initializationMode == "offline") updateFeed->stall = true;
+        testUpdates = std::make_unique<UpdateChecker>(updateFeed->url(), updateTestDirectory->filePath("state.ini"), 300);
         activeUpdates = testUpdates.get();
         QDesktopServices::setUrlHandler("https", updateFeed.get(), "recordOpenedUrl");
     }
@@ -76,7 +79,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("UiInput", &uiTestInput);
     if (app.arguments().contains("--window-frame-tests"))
         return runWindowFrameTests(engine);
-    if (app.arguments().contains("--update-ui-smoke") || app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
+    if (app.arguments().contains("--initialization-ui-smoke") || app.arguments().contains("--update-ui-smoke") || app.arguments().contains("--ui-smoke") || app.arguments().contains("--minecraft-ui-smoke")
         || app.arguments().contains("--operations-ui-smoke") || app.arguments().contains("--shared-ui-smoke")
         || app.arguments().contains("--dropdown-ui-smoke") || app.arguments().contains("--light-theme-ui-smoke")
         || app.arguments().contains("--themed-icon-ui-smoke") || app.arguments().contains("--explorer-ui-smoke")
@@ -89,7 +92,12 @@ int main(int argc, char *argv[])
         smokeDirectory = std::make_unique<QTemporaryDir>(appDir + "/ui-smoke-XXXXXX");
         engine.rootContext()->setContextProperty("SMOKE_DIR", smokeDirectory->path());
         engine.rootContext()->setContextProperty("SMOKE_OUTPUT_DIR", appDir);
-        if (app.arguments().contains("--update-ui-smoke")) {
+        if (app.arguments().contains("--initialization-ui-smoke")) {
+            engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
+            engine.rootContext()->setContextProperty("INITIALIZATION_TEST_MODE", qEnvironmentVariable("XCSHOP_INITIALIZATION_TEST_MODE"));
+            engine.load(QUrl("qrc:/tests/InitializationUiSmoke.qml"));
+        } else if (app.arguments().contains("--update-ui-smoke")) {
+            xcfile.writeAtomic(smokeDirectory->filePath("settings.json"), "{\"initializationCompleted\":true}");
             engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
             engine.load(QUrl("qrc:/tests/UpdateUiSmoke.qml"));
         } else if (app.arguments().contains("--editor-fonts-ui-smoke")) {
@@ -101,6 +109,10 @@ int main(int argc, char *argv[])
             engine.load(QUrl("qrc:/tests/ThemedIconUiSmoke.qml"));
         } else if (app.arguments().contains("--light-theme-ui-smoke")) {
             const auto testFile = qEnvironmentVariable("XCSHOP_THEME_TEST_FILE");
+            if (testFile.endsWith("WorkspaceTransitionUiSmoke.qml") || testFile.endsWith("AboutUiSmoke.qml")) {
+                engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
+                xcfile.writeAtomic(smokeDirectory->filePath("settings.json"), "{\"initializationCompleted\":true}");
+            }
             engine.load(testFile.isEmpty() ? QUrl("qrc:/tests/LightThemeUiSmoke.qml")
                                           : QUrl::fromLocalFile(testFile));
         } else if (app.arguments().contains("--dropdown-ui-smoke")) {
@@ -121,7 +133,9 @@ int main(int argc, char *argv[])
 #ifdef XCSHOP_UI_TESTS
     if (app.arguments().size() == 1)
 #endif
-        QTimer::singleShot(1500, &updates, &UpdateChecker::check);
+        if (!engine.rootObjects().isEmpty()
+            && !engine.rootObjects().first()->property("initializing").toBool())
+            QTimer::singleShot(1500, &updates, &UpdateChecker::check);
 
 #ifdef XCSHOP_UI_TESTS
     if (app.arguments().contains("--startup-smoke")) {

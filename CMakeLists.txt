@@ -183,6 +183,7 @@ qt_add_qml_module(appxcshop
         qml/pages/base/WindowSurface.qml
         qml/pages/PageWithEmpty.qml
         qml/pages/PageOnStart.qml
+        qml/pages/PageOnInitialize.qml
         qml/pages/PageOnCreating.qml
         qml/pages/PageOnTotal.qml
         qml/pages/PageOnUI.qml
@@ -305,7 +306,14 @@ if(XCSHOP_BUILD_TESTS)
             RUN_SERIAL TRUE
             TIMEOUT 60)
     endif()
-    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml tests/UpdateUiSmoke.qml)
+    qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml tests/UpdateUiSmoke.qml tests/InitializationUiSmoke.qml)
+    foreach(mode IN ITEMS update current offline)
+        add_test(NAME initialization_${mode}_ui_smoke COMMAND appxcshop --initialization-ui-smoke)
+        set_tests_properties(initialization_${mode}_ui_smoke PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_INITIALIZATION_TEST_MODE=${mode}"
+            FAIL_REGULAR_EXPRESSION "INITIALIZATION_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+            TIMEOUT 30)
+    endforeach()
     add_test(NAME update_ui_smoke COMMAND appxcshop --update-ui-smoke)
     set_tests_properties(update_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"

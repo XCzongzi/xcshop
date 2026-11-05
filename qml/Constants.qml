@@ -15,6 +15,7 @@ QtObject{
     readonly property Component pageWithEmpty: Qt.createComponent("pages/PageWithEmpty.qml")
 
     readonly property Component pageOnStart: Qt.createComponent("pages/PageOnStart.qml")
+    readonly property Component pageOnInitialize: Qt.createComponent("pages/PageOnInitialize.qml")
     readonly property Component pageOnTotal: Qt.createComponent("pages/PageOnTotal.qml")
     readonly property Component pageOnUI: Qt.createComponent("pages/PageOnUI.qml")
     readonly property Component pageOnItem: Qt.createComponent("pages/PageOnItem.qml")

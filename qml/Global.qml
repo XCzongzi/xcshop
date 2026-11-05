@@ -20,6 +20,7 @@ QtObject{
     property string backgroundImage: ""
     property real backgroundBlur: 0.45
     property string settingsPath: ""
+    property bool initializationCompleted: false
     property string editorChineseFont: "Microsoft YaHei"
     property string editorLatinFont: "Consolas"
     property var recentProjects: []
@@ -370,6 +371,7 @@ QtObject{
     }
 
     function loadSettings(){
+        initializationCompleted = false
         reloadMinecraftResources()
         settingsPath = APP_DIRPATH + "/settings.json"
         var text = xcfile.read(settingsPath)
@@ -380,6 +382,7 @@ QtObject{
             if (typeof saved !== "object" || Array.isArray(saved))
                 return
             savedSettings = saved
+            initializationCompleted = saved.initializationCompleted === true
             editorChineseFont = typeof saved.editorChineseFont === "string" && saved.editorChineseFont.trim().length
                     ? saved.editorChineseFont.trim() : "Microsoft YaHei"
             editorLatinFont = typeof saved.editorLatinFont === "string" && saved.editorLatinFont.trim().length
@@ -416,6 +419,7 @@ QtObject{
         if (!settingsPath.length)
             return
         var settings = Object.assign({}, savedSettings, Colors.settingsData())
+        settings.initializationCompleted = initializationCompleted
         settings.animationSpeed = animationSpeed
         settings.editorChineseFont = editorChineseFont
         settings.editorLatinFont = editorLatinFont

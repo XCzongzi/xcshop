@@ -12,6 +12,7 @@ XCWindow {
     property bool closeAfterBuild: false
     property bool closeQuestionShown: false
     property bool pendingUpdateNotice: false
+    property bool initializing: true
 
     Connections {
         target: Qt.application
@@ -20,7 +21,9 @@ XCWindow {
 
     Connections {
         target: Updates
-        function onStartupUpdateAvailable() { mainWindow.pendingUpdateNotice = true }
+        function onStartupUpdateAvailable() {
+            if (!mainWindow.initializing) mainWindow.pendingUpdateNotice = true
+        }
     }
 
     onClosing: function(event) {
@@ -50,6 +53,7 @@ XCWindow {
         if (expanded) showMaximized()
         else showNormal()
         Global.loadSettings()
+        initializing = !Global.initializationCompleted
         //连接信号
         SignalBus.sendToMain.connect(root.signalReceive)
         
@@ -59,6 +63,7 @@ XCWindow {
         Global.mainWindow_backdrop = mainWindow.backdrop
         Global.mainWindow_popupBackdrop = popupBlurSource
         Global.mainWindow_popupHost = root
+        pageLoader.sourceComponent = initializing ? Constants.pageOnInitialize : Constants.pageOnStart
     }
     WindowSurface{
         id: root
@@ -66,6 +71,7 @@ XCWindow {
         onWidthChanged: Global.window_width = root.width
         onHeightChanged: Global.window_height = root.height
         ignoreTitleBar: pageLoader.sourceComponent === Constants.pageOnStart
+                        || pageLoader.sourceComponent === Constants.pageOnInitialize
                         || pageLoader.sourceComponent === Constants.pageOnAbout
         
         property bool settingsFromWorkspace: false
@@ -107,7 +113,7 @@ XCWindow {
         Timer {
             interval: 250
             repeat: true
-            running: mainWindow.pendingUpdateNotice
+            running: mainWindow.pendingUpdateNotice && !mainWindow.initializing
             onTriggered: {
                 if (!popup.active && !Builder.running && !mainWindow.closeQuestionShown)
                     root.showUpdateDialog()
@@ -355,13 +361,14 @@ XCWindow {
             parent: workspaceForeground
             
             readonly property bool aboutPage: sourceComponent === Constants.pageOnAbout
-            x: aboutPage ? 0 : Math.max(root.pageX, Constants.typeBarWidth)
+            readonly property bool edgeToEdgePage: aboutPage || sourceComponent === Constants.pageOnInitialize
+            x: edgeToEdgePage ? 0 : Math.max(root.pageX, Constants.typeBarWidth)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
             height: Math.max(0, root.height - y - elementRelayBar.height)
-            width: aboutPage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
+            width: edgeToEdgePage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
             z: 96
             transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) }
-            sourceComponent: Constants.pageOnStart
+            sourceComponent: null
             onItemChanged: {
                 if (item)
                     item.mainWindow = mainWindow
@@ -421,6 +428,11 @@ XCWindow {
                 target: pageLoader.item
                 function onPageEvent(signalType,parameters){
                     switch(signalType){
+                        case "Initialize.finished":
+                            mainWindow.initializing = false
+                            mainWindow.pendingUpdateNotice = false
+                            pageLoader.pageSwitch(Constants.pageOnStart)
+                        break
                         case "Start.":
                             switch(parameters.object){
                                 case "projectOpened":
