@@ -71,7 +71,7 @@ Main {
                 } else if (root.stage === 10) {
                     root.check(!notice, "view update did not close dialog")
                     root.check(UpdateFixture.openedCount() === 1, "browser action not invoked")
-                    root.check(UpdateFixture.lastOpenedUrl() === "https://github.com/XCzongzi/xcshop/releases/tag/v0.2.0", "wrong release URL")
+                    root.check(UpdateFixture.lastOpenedUrl() === "https://xczongzi.net/projects/xcshop/", "wrong release URL")
                     UpdateFixture.setVersion("0.3.0")
                     Updates.check()
                 } else if (root.stage === 11) {
@@ -79,7 +79,7 @@ Main {
                     root.check(notice.title === "发现新版本 v0.3.0", "changed version did not remind")
                     UiInput.click(root.find(notice, "noticeDismissButton"))
                 } else if (root.stage === 12) {
-                    UpdateFixture.setVersion("0.1.0")
+                    UpdateFixture.setVersion(Qt.application.version)
                     Updates.check()
                 } else if (root.stage === 13) {
                     if (Updates.checking) return

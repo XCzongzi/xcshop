@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "repository": "XCzongzi/xcshop",
+  "releases": [
+    {
+      "id": 431574851,
+      "tag_name": "v0.0.2",
+      "name": "测试发布",
+      "published_at": "2026-11-02T14:41:21Z",
+      "prerelease": false,
+      "html_url": "https://github.com/XCzongzi/xcshop/releases/tag/v0.0.2",
+      "body": "",
+      "assets": [
+        {
+          "name": "xcshop-v0.0.2.zip",
+          "size": 22,
+          "content_type": "application/x-zip-compressed",
+          "browser_download_url": "https://github.com/XCzongzi/xcshop/releases/download/v0.0.2/xcshop-v0.0.2.zip",
+          "digest": "sha256:8739c76e681f900923b900c9df0ef75cf421d39cabb54650c4b9ad19b6a76d85"
+        }
+      ]
+    },
+    {
+      "id": 431557994,
+      "tag_name": "v0.0.1",
+      "name": "测试发布",
+      "published_at": "2026-11-02T14:27:31Z",
+      "prerelease": false,
+      "html_url": "https://github.com/XCzongzi/xcshop/releases/tag/v0.0.1",
+      "body": "非正式的发布，早期测试内容\r\nhttps://xczongzi.net/projects/xcshop/v0.0.1",
+      "assets": [
+        {
+          "name": "xcshop-v0.0.1.zip",
+          "size": 96341443,
+          "content_type": "application/x-zip-compressed",
+          "browser_download_url": "https://github.com/XCzongzi/xcshop/releases/download/v0.0.1/xcshop-v0.0.1.zip",
+          "digest": "sha256:e32dbe42ce82fde3f53d649587f52656ba5cdf2803cd0a2c9857ab64d7710197"
+        }
+      ]
+    }
+  ]
+}

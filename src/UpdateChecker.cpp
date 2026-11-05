@@ -87,7 +87,8 @@ void UpdateChecker::check() {
 
         m_latestVersion = latest > current ? latest.toString() : QString();
         m_releaseNotes = updateAvailable() ? release.value("body").toString().left(12000) : QString();
-        m_releaseUrl = updateAvailable() ? url : QUrl();
+        m_releaseUrl = updateAvailable()
+            ? QUrl(QStringLiteral("https://xczongzi.net/projects/xcshop/")) : QUrl();
         emit releaseChanged();
         if (updateAvailable() && m_latestVersion != m_dismissedVersion)
             emit startupUpdateAvailable();
