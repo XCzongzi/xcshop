@@ -10,6 +10,7 @@ ContentSurface {
     property int minimumWidth: 260
     property int maximumWidth: minimumWidth
     property var uiPage: null
+    readonly property int selectedEditor: propertyEditor.selected
 
     signal widthRequested(int width)
     signal widthResizeFinished()
@@ -30,6 +31,7 @@ ContentSurface {
 
     function showSlotEditor() { propertyEditor.selectOption(1) }
     function showLayoutEditor() { propertyEditor.selectOption(2) }
+    function restoreEditor(index) { propertyEditor.selectOption(index) }
 
     function leaveLayoutEditor() {
         if (propertyEditor.selected === 2)

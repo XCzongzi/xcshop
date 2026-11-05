@@ -529,6 +529,135 @@ Window {
               "Drag swap was not persisted")
     }
 
+    function checkWorkspaceHistory() {
+        page.selectBasicLayout()
+        for (var index = 0; index < page.currentSlotCount; ++index)
+            page.clearSlotItems(index)
+        page.setCurrentSlot(0)
+        page.clearWorkspaceHistory()
+        var slot = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 0 })
+        function shortcut(redo) {
+            slot.forceActiveFocus()
+            UiInput.key(slot, Qt.Key_Z, Qt.ControlModifier | (redo ? Qt.ShiftModifier : 0))
+        }
+        function storedSlots() { return JSON.parse(file.read(project + "/UI/source.xcseUI")).slots }
+
+        page.addSaleItem(0)
+        page.updateSaleItemMacros(0, 0, [{name: "price", value: "42"}])
+        check(page.canUndoWorkspace && page.workspaceUndoHistory.length === 1, "Adding an item did not create one undo step")
+        shortcut(false)
+        check(page.slotItems(0).length === 0 && !page.canUndoWorkspace && page.canRedoWorkspace,
+              "Ctrl+Z did not undo addition")
+        shortcut(true)
+        check(page.slotItems(0).length === 1 && page.slotItems(0)[0].macros[0].value === "42"
+              && storedSlots()[0].items[0].macros[0].value === "42",
+              "Redo of addition lost subsequent item edits or was not saved")
+
+        page.setSlotPreviewElement(1, "Item/drag-a.xcseItem")
+        var stepCount = page.workspaceUndoHistory.length
+        shortcut(false)
+        check(page.slotRecordIndex(1) === -1, "External item insertion was not one undo step")
+        shortcut(true)
+        check(page.slotItems(1)[0].element === "Item/drag-a.xcseItem" && page.workspaceUndoHistory.length === stepCount,
+              "External item insertion did not redo")
+        page.setSlotPreviewElement(1, "Item/drag-b.xcseItem")
+        page.updateSaleItemMacros(1, 0, [{name: "later", value: "preserved"}])
+        shortcut(false)
+        check(page.slotItems(1)[0].element === "Item/drag-a.xcseItem"
+              && page.slotItems(1)[0].macros[0].value === "preserved",
+              "Undo of an element replacement lost later item properties")
+        shortcut(true)
+        check(page.slotItems(1)[0].element === "Item/drag-b.xcseItem"
+              && page.slotItems(1)[0].macros[0].value === "preserved", "Redo of an element replacement lost item properties")
+
+        page.addSaleItem(0)
+        page.updateSaleItemMacros(0, 1, [{name: "second", value: "7"}])
+        page.setPreviewSaleItem(0, 1, true)
+        var original = JSON.stringify(page.slotItems(0))
+        page.moveSaleItem(0, 1, 0)
+        shortcut(false)
+        check(JSON.stringify(page.slotItems(0)) === original && page.previewItemIndex(0) === 1,
+              "Undo of item reordering did not restore order and preview")
+        shortcut(true)
+        check(page.slotItems(0)[0].macros[0].name === "second" && page.previewItemIndex(0) === 0,
+              "Redo of item reordering did not restore order and preview")
+        var beforeSwap = JSON.stringify(page.eledata.slots)
+        var undoCount = page.workspaceUndoHistory.length
+        check(page.swapSlotItems(0, 1), "History test swap failed")
+        var afterSwap = JSON.stringify(page.eledata.slots)
+        shortcut(false)
+        check(JSON.stringify(page.eledata.slots) === beforeSwap && page.currentSlotIndex === 0
+              && page.workspaceUndoHistory.length === undoCount && page.previewItemIndex(0) === 0,
+              "One undo did not restore both swapped slots and the source selection")
+        shortcut(true)
+        check(JSON.stringify(page.eledata.slots) === afterSwap && page.currentSlotIndex === 1
+              && page.previewItemIndex(1) === 0, "Redo did not exchange both slots")
+
+        var fullSlot = JSON.stringify(page.slotItems(1))
+        page.removeSaleItem(1, 0)
+        shortcut(false)
+        check(JSON.stringify(page.slotItems(1)) === fullSlot, "Undo did not restore a deleted item and its properties")
+        shortcut(true)
+        check(page.slotItems(1).length === 1, "Redo did not delete the individual item")
+        page.clearSlotItems(1)
+        shortcut(false)
+        check(page.slotItems(1).length === 1, "Undo did not restore the cleared slot")
+        shortcut(true)
+        check(page.slotRecordIndex(1) === -1 && !storedSlots().some(function(record) { return record.index === 1 }),
+              "Redo of slot clearing was not persisted")
+
+        shortcut(false)
+        var historyLength = page.workspaceUndoHistory.length
+        page.moveSaleItem(1, 0, 0)
+        check(page.canRedoWorkspace && page.workspaceUndoHistory.length === historyLength,
+              "A no-op consumed history or invalidated redo")
+        page.addSaleItem(2)
+        check(!page.canRedoWorkspace, "A new operation did not discard the redo branch")
+
+        page.selectNestedGroup("group")
+        page.setNestingDrawMode(true)
+        var membership = JSON.stringify(page.selectedNestedGroup().slots)
+        page.toggleNestedSlot(5)
+        shortcut(false)
+        check(JSON.stringify(page.selectedNestedGroup().slots) === membership && page.nestingDrawMode,
+              "Undo did not restore nested slot membership or drawing mode")
+        shortcut(true)
+        check(page.selectedNestedGroup().slots.indexOf(5) >= 0, "Redo did not restore nested slot membership")
+        var group = page.selectedNestedGroup()
+        page.removeNestedGroup(group.id)
+        shortcut(false)
+        check(page.selectedNestedGroup() === group && group.slots.indexOf(5) >= 0,
+              "Undo of group deletion did not restore its slots and selected group")
+        shortcut(true)
+        check(page.nestedGroupIndex(group.id) < 0, "Redo of group deletion failed")
+        shortcut(false)
+        page.setNestingDrawMode(false)
+
+        page.setCurrentSlot(1)
+        UiInput.settle(40)
+        var input = macroInput(0, true)
+        check(input, "Text undo test input missing")
+        UiInput.click(input)
+        input.selectAll()
+        UiInput.key(input, Qt.Key_9)
+        var undoLength = page.workspaceUndoHistory.length
+        var slotContents = JSON.stringify(page.eledata.slots)
+        UiInput.key(input, Qt.Key_Z, Qt.ControlModifier)
+        check(input.text !== "9" && JSON.stringify(page.eledata.slots) === slotContents
+              && page.workspaceUndoHistory.length === undoLength,
+              "Ctrl+Z in a text editor replayed workspace history")
+        page.setCurrentSlot(0)
+        page.setCustomName("History keeps this global setting")
+        page.clearSlotItems(0)
+        shortcut(false)
+        check(page.customName === "History keeps this global setting", "Slot undo reverted unrelated global settings")
+        page.setContainerType("generic_9x6")
+        check(!page.canUndoWorkspace && !page.canRedoWorkspace, "Changing container type kept incompatible history")
+        page.addSaleItem(3)
+        page.elementReading()
+        check(!page.canUndoWorkspace && !page.canRedoWorkspace, "Reloading an element did not reset its history")
+    }
+
     function show(component, properties) {
         if (page)
             page.destroy()
@@ -814,6 +943,7 @@ Window {
                         root.checkSlotContextMenu()
                         root.checkSlotDeleteKey()
                         root.checkSlotItemDragging()
+                        root.checkWorkspaceHistory()
                     } finally { root.checkingFocus = false }
                     console.log("SHARED_UI_SMOKE_PASSED: themes, actions, editors, choices, selection, settings, popup results/focus, layout row deletion, macro focus/persistence, workspace inspector navigation and edit commits")
                     Qt.exit(0)

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Window
 import xcshop
 import Qt5Compat.GraphicalEffects
 
@@ -20,6 +21,15 @@ BaseIOPage {
     property int layoutRevision: 0
     property string selectedNestedGroupId: ""
     property bool nestingDrawMode: false
+    property var workspaceUndoHistory: []
+    property var workspaceRedoHistory: []
+    property bool replayingWorkspaceEdit: false
+    readonly property bool canUndoWorkspace: workspaceUndoHistory.length > 0
+    readonly property bool canRedoWorkspace: workspaceRedoHistory.length > 0
+    readonly property bool textEditorFocused: {
+        var item = root.Window.window ? root.Window.window.activeFocusItem : null
+        return item instanceof TextInput || item instanceof TextEdit
+    }
     readonly property bool containerConfigured: containerType >= 0
     readonly property bool editorReady: dataLoaded && containerConfigured
                                       && !changingContainerType
@@ -52,6 +62,16 @@ BaseIOPage {
         autoRepeat: false
         onActivated: root.setNestingDrawMode(false)
     }
+    Shortcut {
+        sequence: "Ctrl+Z"
+        enabled: root.visible && root.enabled && root.editorReady && !root.textEditorFocused
+        onActivated: root.undoWorkspaceEdit()
+    }
+    Shortcut {
+        sequence: "Ctrl+Shift+Z"
+        enabled: root.visible && root.enabled && root.editorReady && !root.textEditorFocused
+        onActivated: root.redoWorkspaceEdit()
+    }
 
     // Text editors consume Delete first; unhandled keys bubble up from the canvas.
     Keys.onPressed: function(event) {
@@ -61,6 +81,125 @@ BaseIOPage {
             event.accepted = true
         }
     }
+
+    function clearWorkspaceHistory() {
+        root.workspaceUndoHistory = []
+        root.workspaceRedoHistory = []
+    }
+
+    function captureWorkspaceEdit(indices, includeGroups, membershipGroup) {
+        var slots = []
+        for (var index of indices) {
+            var record = root.slotRecord(index, false)
+            var items = record ? record.items.slice() : []
+            slots.push({ "index": index, "exists": !!record, "items": items,
+                         "elements": items.map(function(item) { return item.element }),
+                         "preview": items[root.previewItemIndex(index)] || null })
+        }
+        // Keep item identities, so later property edits survive structural undo/redo.
+        return {
+            "slots": slots,
+            "groups": includeGroups ? root.nestedGroups().slice() : null,
+            "membership": membershipGroup
+                          ? { "group": membershipGroup, "slots": membershipGroup.slots.slice() } : null,
+            "currentSlot": root.currentSlotIndex,
+            "selectedGroup": root.selectedNestedGroupId,
+            "drawing": root.nestingDrawMode,
+            "editor": inspector.selectedEditor
+        }
+    }
+
+    function workspaceEditKey(state) {
+        return JSON.stringify({
+            "slots": state.slots.map(function(slot) {
+                return { "index": slot.index, "exists": slot.exists, "items": slot.items,
+                         "preview": slot.items.indexOf(slot.preview) }
+            }),
+            "groups": state.groups ? state.groups.map(function(group) { return group.id }) : null,
+            "membership": state.membership ? state.membership.slots : null
+        })
+    }
+
+    function beginWorkspaceEdit(indices, includeGroups, membershipGroup) {
+        inspector.finishEditing()
+        var before = root.captureWorkspaceEdit(indices, includeGroups, membershipGroup)
+        return { "indices": indices, "includeGroups": includeGroups === true,
+                 "membershipGroup": membershipGroup || null, "before": before,
+                 "beforeKey": root.workspaceEditKey(before) }
+    }
+
+    function finishWorkspaceEdit(edit) {
+        if (root.replayingWorkspaceEdit)
+            return
+        edit.after = root.captureWorkspaceEdit(edit.indices, edit.includeGroups, edit.membershipGroup)
+        if (edit.beforeKey === root.workspaceEditKey(edit.after))
+            return
+        root.workspaceUndoHistory = root.workspaceUndoHistory.concat([edit]).slice(-200)
+        root.workspaceRedoHistory = []
+    }
+
+    function applyWorkspaceEdit(state) {
+        var indices = state.slots.map(function(slot) { return slot.index })
+        root.eledata.slots = root.eledata.slots.filter(function(slot) {
+            return indices.indexOf(Number(slot.index)) < 0
+        })
+        var previews = Object.assign({}, root.previewOffers)
+        for (var slot of state.slots) {
+            delete previews[String(slot.index)]
+            if (slot.exists) {
+                for (var itemIndex = 0; itemIndex < slot.items.length; ++itemIndex)
+                    slot.items[itemIndex].element = slot.elements[itemIndex]
+                root.eledata.slots.push({ "index": slot.index, "items": slot.items.slice() })
+                var preview = slot.items.indexOf(slot.preview)
+                if (preview >= 0)
+                    previews[String(slot.index)] = preview
+            }
+        }
+        root.eledata.slots.sort(function(first, second) { return first.index - second.index })
+        root.previewOffers = previews
+        if (state.groups)
+            root.eledata.nestedGroups = state.groups.slice()
+        if (state.membership && root.nestedGroups().indexOf(state.membership.group) >= 0)
+            state.membership.group.slots = state.membership.slots.slice()
+        root.currentSlotIndex = state.currentSlot
+        root.selectedNestedGroupId = root.nestedGroupIndex(state.selectedGroup) >= 0 ? state.selectedGroup : ""
+        root.nestingDrawMode = state.drawing && root.selectedNestedGroupId.length > 0
+        inspector.restoreEditor(state.editor)
+    }
+
+    function replayWorkspaceEdit(redo) {
+        var history = redo ? root.workspaceRedoHistory : root.workspaceUndoHistory
+        if (!root.editorReady || root.replayingWorkspaceEdit || !history.length)
+            return false
+        inspector.finishEditing()
+        root.forceActiveFocus()
+        var edit = history[history.length - 1]
+        var rollback = root.captureWorkspaceEdit(edit.indices, edit.includeGroups, edit.membershipGroup)
+        root.replayingWorkspaceEdit = true
+        var saved = false
+        try {
+            root.applyWorkspaceEdit(redo ? edit.after : edit.before)
+            saved = root.updateDataOut()
+            if (!saved)
+                root.applyWorkspaceEdit(rollback)
+            else if (redo) {
+                root.workspaceRedoHistory = history.slice(0, -1)
+                root.workspaceUndoHistory = root.workspaceUndoHistory.concat([edit])
+            } else {
+                root.workspaceUndoHistory = history.slice(0, -1)
+                root.workspaceRedoHistory = root.workspaceRedoHistory.concat([edit])
+            }
+            root.notifyLayoutLoaded()
+            for (var index of edit.indices)
+                root.notifySlotChanged(index)
+        } finally {
+            root.replayingWorkspaceEdit = false
+        }
+        return saved
+    }
+
+    function undoWorkspaceEdit() { return root.replayWorkspaceEdit(false) }
+    function redoWorkspaceEdit() { return root.replayWorkspaceEdit(true) }
 
     function defaultSaleItem() {
         return {
@@ -392,7 +531,7 @@ BaseIOPage {
     }
 
     function addNestedGroup() {
-        inspector.finishEditing()
+        var edit = root.beginWorkspaceEdit([], true)
         var groups = root.nestedGroups()
         var group = {
             "id": root.createNestedGroupId(groups.length),
@@ -407,6 +546,7 @@ BaseIOPage {
         root.selectedNestedGroupId = group.id
         root.nestingDrawMode = false
         root.saveLayoutChange(false)
+        root.finishWorkspaceEdit(edit)
     }
 
     function selectNestedGroup(groupId) {
@@ -447,7 +587,7 @@ BaseIOPage {
         var index = root.nestedGroupIndex(groupId)
         if (index < 0)
             return
-        inspector.finishEditing()
+        var edit = root.beginWorkspaceEdit([], true)
         root.nestedGroups().splice(index, 1)
         if (root.selectedNestedGroupId === groupId) {
             root.selectedNestedGroupId = ""
@@ -455,6 +595,7 @@ BaseIOPage {
             inspector.leaveLayoutEditor()
         }
         root.saveLayoutChange(false)
+        root.finishWorkspaceEdit(edit)
     }
 
     function moveNestedGroup(fromIndex, toIndex) {
@@ -462,9 +603,11 @@ BaseIOPage {
         if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0
                 || toIndex >= groups.length || fromIndex === toIndex)
             return
+        var edit = root.beginWorkspaceEdit([], true)
         var moved = groups.splice(fromIndex, 1)[0]
         groups.splice(toIndex, 0, moved)
         root.saveLayoutChange(false)
+        root.finishWorkspaceEdit(edit)
     }
 
     function setNestedGroupEnabled(groupId, enabled) {
@@ -614,6 +757,7 @@ BaseIOPage {
         var group = root.selectedNestedGroup()
         if (!group)
             return
+        var edit = root.beginWorkspaceEdit([], false, group)
         var index = group.slots.indexOf(slotIndex)
         if (index >= 0)
             group.slots.splice(index, 1)
@@ -622,6 +766,7 @@ BaseIOPage {
             group.slots.sort(function(first, second) { return first - second })
         }
         root.saveLayoutChange(false)
+        root.finishWorkspaceEdit(edit)
     }
 
     function slotItems(slotIndex) {
@@ -679,17 +824,27 @@ BaseIOPage {
     }
 
     function addSaleItem(slotIndex) {
+        if (slotIndex < 0 || slotIndex >= root.currentSlotCount)
+            return
+        var edit = root.beginWorkspaceEdit([slotIndex])
         var slot = root.slotRecord(slotIndex, true)
         slot.items.push(root.defaultSaleItem())
         root.saveSlotChange(slotIndex)
+        root.finishWorkspaceEdit(edit)
     }
 
     function updateSaleItemElement(slotIndex, itemIndex, filePath) {
+        inspector.finishEditing()
         var items = root.slotItems(slotIndex)
         if (itemIndex < 0 || itemIndex >= items.length)
             return
-        items[itemIndex].element = Global.projectRelativeElementPath(filePath)
+        var path = Global.projectRelativeElementPath(filePath)
+        if (items[itemIndex].element === path)
+            return
+        var edit = root.beginWorkspaceEdit([slotIndex])
+        items[itemIndex].element = path
         root.saveSlotChange(slotIndex)
+        root.finishWorkspaceEdit(edit)
     }
 
     function updateSaleItemFilter(slotIndex, itemIndex, scoreboardName,
@@ -733,10 +888,12 @@ BaseIOPage {
     }
 
     function moveSaleItem(slotIndex, fromIndex, toIndex) {
+        inspector.finishEditing()
         var items = root.slotItems(slotIndex)
         if (fromIndex < 0 || fromIndex >= items.length
                 || toIndex < 0 || toIndex >= items.length || fromIndex === toIndex)
             return
+        var edit = root.beginWorkspaceEdit([slotIndex])
         var previewIndex = root.previewItemIndex(slotIndex)
         var moved = items.splice(fromIndex, 1)[0]
         items.splice(toIndex, 0, moved)
@@ -749,6 +906,7 @@ BaseIOPage {
             previews[String(slotIndex)] = previewIndex + 1
         root.previewOffers = previews
         root.saveSlotChange(slotIndex)
+        root.finishWorkspaceEdit(edit)
     }
 
     function swapSlotItems(sourceIndex, targetIndex) {
@@ -760,6 +918,7 @@ BaseIOPage {
         var source = root.slotRecord(sourceIndex, false)
         if (!source || !source.items.length)
             return false
+        var edit = root.beginWorkspaceEdit([sourceIndex, targetIndex])
         var target = root.slotRecord(targetIndex, false)
         var sourcePreview = root.previewItemIndex(sourceIndex)
         var targetPreview = root.previewItemIndex(targetIndex)
@@ -778,6 +937,7 @@ BaseIOPage {
         root.notifySlotChanged(sourceIndex)
         root.notifySlotChanged(targetIndex)
         root.setCurrentSlot(targetIndex)
+        root.finishWorkspaceEdit(edit)
         return saved
     }
 
@@ -788,17 +948,21 @@ BaseIOPage {
         var recordIndex = root.slotRecordIndex(slotIndex)
         if (recordIndex < 0)
             return
+        var edit = root.beginWorkspaceEdit([slotIndex])
         root.eledata.slots.splice(recordIndex, 1)
         var previews = Object.assign({}, root.previewOffers)
         delete previews[String(slotIndex)]
         root.previewOffers = previews
         root.saveSlotChange(slotIndex)
+        root.finishWorkspaceEdit(edit)
     }
 
     function removeSaleItem(slotIndex, itemIndex) {
+        inspector.finishEditing()
         var items = root.slotItems(slotIndex)
         if (itemIndex < 0 || itemIndex >= items.length)
             return
+        var edit = root.beginWorkspaceEdit([slotIndex])
         var previewIndex = root.previewItemIndex(slotIndex)
         items.splice(itemIndex, 1)
         var previews = Object.assign({}, root.previewOffers)
@@ -814,15 +978,23 @@ BaseIOPage {
         }
         root.previewOffers = previews
         root.saveSlotChange(slotIndex)
+        root.finishWorkspaceEdit(edit)
     }
 
     function setSlotPreviewElement(slotIndex, filePath) {
+        if (slotIndex < 0 || slotIndex >= root.currentSlotCount)
+            return
+        inspector.finishEditing()
         var items = root.slotItems(slotIndex)
         var itemIndex = root.previewItemIndex(slotIndex)
         if (!items.length || itemIndex < 0) {
-            root.addSaleItem(slotIndex)
-            items = root.slotItems(slotIndex)
-            itemIndex = 0
+            var edit = root.beginWorkspaceEdit([slotIndex])
+            var item = root.defaultSaleItem()
+            item.element = Global.projectRelativeElementPath(filePath)
+            root.slotRecord(slotIndex, true).items.push(item)
+            root.saveSlotChange(slotIndex)
+            root.finishWorkspaceEdit(edit)
+            return
         }
         root.updateSaleItemElement(slotIndex, itemIndex, filePath)
     }
@@ -844,6 +1016,7 @@ BaseIOPage {
         root.updateDataOut()
         root.notifyLayoutLoaded()
         root.notifySlotChanged(root.currentSlotIndex)
+        root.clearWorkspaceHistory()
         return true
     }
 
@@ -880,6 +1053,7 @@ BaseIOPage {
     }
 
     function elementReading() {
+        root.clearWorkspaceHistory()
         root.pageInitialized = false
         root.containerType = -1
         root.changingContainerType = false
