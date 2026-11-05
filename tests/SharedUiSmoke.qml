@@ -20,6 +20,15 @@ Window {
     XCFile {
         id: file
     }
+    ContextMenu { id: slotContextMenu }
+    Connections {
+        target: SignalBus
+        function onContextMenuRequested(target, x, y, items, component) {
+            slotContextMenu.menuItems = items
+            slotContextMenu.contentComponent = component
+            slotContextMenu.openFor(target, x, y)
+        }
+    }
     Rectangle {
         id: frame
         anchors.fill: parent
@@ -315,7 +324,17 @@ Window {
         check(tabs.selected === 2 && page.currentSlotIndex === 0
               && page.selectedNestedGroup().slots.indexOf(1) >= 0,
               "Drawing a nested slot switched away from the layout editor")
-        page.setNestingDrawMode(false)
+        UiInput.key(slot, Qt.Key_Return)
+        check(!page.nestingDrawMode && page.selectedNestedGroupId === "other"
+              && page.selectedNestedGroup().slots.indexOf(1) >= 0 && tabs.selected === 2,
+              "Return did not finish drawing while preserving the group and drawn slots")
+        page.setNestingDrawMode(true)
+        UiInput.key(slot, Qt.Key_Enter)
+        check(!page.nestingDrawMode, "Keypad Enter did not finish drawing")
+        var finishedRevision = page.layoutRevision
+        UiInput.key(slot, Qt.Key_Return)
+        check(!page.nestingDrawMode && page.layoutRevision === finishedRevision,
+              "Return changed the layout outside drawing mode")
         UiInput.click(slot)
         check(tabs.selected === 1 && page.currentSlotIndex === 1, "Clicking a canvas slot did not open its editor")
         page.selectBasicLayout()
@@ -353,6 +372,163 @@ Window {
               "Deleting the selected group left its layout editor open")
         UiInput.settle(35)
     }
+    function checkSlotContextMenu() {
+        page.addSaleItem(1)
+        page.addSaleItem(1)
+        page.addSaleItem(2)
+        page.setPreviewSaleItem(1, 1, true)
+        page.setCurrentSlot(0)
+        page.selectNestedGroup("group")
+        page.setNestingDrawMode(true)
+        var groups = JSON.stringify(page.nestedGroups())
+        var firstItems = JSON.stringify(page.slotItems(0))
+        var slot = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 1 })
+        UiInput.rightClick(slot)
+        check(slotContextMenu.opened && slotContextMenu.menuItems[0].text === "删除当前栏位"
+              && slotContextMenu.menuItems[0].enabled, "Slot deletion menu missing")
+        check(page.currentSlotIndex === 0 && JSON.stringify(page.nestedGroups()) === groups,
+              "Right click selected a slot or changed the nested drawing")
+        UiInput.key(slot, Qt.Key_Delete)
+        check(!slotContextMenu.opened, "Delete did not activate the slot context menu action")
+        check(page.slotItems(1).length === 0 && page.slotRecordIndex(1) === -1
+              && page.previewOffers["1"] === undefined, "Deleting a slot did not remove all items and its preview")
+        check(JSON.stringify(page.slotItems(0)) === firstItems && page.slotItems(2).length === 1
+              && JSON.stringify(page.nestedGroups()) === groups, "Slot deletion changed another slot or group")
+        var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
+        check(!stored.slots.some(function(record) { return record.index === 1 }), "Deleted slot was not persisted")
+        UiInput.settle(40)
+        UiInput.rightClick(slot)
+        check(slotContextMenu.opened && slotContextMenu.menuItems[0].enabled === false,
+              "Empty slot did not show a disabled deletion action")
+        slotContextMenu.close()
+        page.setNestingDrawMode(false)
+        page.addSaleItem(0)
+        page.setCurrentSlot(0)
+        slot = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 0 })
+        UiInput.settle(40)
+        UiInput.rightClick(slot)
+        slotContextMenu.invoke(slotContextMenu.menuItems[0], 0, -1)
+        page.setCurrentSlot(2)
+        page.setCurrentSlot(0)
+        check(page.slotItems(0).length === 0 && page.previewItemIndex(0) === -1
+              && JSON.stringify(page.nestedGroups()) === groups,
+              "Deleting the edited slot restored items or removed nested membership")
+    }
+
+    function checkSlotDeleteKey() {
+        var groups = JSON.stringify(page.nestedGroups())
+        page.addSaleItem(0)
+        page.addSaleItem(0)
+        page.updateSaleItemMacros(0, 0, [{ name: "price", value: "12" }])
+        page.setCurrentSlot(0)
+        UiInput.settle(40)
+        var input = macroInput(0, true)
+        check(input, "Delete shortcut test input missing")
+        UiInput.click(input)
+        input.selectAll()
+        UiInput.key(input, Qt.Key_Delete)
+        check(input.text === "" && page.slotItems(0).length === 2,
+              "Delete in an input cleared the slot instead of text")
+        UiInput.key(input, Qt.Key_Delete)
+        check(page.slotItems(0).length === 2, "Delete in an empty input cleared the slot")
+        var slot = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 0 })
+        slot.forceActiveFocus()
+        UiInput.key(slot, Qt.Key_Delete)
+        check(page.slotItems(0).length === 0 && page.slotRecordIndex(0) === -1
+              && page.previewOffers["0"] === undefined && page.slotItems(2).length === 1
+              && JSON.stringify(page.nestedGroups()) === groups,
+              "Delete did not clear only the selected slot's items")
+        var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
+        check(!stored.slots.some(function(record) { return record.index === 0 }), "Keyboard deletion was not persisted")
+        page.clearCurrentSlot()
+        slot.forceActiveFocus()
+        UiInput.key(slot, Qt.Key_Delete)
+        check(page.slotItems(2).length === 1, "Delete without a selected slot removed another slot")
+    }
+
+    function dragSlotItem(source, target) {
+        var position = target.mapToItem(source, target.width / 2, target.height / 2)
+        UiInput.dragSelect(source, source.width / 2, source.height / 2, position.x, position.y)
+        UiInput.settle(40)
+    }
+
+    function checkSlotItemDragging() {
+        page.selectBasicLayout()
+        page.clearSlotItems(2)
+        for (var name of ["drag-a", "drag-b", "drag-c"])
+            check(file.writeAtomic(project + "/Item/" + name + ".xcseItem", '{"item":"minecraft:stone"}'), "Seed drag item")
+        page.addSaleItem(0)
+        page.addSaleItem(0)
+        page.updateSaleItemElement(0, 0, "Item/drag-a.xcseItem")
+        page.updateSaleItemElement(0, 1, "Item/drag-b.xcseItem")
+        page.updateSaleItemFilter(0, 1, "score", "@s", "1..5")
+        page.updateSaleItemMacros(0, 1, [{name: "price", value: "42"}])
+        page.setPreviewSaleItem(0, 1, true)
+        var moved = JSON.stringify(page.slotItems(0))
+        var groups = JSON.stringify(page.nestedGroups())
+        var source = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 0 })
+        var target = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 1 })
+        UiInput.settle(40)
+        var beforeHold = JSON.stringify(page.eledata)
+        page.setCurrentSlot(2)
+        UiInput.pressAndHold(source)
+        check(page.currentSlotIndex === 0 && source.lit && source.activeFocus
+              && inspectorTabs().selected === 1 && !source.waitingForSelection
+              && JSON.stringify(page.eledata) === beforeHold,
+              "Long press did not select the source slot and its inspector without editing items")
+        UiInput.pressAndHold(target)
+        check(page.currentSlotIndex === 1 && target.lit && target.activeFocus
+              && !target.waitingForSelection && JSON.stringify(page.eledata) === beforeHold,
+              "Long press on an empty slot opened element selection or failed to focus it")
+        var cancelledPosition = source.mapFromItem(page, 10, page.height - 10)
+        UiInput.dragSelect(source, source.width / 2, source.height / 2,
+                           cancelledPosition.x, cancelledPosition.y)
+        check(page.currentSlotIndex === 0 && source.lit && source.activeFocus
+              && inspectorTabs().selected === 1 && !source.waitingForSelection
+              && JSON.stringify(page.eledata) === beforeHold,
+              "An unsuccessful drag did not keep the source slot selected")
+        dragSlotItem(source, target)
+        check(page.slotRecordIndex(0) === -1 && page.previewOffers["0"] === undefined
+              && JSON.stringify(page.slotItems(1)) === moved,
+              "Dragging to an empty slot did not move all items with all properties")
+        check(page.currentSlotIndex === 1 && page.previewItemIndex(1) === 1
+              && !source.dragging && !source.waitingForSelection && !target.waitingForSelection,
+              "Dragging left stale preview, drag or selection state")
+        check(source.selectedElementPath === ""
+              && target.selectedElementPath === Global.resolveElementPath("Item/drag-b.xcseItem"),
+              "Dragging did not refresh both canvas previews")
+        page.addSaleItem(2)
+        page.updateSaleItemElement(2, 0, "Item/drag-c.xcseItem")
+        var targetItems = JSON.stringify(page.slotItems(2))
+        var occupied = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 2 })
+        dragSlotItem(target, occupied)
+        check(JSON.stringify(page.slotItems(1)) === targetItems && JSON.stringify(page.slotItems(2)) === moved
+              && page.previewItemIndex(1) === 0 && page.previewItemIndex(2) === 1 && page.currentSlotIndex === 2,
+              "Dragging to an occupied slot did not swap both sets of items and their previews")
+        check(target.selectedElementPath === Global.resolveElementPath("Item/drag-c.xcseItem")
+              && occupied.selectedElementPath === Global.resolveElementPath("Item/drag-b.xcseItem"),
+              "Swapping did not refresh both canvas previews")
+        var beforeCancel = JSON.stringify(page.eledata)
+        var outside = occupied.mapFromItem(page, 10, page.height - 10)
+        UiInput.dragSelect(occupied, occupied.width / 2, occupied.height / 2, outside.x, outside.y)
+        UiInput.settle(40)
+        check(JSON.stringify(page.eledata) === beforeCancel && !occupied.dragging,
+              "Dropping outside the canvas changed slot contents or left a drag active")
+        page.selectNestedGroup("group")
+        page.setNestingDrawMode(true)
+        dragSlotItem(occupied, target)
+        check(JSON.stringify(page.slotItems(2)) === moved && JSON.stringify(page.slotItems(1)) === targetItems,
+              "Nested drawing started an item transfer")
+        page.setNestingDrawMode(false)
+        check(JSON.stringify(page.nestedGroups()) === groups, "Moving items changed nested group membership")
+        var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
+        var storedTarget = stored.slots.find(function(record) { return record.index === 2 })
+        var storedSource = stored.slots.find(function(record) { return record.index === 1 })
+        check(JSON.stringify(storedTarget.items) === moved && JSON.stringify(storedSource.items) === targetItems
+              && !stored.slots.some(function(record) { return record.index === 0 }),
+              "Drag swap was not persisted")
+    }
+
     function show(component, properties) {
         if (page)
             page.destroy()
@@ -635,6 +811,9 @@ Window {
                     try {
                         root.checkWorkspaceNavigation()
                         root.checkMacroFocus()
+                        root.checkSlotContextMenu()
+                        root.checkSlotDeleteKey()
+                        root.checkSlotItemDragging()
                     } finally { root.checkingFocus = false }
                     console.log("SHARED_UI_SMOKE_PASSED: themes, actions, editors, choices, selection, settings, popup results/focus, layout row deletion, macro focus/persistence, workspace inspector navigation and edit commits")
                     Qt.exit(0)

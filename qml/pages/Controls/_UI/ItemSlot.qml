@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import xcshop
 
 Rectangle {
@@ -15,6 +16,12 @@ Rectangle {
     property bool nestedOccupied: false
     property bool nestingDrawMode: false
     property bool controlHovered: false
+    property var dragContext: null
+    property int slotIndex: -1
+    property int previewItemIndex: -1
+    property bool dragAllowed: false
+    property bool suppressClick: false
+    readonly property bool dragging: dragProxy.Drag.active
 
     readonly property bool isItemSlot: true
     readonly property bool hasSelection: selectedElementPath.length > 0
@@ -39,6 +46,8 @@ Rectangle {
     signal selectionCleared()
     signal activated()
     signal nestedSlotToggled()
+    signal contextMenuRequested(real x, real y)
+    signal slotItemsDropped(int sourceSlotIndex)
 
     width: size
     height: size
@@ -52,6 +61,10 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 20 / Global.animationSpeed } }
 
     onNestingDrawModeChanged: {
+        if (nestingDrawMode && dragging) {
+            dragProxy.Drag.cancel()
+            dragAllowed = false
+        }
         if (nestingDrawMode && waitingForSelection)
             cancelElementSelection()
     }
@@ -227,7 +240,7 @@ Rectangle {
         smooth: false
         mipmap: false
         visible: root.hasSelection && status === Image.Ready
-        opacity: root.nestingDrawMode ? 0.42 : 1
+        opacity: root.nestingDrawMode || root.dragging ? 0.42 : 1
 
         Behavior on opacity { NumberAnimation { duration: 120 / Global.animationSpeed } }
     }
@@ -243,7 +256,7 @@ Rectangle {
 
     Item {
         id: itemTooltip
-        visible: root.hasSelection && slotMouse.containsMouse && !root.nestingDrawMode
+        visible: root.hasSelection && slotMouse.containsMouse && !root.nestingDrawMode && !root.dragging
         z: 2
         width: tooltipContent.implicitWidth + 32
         height: tooltipContent.implicitHeight + 26
@@ -305,20 +318,91 @@ Rectangle {
         }
     }
 
+    Item {
+        id: dragProxy
+        parent: root.Window.window ? root.Window.window.contentItem : root
+        width: root.width
+        height: root.height
+        z: 10000
+        Drag.active: slotMouse.drag.active && root.dragAllowed
+        Drag.source: root
+        Drag.keys: ["xcshop-slot-items"]
+        Drag.supportedActions: Qt.MoveAction
+        Drag.proposedAction: Qt.MoveAction
+        Drag.hotSpot.x: width / 2
+        Drag.hotSpot.y: height / 2
+
+        Image {
+            anchors.fill: parent
+            visible: root.dragging
+            source: root.iconSource.length ? root.iconSource : root.defaultIconSource
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            opacity: 0.85
+        }
+    }
+
     MouseArea {
         id: slotMouse
         anchors.fill: parent
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: root.hasSelection && root.controlHovered && !root.nestingDrawMode
                      ? Qt.PointingHandCursor : Qt.ArrowCursor
         onEntered: root.forceActiveFocus()
-        onPressed: root.forceActiveFocus()
+        drag.target: root.dragAllowed ? dragProxy : null
+        drag.threshold: 7
+        onPressed: function(mouse) {
+            root.forceActiveFocus()
+            root.suppressClick = false
+            root.dragAllowed = mouse.button === Qt.LeftButton && !root.nestingDrawMode
+                    && root.dragContext !== null && root.previewItemIndex >= 0
+                    && mouse.modifiers === Qt.NoModifier
+            if (root.dragAllowed) {
+                var position = root.mapToItem(dragProxy.parent, mouse.x, mouse.y)
+                dragProxy.x = position.x - dragProxy.width / 2
+                dragProxy.y = position.y - dragProxy.height / 2
+            }
+        }
         onPositionChanged: function(mouse) {
             root.controlHovered = (mouse.modifiers & Qt.ControlModifier) !== 0
+            if (drag.active && !root.suppressClick) {
+                root.suppressClick = true
+                root.light()
+                root.activated()
+            }
+        }
+        onPressAndHold: function(mouse) {
+            if (mouse.button !== Qt.LeftButton || mouse.modifiers !== Qt.NoModifier
+                    || root.nestingDrawMode) {
+                mouse.accepted = false
+                return
+            }
+            root.suppressClick = true
+            root.light()
+            root.activated()
+        }
+        onReleased: {
+            if (root.dragging) {
+                root.suppressClick = true
+                dragProxy.Drag.drop()
+            }
+            root.dragAllowed = false
+            dragProxy.x = 0
+            dragProxy.y = 0
+        }
+        onCanceled: {
+            dragProxy.Drag.cancel()
+            root.dragAllowed = false
         }
         onExited: root.controlHovered = false
         onClicked: function(mouse) {
+            if (root.suppressClick)
+                return
+            if (mouse.button === Qt.RightButton) {
+                root.contextMenuRequested(mouse.x, mouse.y)
+                return
+            }
             if (root.nestingDrawMode) {
                 root.nestedSlotToggled()
                 return
@@ -358,6 +442,29 @@ Rectangle {
                 path = drop.urls[0].toString()
             if (path.length) {
                 root.setElement(path, true)
+                drop.acceptProposedAction()
+            }
+        }
+    }
+
+    DropArea {
+        anchors.fill: parent
+        enabled: !root.nestingDrawMode
+        keys: ["xcshop-slot-items"]
+        onEntered: function(drag) {
+            var source = drag.source
+            drag.accepted = !!source && root.dragContext !== null
+                    && source.dragContext === root.dragContext
+                    && source.slotIndex !== root.slotIndex && source.previewItemIndex >= 0
+            root.dropHovered = drag.accepted
+        }
+        onExited: root.dropHovered = false
+        onDropped: function(drop) {
+            root.dropHovered = false
+            var source = drop.source
+            if (source && source.dragContext === root.dragContext
+                    && source.slotIndex !== root.slotIndex && source.previewItemIndex >= 0) {
+                root.slotItemsDropped(source.slotIndex)
                 drop.acceptProposedAction()
             }
         }

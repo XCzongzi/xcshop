@@ -5,6 +5,8 @@
 #include <QRect>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QGuiApplication>
+#include <QStyleHints>
 #include <QTest>
 #include <QWindow>
 #include <QVariantMap>
@@ -36,6 +38,14 @@ public:
         const auto point = item->mapToScene(QPointF(x < 0 ? item->width() / 2 : x,
                                                   y < 0 ? item->height() / 2 : y));
         QTest::mouseClick(item->window(), Qt::LeftButton, Qt::NoModifier, point.toPoint());
+    }
+    Q_INVOKABLE void pressAndHold(QQuickItem *item) {
+        if (!item || !item->window()) return;
+        const auto point = item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint();
+        QTest::mouseMove(item->window(), point);
+        QTest::mousePress(item->window(), Qt::LeftButton, Qt::NoModifier, point);
+        QTest::qWait(QGuiApplication::styleHints()->mousePressAndHoldInterval() + 80);
+        QTest::mouseRelease(item->window(), Qt::LeftButton, Qt::NoModifier, point);
     }
     Q_INVOKABLE void key(QQuickItem *item, int key, int modifiers = 0) {
         if (item && item->window())

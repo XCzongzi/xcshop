@@ -46,6 +46,22 @@ BaseIOPage {
     signal slotItemsChanged(int slotIndex)
     signal layoutDataChanged()
 
+    Shortcut {
+        sequences: ["Return", "Enter"]
+        enabled: root.visible && root.enabled && root.nestingDrawMode
+        autoRepeat: false
+        onActivated: root.setNestingDrawMode(false)
+    }
+
+    // Text editors consume Delete first; unhandled keys bubble up from the canvas.
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Delete && event.modifiers === Qt.NoModifier
+                && root.editorReady && root.currentSlotIndex >= 0) {
+            root.clearSlotItems(root.currentSlotIndex)
+            event.accepted = true
+        }
+    }
+
     function defaultSaleItem() {
         return {
             "element": "",
@@ -731,6 +747,50 @@ BaseIOPage {
             previews[String(slotIndex)] = previewIndex - 1
         else if (fromIndex > previewIndex && toIndex <= previewIndex)
             previews[String(slotIndex)] = previewIndex + 1
+        root.previewOffers = previews
+        root.saveSlotChange(slotIndex)
+    }
+
+    function swapSlotItems(sourceIndex, targetIndex) {
+        if (!root.editorReady || root.nestingDrawMode || sourceIndex === targetIndex
+                || sourceIndex < 0 || sourceIndex >= root.currentSlotCount
+                || targetIndex < 0 || targetIndex >= root.currentSlotCount)
+            return false
+        inspector.finishEditing()
+        var source = root.slotRecord(sourceIndex, false)
+        if (!source || !source.items.length)
+            return false
+        var target = root.slotRecord(targetIndex, false)
+        var sourcePreview = root.previewItemIndex(sourceIndex)
+        var targetPreview = root.previewItemIndex(targetIndex)
+        source.index = targetIndex
+        if (target)
+            target.index = sourceIndex
+        root.eledata.slots.sort(function(first, second) { return first.index - second.index })
+        var previews = Object.assign({}, root.previewOffers)
+        previews[String(targetIndex)] = sourcePreview
+        if (targetPreview < 0)
+            delete previews[String(sourceIndex)]
+        else
+            previews[String(sourceIndex)] = targetPreview
+        root.previewOffers = previews
+        var saved = root.updateDataOut()
+        root.notifySlotChanged(sourceIndex)
+        root.notifySlotChanged(targetIndex)
+        root.setCurrentSlot(targetIndex)
+        return saved
+    }
+
+    function clearSlotItems(slotIndex) {
+        if (slotIndex < 0 || slotIndex >= root.currentSlotCount)
+            return
+        inspector.finishEditing()
+        var recordIndex = root.slotRecordIndex(slotIndex)
+        if (recordIndex < 0)
+            return
+        root.eledata.slots.splice(recordIndex, 1)
+        var previews = Object.assign({}, root.previewOffers)
+        delete previews[String(slotIndex)]
         root.previewOffers = previews
         root.saveSlotChange(slotIndex)
     }

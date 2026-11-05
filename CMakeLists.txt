@@ -358,7 +358,7 @@ if(XCSHOP_BUILD_TESTS)
     set_tests_properties(shared_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
         FAIL_REGULAR_EXPRESSION "SHARED_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
-        TIMEOUT 20)
+        TIMEOUT 30)
     add_test(NAME operations_ui_smoke COMMAND appxcshop --operations-ui-smoke)
     set_tests_properties(operations_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1"
