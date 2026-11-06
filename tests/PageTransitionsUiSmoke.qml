@@ -189,11 +189,11 @@ Window {
                     loader.item.currentSection = 1
                     root.check(sectionMotion.running && root.find(loader.item, "settingsSectionLoader").item === previousSection,
                                "settings must keep outgoing content until it fades out")
-                    root.check(sectionMotion.activeExitDuration === 500 && sectionMotion.activeEnterDuration === 500,
-                               "settings must use the initialization fade durations")
+                    root.check(sectionMotion.activeExitDuration === 110 && sectionMotion.activeEnterDuration === 180,
+                               "settings must match the initialization check-step timing")
                     UiInput.settle(40)
-                    root.check(sectionMotion.contentOpacity > 0 && sectionMotion.contentOpacity < 1 && sectionMotion.contentOffset === 0,
-                               "settings must fade out in place")
+                    root.check(sectionMotion.contentOpacity > 0 && sectionMotion.contentOpacity < 1 && sectionMotion.contentOffset < 0,
+                               "settings must move upward like initialization check steps")
                     loader.item.currentSection = 2
                     loader.item.currentSection = 3
                     root.stage++
@@ -205,12 +205,12 @@ Window {
                     root.check(root.find(loader.item, "settingsSectionLoader").item.itemsRootPath.length > 0, "settings content mismatch")
                     Global.animationSpeed = 2
                     loader.item.currentSection = 2
-                    UiInput.settle(360)
+                    UiInput.settle(90)
                     root.check(loader.item.displayedSection === 2 && sections.running
                                && sections.contentOpacity > 0 && sections.contentOpacity < 1 && sections.contentOffset > 0,
                                "settings must fade in upward and honor the animation speed: section=" + loader.item.displayedSection
                                + " opacity=" + sections.contentOpacity + " offset=" + sections.contentOffset + " running=" + sections.running)
-                    UiInput.settle(260)
+                    UiInput.settle(160)
                     root.check(!sections.running && loader.item.currentSection === 2 && loader.item.displayedSection === 2,
                                "settings animation must finish and release input")
                     Global.animationSpeed = 1

@@ -133,9 +133,6 @@ BasePage {
             PageTransition {
                 id: sectionMotion
                 objectName: "settingsSectionTransition"
-                exitOffset: 0
-                exitDuration: 500
-                enterDuration: 500
                 onCommit: function(value) { root.displayedSection = value }
                 onFinished: { if (sectionLoader.item) sectionLoader.item.forceActiveFocus() }
             }
