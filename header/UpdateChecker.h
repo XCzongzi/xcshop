@@ -2,8 +2,11 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <QUrl>
+
+class QNetworkReply;
 
 // Checks public, stable editor releases. Never downloads or installs software.
 class UpdateChecker : public QObject {
@@ -23,6 +26,7 @@ public:
     QString releaseNotes() const { return m_releaseNotes; }
     QUrl releaseUrl() const { return m_releaseUrl; }
     Q_INVOKABLE void check();
+    Q_INVOKABLE void cancel();
     Q_INVOKABLE void dismissVersion(const QString &version);
 signals:
     void checkingChanged();
@@ -31,6 +35,7 @@ signals:
     void checkFinished();
 private:
     QNetworkAccessManager m_network;
+    QPointer<QNetworkReply> m_reply;
     QUrl m_feedUrl, m_releaseUrl;
     QString m_settingsPath, m_dismissedVersion, m_latestVersion, m_releaseNotes;
     int m_timeoutMs;

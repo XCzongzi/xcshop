@@ -53,6 +53,7 @@ void UpdateChecker::check() {
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(m_timeoutMs);
     auto *reply = m_network.get(request);
+    m_reply = reply;
     reply->setReadBufferSize(maxResponseBytes + 1);
     // Also bound the total request time, including slow trickling responses.
     QTimer::singleShot(m_timeoutMs, reply, [reply] { reply->abort(); });
@@ -60,6 +61,7 @@ void UpdateChecker::check() {
         if (reply->bytesAvailable() > maxResponseBytes) reply->abort();
     });
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        m_reply = nullptr;
         const bool ok = reply->error() == QNetworkReply::NoError
             && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200
             && reply->bytesAvailable() <= maxResponseBytes;
@@ -94,6 +96,10 @@ void UpdateChecker::check() {
             emit startupUpdateAvailable();
         emit checkFinished();
     });
+}
+
+void UpdateChecker::cancel() {
+    if (m_reply) m_reply->abort();
 }
 
 void UpdateChecker::dismissVersion(const QString &version) {

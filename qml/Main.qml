@@ -13,6 +13,11 @@ XCWindow {
     property bool closeQuestionShown: false
     property bool pendingUpdateNotice: false
     property bool initializing: true
+    readonly property bool welcomeVisible: initializing && (!pageLoader.item
+                  || (pageLoader.sourceComponent === Constants.pageOnInitialize
+                      && pageLoader.item.displayedStep === "welcome"))
+    titleBarText: welcomeVisible ? "" : "Minecraft xcshop"
+    autoHideTitleBarControls: welcomeVisible
 
     Connections {
         target: Qt.application
@@ -145,6 +150,7 @@ XCWindow {
         
         TypeBar{
             id: typeBar
+            objectName: "workspaceTypeBar"
             parent: workspaceForeground
             z: extraMenuOpened? 100 : 98    //跟RelayBar抢占更高层
             onTypeBtnClicked: typeName=>root.typeSwitch(typeName,false)
@@ -162,7 +168,18 @@ XCWindow {
             }
         }
         function typeSwitch(typeName,after) {   //为了方便后续调用，就把type原本的槽函数单独分离了出来，after用于区分是否后期调用
-            Global.current_element = typeName   //after的作用是取消动画
+            if (workspaceEntrance.busy) return
+            if (!pageMotion.committing) {
+                var destination = typeName === "Global" ? Constants.pageOnTotal
+                        : !elementExplorer.started ? Constants.pageWithEmpty
+                        : ({UI: Constants.pageOnUI, Item: Constants.pageOnItem,
+                            Cost: Constants.pageOnCost, Display: Constants.pageOnDisplay})[typeName]
+                if (!pageMotion.running && Global.current_element === typeName
+                        && pageLoader.sourceComponent === destination) return
+                pageMotion.changeTo(function() { root.typeSwitch(typeName, after) }, true)
+                return
+            }
+            Global.current_element = typeName
             // 中转区可以直接调用 typeSwitch；同步类型栏的视觉选中态，不能只依赖按钮点击。
             switch(typeName){
                 case "Global": typeBar.currentType = 0; break
@@ -191,6 +208,11 @@ XCWindow {
             }
         }
         function openElementFromRelay(filePath) {
+            if (workspaceEntrance.busy) return
+            if (!pageMotion.committing) {
+                pageMotion.changeTo(function() { root.openElementFromRelay(filePath) }, true)
+                return
+            }
             var element = Global.parseElementPath(filePath)
             if (!element)
                 return
@@ -315,7 +337,7 @@ XCWindow {
             height: mainWindow.surfaceHeight
             z: 98
             onCovered: {
-                opcAnim.stop()
+                pageMotion.reset(pageLoader.sourceComponent)
                 if (destinationPage) {
                     mainWindow.titleBarColorFilling = destinationPage === Constants.pageOnSettings
                     pageLoader.sourceComponent = destinationPage
@@ -349,8 +371,6 @@ XCWindow {
             }
             onFinished: {
                 destinationPage = null
-                typeBar.freeze = false
-                freeze.visible = false
                 if (pageLoader.item) pageLoader.item.forceActiveFocus()
             }
         }
@@ -367,60 +387,45 @@ XCWindow {
             height: Math.max(0, root.height - y - elementRelayBar.height)
             width: edgeToEdgePage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
             z: 96
-            transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) }
+            opacity: pageMotion.contentOpacity
+            transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) + pageMotion.contentOffset }
             sourceComponent: null
             onItemChanged: {
                 if (item)
                     item.mainWindow = mainWindow
             }
-            MouseArea{
-                id: freeze
-                visible: false
-                anchors.fill: parent
-                hoverEnabled: true
-                z: 999
+            onLoaded: {
+                if (workspaceEntrance.busy) pageMotion.reset(sourceComponent)
+                else if (!pageMotion.running) pageMotion.reveal(sourceComponent)
             }
-            property var page   //销毁动画
-            NumberAnimation{
-                id: opcAnim
-                target: pageLoader.item
-                property: "opacity"
-                duration: 250 / Global.animationSpeed
-                to: 0
-                easing.type: Easing.OutQuad
-                onFinished: {
-                    pageLoader.sourceComponent = pageLoader.page
-                    typeBar.freeze = false
-                    freeze.visible = false
+            PageTransition {
+                id: pageMotion
+                objectName: "mainPageTransition"
+                onCommit: function(value) {
+                    if (typeof value === "function") value()
+                    else pageLoader.setPage(value)
+                    currentValue = pageLoader.sourceComponent
                 }
+                onFinished: { if (pageLoader.item) pageLoader.item.forceActiveFocus() }
             }
-            function pageSwitch(page_){
+            function setPage(page_, reload = false) {
+                mainWindow.titleBarColorFilling = page_ !== Constants.pageOnStart
+                        && page_ !== Constants.pageOnInitialize && page_ !== Constants.pageOnAbout
+                if (reload) sourceComponent = null
+                sourceComponent = page_
+            }
+            function pageSwitch(page_, reload = false){
                 if (workspaceEntrance.busy) return
+                if (pageMotion.committing) { setPage(page_, reload); return }
                 if ((pageLoader.sourceComponent === Constants.pageOnStart && page_ === Constants.pageOnSettings)
                         || (page_ === Constants.pageOnAbout && pageLoader.sourceComponent !== page_)) {
                     workspaceEntrance.destinationPage = page_
                     workspaceEntrance.start(false, "")
                     return
                 }
-                if(pageLoader.sourceComponent === page_)return    //防止重复切换
-                typeBar.freeze = true
-                freeze.visible = true
-                pageLoader.page = page_
-
-                if(pageLoader.page === Constants.pageOnStart || pageLoader.page === Constants.pageOnAbout){
-                    mainWindow.titleBarColorFilling = false
-                }else{
-                    mainWindow.titleBarColorFilling = true
-                }
-
-                if(pageLoader.page === Constants.pageOnUI       //切换前检测销毁动画，仅在工作区时跳过播放
-                || pageLoader.page === Constants.pageOnItem
-                || pageLoader.page === Constants.pageOnCost
-                || pageLoader.page === Constants.pageOnDisplay){
-                    opcAnim.onFinished()
-                }else{
-                    opcAnim.start()
-                }
+                if (!pageMotion.running && sourceComponent === page_ && !reload) return
+                if (reload) pageMotion.changeTo(function() { pageLoader.setPage(page_, true) }, true)
+                else pageMotion.changeTo(page_)
             }
 
 
@@ -506,9 +511,7 @@ XCWindow {
                 break
                 case "switched_file":
                     if(pageLoader.sourceComponent === Constants.pageWithEmpty)return
-                    var tempcom = pageLoader.sourceComponent
-                    pageLoader.sourceComponent = undefined
-                    pageLoader.pageSwitch(tempcom)
+                    pageLoader.pageSwitch(pageLoader.sourceComponent, true)
                 break
             }
         }

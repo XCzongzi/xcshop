@@ -8,12 +8,18 @@ BasePage {
     fullScreen: true
 
     property int currentSection: 0
+    property int displayedSection: 0
     onCurrentSectionChanged: {
         for (var i = 0; i < sectionButtons.count; ++i) {
             var button = sectionButtons.itemAt(i)
             if (button)
                 button.setSelected(i === currentSection, false)
         }
+        if (sectionMotion) sectionMotion.changeTo(currentSection)
+    }
+    Component.onCompleted: {
+        displayedSection = currentSection
+        sectionMotion.reset(currentSection)
     }
     readonly property var sections: [
         { title: "界面", page: interfacePage },
@@ -113,12 +119,22 @@ BasePage {
             anchors.left: sidebar.right; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
             clip: true
             Loader {
+                id: sectionLoader
+                objectName: "settingsSectionLoader"
                 anchors.fill: parent
                 anchors.leftMargin: 32
                 anchors.rightMargin: 32
                 anchors.topMargin: 24
                 anchors.bottomMargin: 24
-                sourceComponent: root.sections[root.currentSection].page
+                opacity: sectionMotion.contentOpacity
+                transform: Translate { y: sectionMotion.contentOffset }
+                sourceComponent: root.sections[root.displayedSection].page
+            }
+            PageTransition {
+                id: sectionMotion
+                objectName: "settingsSectionTransition"
+                onCommit: function(value) { root.displayedSection = value }
+                onFinished: { if (sectionLoader.item) sectionLoader.item.forceActiveFocus() }
             }
         }
     }

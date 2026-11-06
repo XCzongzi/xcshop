@@ -39,8 +39,9 @@ int main(int argc, char *argv[])
         updateFeed = std::make_unique<UpdateFeedFixture>();
         const auto initializationMode = qEnvironmentVariable("XCSHOP_INITIALIZATION_TEST_MODE");
         if (initializationMode == "current") updateFeed->setVersion(app.applicationVersion());
-        if (initializationMode == "offline") updateFeed->stall = true;
-        testUpdates = std::make_unique<UpdateChecker>(updateFeed->url(), updateTestDirectory->filePath("state.ini"), 300);
+        if (initializationMode == "offline" || initializationMode == "skip") updateFeed->stall = true;
+        testUpdates = std::make_unique<UpdateChecker>(updateFeed->url(), updateTestDirectory->filePath("state.ini"),
+                                                    initializationMode == "skip" ? 10000 : 300);
         activeUpdates = testUpdates.get();
         QDesktopServices::setUrlHandler("https", updateFeed.get(), "recordOpenedUrl");
     }
@@ -109,7 +110,8 @@ int main(int argc, char *argv[])
             engine.load(QUrl("qrc:/tests/ThemedIconUiSmoke.qml"));
         } else if (app.arguments().contains("--light-theme-ui-smoke")) {
             const auto testFile = qEnvironmentVariable("XCSHOP_THEME_TEST_FILE");
-            if (testFile.endsWith("WorkspaceTransitionUiSmoke.qml") || testFile.endsWith("AboutUiSmoke.qml")) {
+            if (testFile.endsWith("WorkspaceTransitionUiSmoke.qml") || testFile.endsWith("AboutUiSmoke.qml")
+                || testFile.endsWith("PageTransitionsUiSmoke.qml")) {
                 engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
                 xcfile.writeAtomic(smokeDirectory->filePath("settings.json"), "{\"initializationCompleted\":true}");
             }

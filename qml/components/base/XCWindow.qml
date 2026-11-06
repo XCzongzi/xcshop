@@ -24,6 +24,8 @@ Window {
     property real backgroundBlur: Global.backgroundBlur
 
     property bool titleBarColorFilling: false
+    property string titleBarText: "Minecraft xcshop"
+    property bool autoHideTitleBarControls: false
     readonly property bool expanded: windowState.maximized || windowState.fullScreen
     readonly property bool snapped: windowState.snapped
     readonly property real margins: snapped ? 0 : Constants.margins * (1 - windowState.frameProgress)

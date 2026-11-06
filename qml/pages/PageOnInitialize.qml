@@ -12,7 +12,11 @@ BasePage {
 
     // welcome, update, theme, templates, items
     property string step: "welcome"
+    property string displayedStep: "welcome"
+    onStepChanged: stepMotion.changeTo(step)
     property bool checkComplete: false
+    property bool canSkipCheck: false
+    property bool updateCheckSkipped: false
     property string errorText: ""
     property bool showImport: false
     property var mappedItems: []
@@ -20,8 +24,8 @@ BasePage {
     property int missingIcons: 0
     readonly property string itemsRoot: APP_DIRPATH + "/assets/minecraft/items"
     readonly property bool busy: BuildKits.acquiring || MinecraftAssetImporter.importing
-    readonly property bool configuring: step === "theme" || step === "templates" || step === "items"
-    readonly property int stepIndex: ["theme", "templates", "items"].indexOf(step)
+    readonly property bool configuring: displayedStep === "theme" || displayedStep === "templates" || displayedStep === "items"
+    readonly property int stepIndex: ["theme", "templates", "items"].indexOf(displayedStep)
 
     XCFile { id: files }
     function readJson(path, fallback) {
@@ -56,11 +60,17 @@ BasePage {
         missingIcons = missing
     }
     function begin() {
-        if (!checkComplete) return
-        step = Updates.updateAvailable ? "update" : "theme"
+        if (!checkComplete || stepMotion.running) return
+        step = !updateCheckSkipped && Updates.updateAvailable ? "update" : "theme"
+    }
+    function skipUpdateCheck() {
+        if (!canSkipCheck || checkComplete) return
+        updateCheckSkipped = true
+        checkComplete = true
+        Updates.cancel()
     }
     function next() {
-        if (busy) return
+        if (busy || stepMotion.running) return
         errorText = ""
         if (step === "update") {
             Updates.dismissVersion(Updates.latestVersion)
@@ -83,7 +93,7 @@ BasePage {
         }
     }
     function back() {
-        if (busy) return
+        if (busy || stepMotion.running) return
         errorText = ""
         step = step === "items" ? "templates" : "theme"
     }
@@ -100,6 +110,11 @@ BasePage {
         }
     }
     Component.onCompleted: Qt.callLater(function() { Updates.check() })
+    Timer {
+        interval: 2000
+        running: Updates.checking && !root.checkComplete && root.displayedStep === "welcome"
+        onTriggered: root.canSkipCheck = true
+    }
     Connections {
         target: Updates
         function onCheckFinished() { root.checkComplete = true }
@@ -115,112 +130,148 @@ BasePage {
     AmbientBackground { anchors.fill: parent; animated: true }
 
     Item {
+        id: transitionContent
         anchors.fill: parent
-        visible: root.step === "welcome"
-        Column {
-            anchors.centerIn: parent
-            width: parent.width - 80
-            spacing: 18
-            XCText { width: parent.width; onCenter: false; horizontalAlignment: Text.AlignHCenter; xcText: "欢迎使用 XCShop"; xcFontSize: 36 }
-            XCText {
-                objectName: "initializationWelcomeStatus"
-                width: parent.width; onCenter: false; horizontalAlignment: Text.AlignHCenter
-                xcText: root.checkComplete ? "点击任意位置开始" : "正在检查更新"
-                xcFontSize: 14; boldFont: false; textColor: Colors.banned
-            }
-        }
-        MouseArea {
-            objectName: "initializationWelcomeAction"
+        opacity: stepMotion.contentOpacity
+        transform: Translate { y: stepMotion.contentOffset }
+
+        Item {
             anchors.fill: parent
-            enabled: root.checkComplete
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: root.begin()
-        }
-    }
-
-    Item {
-        id: wizard
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top; anchors.topMargin: 56
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 28
-        width: Math.min(720, parent.width - 80)
-        visible: root.step !== "welcome"
-
-        Row {
-            id: steps
-            height: 24; spacing: 30
-            visible: root.configuring
-            Repeater {
-                model: ["主题", "模板", "物品映射"]
-                delegate: XCText {
-                    required property int index
-                    required property string modelData
-                    onCenter: false; xcText: modelData; xcFontSize: 12
-                    boldFont: root.stepIndex === index
-                    textColor: root.stepIndex === index ? Colors.accentText : Colors.banned
-                }
-            }
-        }
-        XCText {
-            id: heading
-            y: root.configuring ? 38 : 12
-            width: parent.width; onCenter: false; xcFontSize: 26
-            xcText: root.step === "update" ? "发现新版本 v" + Updates.latestVersion
-                  : root.step === "theme" ? "选择喜欢的主题"
-                  : root.step === "templates" ? "检查模板" : "检查物品映射"
-        }
-        XCScrollView {
-            id: scroll
-            anchors.top: heading.bottom; anchors.topMargin: 22
-            anchors.bottom: feedback.top; anchors.bottomMargin: 16
-            width: parent.width
-            contentHeight: body.height
-            Loader {
-                id: body
-                active: wizard.visible
-                width: scroll.availableWidth
-                sourceComponent: root.step === "update" ? updateContent
-                               : root.step === "theme" ? themeContent
-                               : root.step === "templates" ? templateContent : itemContent
-            }
-        }
-        Item {
-            id: feedback
-            anchors.bottom: navigation.top; anchors.bottomMargin: root.errorText.length ? 12 : 0
-            width: parent.width; height: errorMessage.visible ? errorMessage.implicitHeight : 0
-            XCText {
-                id: errorMessage
-                width: parent.width; visible: root.errorText.length > 0
-                onCenter: false; xcWrapMode: true; boldFont: false; xcFontSize: 12
-                elide: Text.ElideNone; textColor: Colors.error; xcText: root.errorText
-            }
-        }
-        Item {
-            id: navigation
-            anchors.bottom: parent.bottom
-            width: parent.width; height: 36
-            ActionButton {
-                objectName: "initializationBack"
-                visible: root.step === "templates" || root.step === "items"
-                enabled: !root.busy; text: "上一步"; onClicked: root.back()
-            }
-            Row {
-                anchors.right: parent.right; spacing: 10
-                ActionButton {
-                    objectName: "initializationViewUpdate"
-                    visible: root.step === "update"; text: "查看更新"; primary: true
-                    onClicked: {
-                        if (!Qt.openUrlExternally(Updates.releaseUrl)) root.errorText = "无法打开更新页面，请稍后在关于页面重试。"
+            visible: root.displayedStep === "welcome"
+            Column {
+                z: 1
+                anchors.centerIn: parent
+                width: parent.width - 80
+                spacing: 18
+                XCText { width: parent.width; onCenter: false; horizontalAlignment: Text.AlignHCenter; xcText: "欢迎使用 XCShop"; xcFontSize: 36 }
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 12
+                    XCText {
+                        objectName: "initializationWelcomeStatus"
+                        onCenter: false
+                        xcText: root.checkComplete ? "点击任意位置开始" : "正在检查更新"
+                        xcFontSize: 14; boldFont: false; textColor: Colors.banned
+                    }
+                    XCText {
+                        objectName: "initializationSkipUpdateCheck"
+                        visible: root.canSkipCheck && !root.checkComplete
+                        onCenter: false; xcText: "跳过"; xcFontSize: 14; boldFont: false
+                        textColor: skipPointer.containsMouse ? Colors.text : Colors.accentText
+                        underlineFont: skipPointer.containsMouse
+                        MouseArea {
+                            id: skipPointer
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.skipUpdateCheck()
+                        }
                     }
                 }
+            }
+            MouseArea {
+                objectName: "initializationWelcomeAction"
+                anchors.fill: parent
+                enabled: root.checkComplete
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.begin()
+            }
+        }
+
+        Item {
+            id: wizard
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top; anchors.topMargin: 56
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 28
+            width: Math.min(720, parent.width - 80)
+            visible: root.displayedStep !== "welcome"
+
+            Row {
+                id: steps
+                height: 24; spacing: 30
+                visible: root.configuring
+                Repeater {
+                    model: ["主题", "模板", "物品映射"]
+                    delegate: XCText {
+                        required property int index
+                        required property string modelData
+                        onCenter: false; xcText: modelData; xcFontSize: 12
+                        boldFont: root.stepIndex === index
+                        textColor: root.stepIndex === index ? Colors.accentText : Colors.banned
+                    }
+                }
+            }
+            XCText {
+                id: heading
+                y: root.configuring ? 38 : 12
+                width: parent.width; onCenter: false; xcFontSize: 26
+                xcText: root.displayedStep === "update" ? "发现新版本 v" + Updates.latestVersion
+                      : root.displayedStep === "theme" ? "选择喜欢的主题"
+                      : root.displayedStep === "templates" ? "检查模板" : "检查物品映射"
+            }
+            XCScrollView {
+                id: scroll
+                anchors.top: heading.bottom; anchors.topMargin: 22
+                anchors.bottom: feedback.top; anchors.bottomMargin: 16
+                width: parent.width
+                contentHeight: body.height
+                Loader {
+                    id: body
+                    active: wizard.visible
+                    width: scroll.availableWidth
+                    sourceComponent: root.displayedStep === "update" ? updateContent
+                                   : root.displayedStep === "theme" ? themeContent
+                                   : root.displayedStep === "templates" ? templateContent : itemContent
+                    onLoaded: scroll.contentItem.contentY = 0
+                }
+            }
+            Item {
+                id: feedback
+                anchors.bottom: navigation.top; anchors.bottomMargin: root.errorText.length ? 12 : 0
+                width: parent.width; height: errorMessage.visible ? errorMessage.implicitHeight : 0
+                XCText {
+                    id: errorMessage
+                    width: parent.width; visible: root.errorText.length > 0
+                    onCenter: false; xcWrapMode: true; boldFont: false; xcFontSize: 12
+                    elide: Text.ElideNone; textColor: Colors.error; xcText: root.errorText
+                }
+            }
+            Item {
+                id: navigation
+                anchors.bottom: parent.bottom
+                width: parent.width; height: 36
                 ActionButton {
-                    objectName: "initializationNext"
-                    text: root.step === "items" ? "完成" : root.step === "update" ? "继续设置" : "下一步"
-                    primary: root.step !== "update"; enabled: !root.busy
-                    onClicked: root.next()
+                    objectName: "initializationBack"
+                    visible: root.displayedStep === "templates" || root.displayedStep === "items"
+                    enabled: !root.busy; text: "上一步"; onClicked: root.back()
+                }
+                Row {
+                    anchors.right: parent.right; spacing: 10
+                    ActionButton {
+                        objectName: "initializationViewUpdate"
+                        visible: root.displayedStep === "update"; text: "查看更新"; primary: true
+                        onClicked: {
+                            if (!Qt.openUrlExternally(Updates.releaseUrl)) root.errorText = "无法打开更新页面，请稍后在关于页面重试。"
+                        }
+                    }
+                    ActionButton {
+                        objectName: "initializationNext"
+                        text: root.displayedStep === "items" ? "完成" : root.displayedStep === "update" ? "继续设置" : "下一步"
+                        primary: root.displayedStep !== "update"; enabled: !root.busy
+                        onClicked: root.next()
+                    }
                 }
             }
         }
+    }
+    PageTransition {
+        id: stepMotion
+        objectName: "initializationStepTransition"
+        currentValue: "welcome"
+        exitOffset: root.displayedStep === "welcome" || root.displayedStep === "update" ? 0 : -6
+        exitDuration: root.displayedStep === "welcome" || root.displayedStep === "update" ? 500 : 110
+        enterDuration: root.displayedStep === "welcome" || root.displayedStep === "update" ? 500 : 180
+        onCommit: function(value) { root.displayedStep = value }
     }
 
     Component {

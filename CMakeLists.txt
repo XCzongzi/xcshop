@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(xcshop VERSION 0.0.2 LANGUAGES CXX)
+project(xcshop VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -98,6 +98,7 @@ qt_add_qml_module(appxcshop
         qml/components/base/reusable/FrostedSurface.qml
         qml/components/base/reusable/ObjectListModel.qml
         qml/components/base/reusable/AnimatedReveal.qml
+        qml/components/base/reusable/PageTransition.qml
         qml/components/base/reusable/AnimatedListRemoval.qml
         qml/components/base/reusable/AnimatedListSwap.qml
         qml/components/base/reusable/AmbientBackground.qml
@@ -307,7 +308,7 @@ if(XCSHOP_BUILD_TESTS)
             TIMEOUT 60)
     endif()
     qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml tests/UpdateUiSmoke.qml tests/InitializationUiSmoke.qml)
-    foreach(mode IN ITEMS update current offline)
+    foreach(mode IN ITEMS update current offline skip)
         add_test(NAME initialization_${mode}_ui_smoke COMMAND appxcshop --initialization-ui-smoke)
         set_tests_properties(initialization_${mode}_ui_smoke PROPERTIES
             ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_INITIALIZATION_TEST_MODE=${mode}"
@@ -343,6 +344,11 @@ if(XCSHOP_BUILD_TESTS)
         TIMEOUT 25)
     add_test(NAME about_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME workspace_transition_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME page_transitions_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(page_transitions_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/PageTransitionsUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "PAGE_TRANSITIONS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 30)
     set_tests_properties(workspace_transition_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/WorkspaceTransitionUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "WORKSPACE_TRANSITION_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"

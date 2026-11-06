@@ -10,9 +10,11 @@ Window {
     property var appWindow: null
     property int stage: 0
     property int ticks: 0
+    property bool advancing: false
     readonly property string itemsRoot: APP_DIRPATH + "/assets/minecraft/items"
     readonly property string pack: "packs/" + "a".repeat(40) + "-r1-abc"
     readonly property bool hasUpdate: INITIALIZATION_TEST_MODE === "update"
+    readonly property bool slowCheck: INITIALIZATION_TEST_MODE === "skip"
     XCFile { id: files }
     Component { id: application; Main { width: 1000; height: 760 } }
     function check(ok, message) { if (!ok) throw new Error(message) }
@@ -25,6 +27,10 @@ Window {
         return null
     }
     function click(name) {
+        var transition = find(appWindow.contentItem, "initializationStepTransition")
+        for (var attempt = 0; transition && transition.running && attempt < 100; ++attempt)
+            UiInput.settle(20)
+        check(!transition || !transition.running, "step transition must finish")
         var target = find(appWindow.contentItem, name)
         check(target && target.visible && target.enabled, "unavailable action " + name)
         UiInput.click(target)
@@ -34,6 +40,16 @@ Window {
         find(appWindow.contentItem, "mainPageLoader").item.grabToImage(function(result) {
             result.saveToFile(SMOKE_OUTPUT_DIR + "/initialization-" + INITIALIZATION_TEST_MODE + "-" + name + ".png")
         })
+    }
+    function skipSlowCheck(page) {
+        var skip = find(page, "initializationSkipUpdateCheck")
+        if (!skip.visible) return false
+        check(Updates.checking, "slow request must still be running before skip")
+        click("initializationSkipUpdateCheck")
+        check(page.checkComplete && page.updateCheckSkipped && !Updates.checking, "skip must stop waiting and cancel the request")
+        check(find(page, "initializationWelcomeStatus").text === "点击任意位置开始", "skip must show start text")
+        check(page.step === "welcome" && !skip.visible, "skip must stay on the welcome page until another click")
+        return true
     }
     function reopen() {
         if (appWindow) {
@@ -49,35 +65,71 @@ Window {
         reopen()
         var page = find(appWindow.contentItem, "mainPageLoader").item
         check(page && page.step === "welcome" && !page.checkComplete, "first launch must wait for checking")
+        check(!find(page, "initializationSkipUpdateCheck").visible, "skip must start hidden")
         page.begin()
         check(page.step === "welcome", "checking must block start")
     }
     Timer {
         interval: 400; running: true; repeat: true
         onTriggered: {
+            if (root.advancing) return
+            root.advancing = true
             try {
                 if (++root.ticks > 65) throw new Error("timed out at stage " + root.stage)
                 var loader = root.find(root.appWindow.contentItem, "mainPageLoader")
                 var page = loader.item
+                var stepTransition = root.find(page, "initializationStepTransition")
+                if (stepTransition && stepTransition.running) return
                 root.check(!root.find(root.appWindow.contentItem, "updateNotice"), "onboarding must own update notice")
                 if (root.stage === 0) {
+                    if (root.slowCheck && !page.checkComplete) {
+                        if (root.ticks <= 3) root.check(!root.find(page, "initializationSkipUpdateCheck").visible, "skip must not appear before two seconds")
+                        if (!root.skipSlowCheck(page)) return
+                    }
                     if (!page.checkComplete) return
                     root.check(root.appWindow.initializing && loader.sourceComponent === Constants.pageOnInitialize, "first launch route")
+                    root.check(root.find(root.appWindow.contentItem, "windowTitle").text === "", "welcome must hide the title text")
+                    var controls = root.find(root.appWindow.contentItem, "windowControls")
+                    var revealArea = root.find(root.appWindow.contentItem, "windowControlRevealArea")
+                    root.check(controls.opacity === 0 && !controls.enabled, "welcome controls must start hidden")
+                    UiInput.hover(revealArea)
+                    UiInput.settle(250)
+                    root.check(controls.opacity === 1 && controls.enabled, "nearby pointer must reveal window controls")
+                    UiInput.hover(controls)
+                    UiInput.settle(50)
+                    root.check(controls.opacity === 1, "controls must stay visible while hovered")
+                    UiInput.hover(revealArea, false)
+                    UiInput.settle(250)
+                    root.check(controls.opacity === 0 && !controls.enabled, "controls must hide after pointer leaves")
                     root.check(loader.x === 0 && page.x === 0 && page.width === root.appWindow.surfaceWidth, "full window layout")
                     root.capture("welcome")
                 } else if (root.stage === 1) {
                     root.click("initializationWelcomeAction")
                     root.check(page.step === (root.hasUpdate ? "update" : "theme"), "update branch")
+                    root.check(page.displayedStep === "welcome", "welcome remains until fade-out finishes")
+                    root.check(root.find(page, "initializationStepTransition").running, "welcome transition must animate")
+                    UiInput.settle(35)
+                    var welcomeMotion = root.find(page, "initializationStepTransition")
+                    root.check(welcomeMotion.activeExitDuration === 500 && welcomeMotion.activeEnterDuration === 500, "welcome fades must use 500ms")
+                    root.check(welcomeMotion.contentOpacity > 0 && welcomeMotion.contentOpacity < 1
+                               && welcomeMotion.contentOffset === 0, "welcome must fade out in place")
                 } else if (root.stage === 2) {
                     if (root.hasUpdate) {
                         root.capture("update")
                         root.click("initializationViewUpdate")
                         root.check(UpdateFixture.openedCount() === 1, "update browser action")
                         root.click("initializationNext")
+                        UiInput.settle(35)
+                        var updateMotion = root.find(page, "initializationStepTransition")
+                        root.check(updateMotion.activeExitDuration === 500 && updateMotion.activeEnterDuration === 500, "update fades must use 500ms")
+                        root.check(updateMotion.contentOpacity > 0 && updateMotion.contentOpacity < 1
+                                   && updateMotion.contentOffset === 0, "update must fade out in place")
                     }
                     root.check(page.step === "theme", "theme must follow welcome/update")
                     root.capture("theme-dark")
                 } else if (root.stage === 3) {
+                    root.check(root.find(root.appWindow.contentItem, "windowTitle").text === "Minecraft xcshop", "later steps must restore the title text")
+                    root.check(root.find(root.appWindow.contentItem, "windowControls").opacity === 1, "later steps must keep window controls visible")
                     root.click("initializationTheme_glacier")
                     root.check(Colors.colorScheme === "glacier", "live theme preview")
                     root.appWindow.width = root.appWindow.minimumWidth
@@ -91,6 +143,7 @@ Window {
                     root.capture("templates")
                     root.reopen()
                 } else if (root.stage === 6) {
+                    if (root.slowCheck && !page.checkComplete && !root.skipSlowCheck(page)) return
                     if (!page.checkComplete) return
                     root.check(page.step === "welcome" && root.appWindow.initializing, "interrupted setup must reopen")
                     root.click("initializationWelcomeAction")
@@ -150,6 +203,8 @@ Window {
                 console.error("INITIALIZATION_UI_SMOKE_FAILED", error)
                 stop()
                 Qt.exit(1)
+            } finally {
+                root.advancing = false
             }
         }
     }

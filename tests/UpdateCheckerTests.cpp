@@ -125,6 +125,28 @@ private slots:
         QVERIFY(!checker.checking());
         QVERIFY(!checker.updateAvailable());
     }
+
+    void cancelAllowsAnotherCheck() {
+        QTemporaryDir temp;
+        UpdateFeedFixture feed;
+        feed.stall = true;
+        UpdateChecker checker(feed.url(), temp.filePath("state.ini"));
+        QSignalSpy finished(&checker, &UpdateChecker::checkFinished);
+        QSignalSpy reminders(&checker, &UpdateChecker::startupUpdateAvailable);
+        checker.check();
+        QTRY_COMPARE(feed.requests, 1);
+        checker.cancel();
+        QTRY_COMPARE(finished.count(), 1);
+        QVERIFY(!checker.checking());
+        QVERIFY(!checker.updateAvailable());
+        QCOMPARE(reminders.count(), 0);
+
+        feed.stall = false;
+        checker.check();
+        QTRY_COMPARE(finished.count(), 2);
+        QVERIFY(checker.updateAvailable());
+        QCOMPARE(reminders.count(), 1);
+    }
 };
 
 QTEST_GUILESS_MAIN(UpdateCheckerTests)

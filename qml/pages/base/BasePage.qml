@@ -28,17 +28,7 @@ Rectangle{
     bottomRightRadius: Constants.window_radius
     
 
-    //动画/创建
-    opacity: 0
-    enabled: opacity > 0.01
-    Behavior on opacity {
-        NumberAnimation{
-            duration: 500 / Global.animationSpeed
-        }
-    }
-    Component.onCompleted: {
-        root.opacity = 1
-    }
+    // Page hosts own entrance and exit animations, including input blocking.
 
     //滚动条
     WheelHandler{
