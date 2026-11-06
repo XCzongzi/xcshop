@@ -86,6 +86,7 @@ qt_add_qml_module(appxcshop
 
         qml/components/TitleBar.qml
         qml/components/WorkspaceEntrance.qml
+        qml/components/InitializationThemePicker.qml
         qml/components/Border.qml
         qml/components/TypeBar.qml
         qml/components/ElementExplorer.qml

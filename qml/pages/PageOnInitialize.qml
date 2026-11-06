@@ -76,6 +76,8 @@ BasePage {
             Updates.dismissVersion(Updates.latestVersion)
             step = "theme"
         } else if (step === "theme") {
+            if (!themePicker.selectedTheme.length) return
+            themePicker.finishPreview()
             Global.saveSettings()
             BuildKits.refresh()
             step = "templates"
@@ -183,13 +185,13 @@ BasePage {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top; anchors.topMargin: 56
             anchors.bottom: parent.bottom; anchors.bottomMargin: 28
-            width: Math.min(720, parent.width - 80)
+            width: root.displayedStep === "theme" ? parent.width - 80 : Math.min(720, parent.width - 80)
             visible: root.displayedStep !== "welcome"
 
             Row {
                 id: steps
                 height: 24; spacing: 30
-                visible: root.configuring
+                visible: root.configuring && root.displayedStep !== "theme"
                 Repeater {
                     model: ["主题", "模板", "物品映射"]
                     delegate: XCText {
@@ -203,6 +205,7 @@ BasePage {
             }
             XCText {
                 id: heading
+                visible: root.displayedStep !== "theme"
                 y: root.configuring ? 38 : 12
                 width: parent.width; onCenter: false; xcFontSize: 26
                 xcText: root.displayedStep === "update" ? "发现新版本 v" + Updates.latestVersion
@@ -211,16 +214,16 @@ BasePage {
             }
             XCScrollView {
                 id: scroll
+                visible: root.displayedStep !== "theme"
                 anchors.top: heading.bottom; anchors.topMargin: 22
                 anchors.bottom: feedback.top; anchors.bottomMargin: 16
                 width: parent.width
                 contentHeight: body.height
                 Loader {
                     id: body
-                    active: wizard.visible
+                    active: wizard.visible && root.displayedStep !== "theme"
                     width: scroll.availableWidth
                     sourceComponent: root.displayedStep === "update" ? updateContent
-                                   : root.displayedStep === "theme" ? themeContent
                                    : root.displayedStep === "templates" ? templateContent : itemContent
                     onLoaded: scroll.contentItem.contentY = 0
                 }
@@ -256,12 +259,20 @@ BasePage {
                     }
                     ActionButton {
                         objectName: "initializationNext"
+                        visible: root.displayedStep !== "theme" || themePicker.expanded
                         text: root.displayedStep === "items" ? "完成" : root.displayedStep === "update" ? "继续设置" : "下一步"
-                        primary: root.displayedStep !== "update"; enabled: !root.busy
+                        primary: root.displayedStep !== "update"
+                        enabled: !root.busy && (root.displayedStep !== "theme" || themePicker.selectedTheme.length > 0)
                         onClicked: root.next()
                     }
                 }
             }
+        }
+
+        InitializationThemePicker {
+            id: themePicker
+            anchors.fill: parent
+            visible: root.displayedStep === "theme"
         }
     }
     PageTransition {
@@ -280,38 +291,6 @@ BasePage {
             spacing: 16
             XCText { width: parent.width; onCenter: false; xcText: "当前版本 v" + Qt.application.version; xcFontSize: 13; boldFont: false; textColor: Colors.banned }
             XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcText: Updates.releaseNotes || "新版本已发布。"; textFormat: Text.PlainText; xcFontSize: 14; boldFont: false }
-        }
-    }
-    Component {
-        id: themeContent
-        Flow {
-            id: themeGrid
-            spacing: 12
-            readonly property int columns: width >= 620 ? 6 : 4
-            Repeater {
-                model: Colors.colorSchemes
-                delegate: Rectangle {
-                    id: choice
-                    required property var modelData
-                    objectName: "initializationTheme_" + modelData.id
-                    width: (themeGrid.width - (themeGrid.columns - 1) * themeGrid.spacing) / themeGrid.columns
-                    height: 100; radius: 9
-                    color: modelData.background
-                    border.width: Colors.colorScheme === modelData.id ? 2 : 1
-                    border.color: Colors.colorScheme === modelData.id ? Colors.themeColor : Colors.changeA(modelData.text, 0.18)
-                    Rectangle { x: 12; y: 14; width: parent.width - 24; height: 12; radius: 3; color: choice.modelData.foreground }
-                    Rectangle { x: 12; y: 33; width: (parent.width - 30) * 0.65; height: 27; radius: 4; color: choice.modelData.foreground }
-                    Rectangle { x: 18 + (parent.width - 30) * 0.65; y: 33; width: (parent.width - 30) * 0.35; height: 27; radius: 4; color: Colors.accentForColorScheme(choice.modelData.id) || Colors.accentChoices[0] }
-                    XCText { x: 12; y: 72; onCenter: false; xcText: choice.modelData.name; xcFontSize: 12; boldFont: false; textColor: choice.modelData.text }
-                    MouseArea {
-                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            Colors.applyColorScheme(choice.modelData.id)
-                            Colors.setThemeColor(Colors.accentForColorScheme(choice.modelData.id) || Colors.accentChoices[0])
-                        }
-                    }
-                }
-            }
         }
     }
     Component {

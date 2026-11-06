@@ -17,6 +17,15 @@ var palettes = {
 
 var names = {"midnight":"深夜","cloud":"云白","slate":"石板","glacier":"冰川","violet":"紫雾","lavender":"薰衣草","forest":"森林","mint":"薄荷","amber":"琥珀","parchment":"羊皮纸","rose":"玫瑰","blush":"樱粉"}
 
+var counterparts = {
+    midnight: "cloud", cloud: "midnight",
+    slate: "glacier", glacier: "slate",
+    violet: "lavender", lavender: "violet",
+    forest: "mint", mint: "forest",
+    amber: "parchment", parchment: "amber",
+    rose: "blush", blush: "rose"
+}
+
 // RGB roles are independent of material opacity. Controls retain their existing
 // alpha/blur and choose a role according to the surface they actually draw.
 var lightSurfaces = {
@@ -56,7 +65,7 @@ function opaque(value) { return value.length === 9 ? "#" + value.substring(3) : 
 function choices() {
     return Object.keys(palettes).map(function(id) {
         var palette = palettes[id]
-        return { id: id, name: names[id], mode: palette.gui_theme === "light" ? "深色" : "浅色",
+        return { id: id, name: names[id], counterpart: counterparts[id], mode: palette.gui_theme === "light" ? "深色" : "浅色",
                  background: palette.background, foreground: opaque(palette.foreground),
                  surface: opaque(palette.pressed), text: palette.text }
     })

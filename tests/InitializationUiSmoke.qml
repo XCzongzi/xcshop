@@ -37,9 +37,32 @@ Window {
     }
     function capture(name) {
         // Capture the page directly; software rendering cannot draw the window's GPU mask.
-        find(appWindow.contentItem, "mainPageLoader").item.grabToImage(function(result) {
-            result.saveToFile(SMOKE_OUTPUT_DIR + "/initialization-" + INITIALIZATION_TEST_MODE + "-" + name + ".png")
+        var captured = false
+        var saved = false
+        var started = find(appWindow.contentItem, "mainPageLoader").item.grabToImage(function(result) {
+            saved = result.saveToFile(SMOKE_OUTPUT_DIR + "/initialization-" + INITIALIZATION_TEST_MODE + "-" + name + ".png")
+            captured = true
         })
+        for (var attempt = 0; started && !captured && attempt < 50; ++attempt) UiInput.settle(20)
+        check(started && captured && saved, "capture must finish before advancing: " + name)
+    }
+    function checkAttachedThemes(page, dark) {
+        var picker = find(page, "initializationThemePicker")
+        var divider = find(page, "initializationThemeDivider")
+        for (var scheme of picker.themes) {
+            var card = find(page, "initializationTheme_" + scheme.id)
+            var edgeX = dark ? 0 : card.width
+            var top = divider.mapFromItem(card, edgeX, 0)
+            var bottom = divider.mapFromItem(card, edgeX, card.height)
+            var gap = dark ? Math.min(top.x, bottom.x) : -Math.max(top.x, bottom.x)
+            check(gap >= 3 && gap <= 10, "theme card must hug the slanted divider: " + scheme.id)
+            var mask = find(card, "initializationThemeEntranceMask_" + scheme.id)
+            check(mask && mask.clip, "entrance must retain a divider-side mask: " + scheme.id)
+            var hidden = mask.mapFromItem(card, dark ? -1 : card.width + 1, card.height / 2)
+            var rebound = mask.mapFromItem(card, dark ? card.width + 16 : -16, card.height / 2)
+            check(!mask.contains(hidden), "entrance must stay hidden behind the divider: " + scheme.id)
+            check(mask.contains(rebound), "outer edge must have room for the rebound: " + scheme.id)
+        }
     }
     function skipSlowCheck(page) {
         var skip = find(page, "initializationSkipUpdateCheck")
@@ -130,14 +153,82 @@ Window {
                 } else if (root.stage === 3) {
                     root.check(root.find(root.appWindow.contentItem, "windowTitle").text === "Minecraft xcshop", "later steps must restore the title text")
                     root.check(root.find(root.appWindow.contentItem, "windowControls").opacity === 1, "later steps must keep window controls visible")
+                    var picker = root.find(page, "initializationThemePicker")
+                    var next = root.find(page, "initializationNext")
+                    var darkMode = root.find(page, "initializationMode_dark")
+                    var lightMode = root.find(page, "initializationMode_light")
+                    var divider = root.find(page, "initializationThemeDivider")
+                    root.check(darkMode.visible && lightMode.visible && !picker.expanded, "start with two transparent mode choices")
+                    root.check(!root.find(page, "initializationTheme_midnight") && !next.enabled && !next.visible, "themes and navigation must wait for a mode")
+                    root.check(divider.rotation !== 0 && divider.height < picker.height * 0.7, "divider must be slanted and shorter than the window")
+                    var shadow = root.find(page, "initializationThemeDividerShadow")
+                    root.check(shadow.y < 0 && shadow.height > divider.height, "shadow needs padding beyond both line ends")
+                    page.next()
+                    root.check(page.step === "theme", "direct navigation must require an explicit theme")
+                    UiInput.hover(darkMode)
+                    UiInput.settle(360)
+                    UiInput.hover(lightMode)
+                    UiInput.settle(160)
+                    root.check(Colors.colorScheme === "cloud" && !picker.selectedTheme.length, "light hover must preview cloud without selecting")
+                    root.check(!root.find(page, "initializationThemeRipple"), "hover must not use a circular reveal")
+                    root.check(!Qt.colorEqual(Colors.background_n, "#1b1d27") && !Qt.colorEqual(Colors.background_n, "#dce2eb"), "hover must interpolate the background color")
+                    UiInput.hover(darkMode)
+                    UiInput.settle(160)
+                    root.check(Colors.colorScheme === "midnight", "rapid reversal must preview midnight")
+                    root.click("initializationMode_dark")
+                    UiInput.settle(460)
+                    root.check(!lightMode.visible && divider.x < picker.width * 0.4, "dark selection must shrink to the left")
+                    root.check(root.find(page, "initializationTheme_midnight") && !root.find(page, "initializationTheme_cloud"), "show only dark palettes")
+                    root.check(next.visible && !next.enabled, "mode preview cannot enable next")
+                    var firstTheme = root.find(page, "initializationTheme_midnight")
+                    var lastTheme = root.find(page, "initializationTheme_rose")
+                    root.check(firstTheme.reveal > lastTheme.reveal, "themes must reveal from top to bottom")
+                    UiInput.settle(850)
+                    root.checkAttachedThemes(page, true)
+                    root.capture("theme-dark-expanded")
+                    root.click("initializationTheme_violet")
+                    root.check(next.enabled && Colors.colorScheme === "violet", "explicit dark theme must enable next")
+                    root.click("initializationThemeBack")
+                    UiInput.settle(460)
+                    root.check(darkMode.visible && lightMode.visible && !next.enabled && !picker.selectedTheme.length, "back must restore mode choices and clear confirmation")
+                    root.check(Colors.colorScheme === "violet", "return must retain the chosen dark theme")
+                    root.check(Math.abs(divider.x - picker.width / 2) < 1, "back must recenter divider")
+                    root.click("initializationMode_dark")
+                    UiInput.settle(460)
+                    root.check(Colors.colorScheme === "violet" && picker.selectedTheme === "violet" && next.enabled, "reopening the same mode must restore its selected theme")
+                    root.click("initializationThemeBack")
+                    UiInput.settle(460)
+                    UiInput.hover(lightMode)
+                    UiInput.settle(160)
+                    root.check(Colors.colorScheme === "lavender", "light preview must use the counterpart of violet")
+                    UiInput.hover(darkMode)
+                    UiInput.settle(160)
+                    root.check(Colors.colorScheme === "violet", "switching back must restore violet")
+                    root.click("initializationMode_light")
+                    UiInput.settle(1350)
+                    root.check(!darkMode.visible && divider.x > picker.width * 0.6, "light selection must shrink to the right")
+                    root.check(root.find(page, "initializationTheme_cloud") && !root.find(page, "initializationTheme_midnight"), "show only light palettes")
+                    root.check(Colors.colorScheme === "lavender" && picker.selectedTheme === "lavender" && next.enabled, "switching modes must select the paired theme after an explicit choice")
+                    root.checkAttachedThemes(page, false)
                     root.click("initializationTheme_glacier")
                     root.check(Colors.colorScheme === "glacier", "live theme preview")
+                    root.click("initializationThemeBack")
+                    UiInput.settle(460)
+                    root.check(Colors.colorScheme === "glacier", "return must retain the chosen light theme")
+                    UiInput.hover(darkMode)
+                    UiInput.settle(160)
+                    root.check(Colors.colorScheme === "slate", "dark preview must use the counterpart of glacier")
+                    root.click("initializationMode_light")
+                    UiInput.settle(1350)
+                    root.check(Colors.colorScheme === "glacier" && picker.selectedTheme === "glacier" && next.enabled, "switching to light again must restore glacier")
                     root.appWindow.width = root.appWindow.minimumWidth
                     root.appWindow.height = root.appWindow.minimumHeight
                 } else if (root.stage === 4) {
+                    root.checkAttachedThemes(page, false)
                     root.capture("theme-light-small")
                     root.click("initializationNext")
                     root.check(page.step === "templates", "template step")
+                    root.check(JSON.parse(files.read(Global.settingsPath)).backgroundColor === "#d0e3ed", "save the final palette rather than an intermediate animation color")
                     root.check(!JSON.parse(files.read(Global.settingsPath)).initializationCompleted, "partial setup cannot mark complete")
                 } else if (root.stage === 5) {
                     root.capture("templates")
@@ -146,10 +237,15 @@ Window {
                     if (root.slowCheck && !page.checkComplete && !root.skipSlowCheck(page)) return
                     if (!page.checkComplete) return
                     root.check(page.step === "welcome" && root.appWindow.initializing, "interrupted setup must reopen")
+                    root.check(Colors.colorScheme === "glacier", "restore chosen theme before hover preview")
                     root.click("initializationWelcomeAction")
                     if (root.hasUpdate) root.click("initializationNext")
                 } else if (root.stage === 7) {
-                    root.check(page.step === "theme" && Colors.colorScheme === "glacier", "restore chosen theme")
+                    root.check(page.step === "theme" && !root.find(page, "initializationThemePicker").expanded, "reopened setup starts with mode choices")
+                    root.check(!root.find(page, "initializationNext").enabled, "reopened setup must ask for an explicit choice")
+                    root.click("initializationMode_light")
+                    UiInput.settle(1350)
+                    root.click("initializationTheme_glacier")
                     root.click("initializationNext")
                 } else if (root.stage === 8) {
                     root.check(BuildKits.templates.length > 0 && BuildKits.templates[0].versions.length > 0, "bundled templates and coverage")
