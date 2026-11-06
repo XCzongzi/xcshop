@@ -28,7 +28,23 @@ Rectangle{
     bottomRightRadius: Constants.window_radius
     
 
-    // Page hosts own entrance and exit animations, including input blocking.
+    property bool animateEntrance: true
+    opacity: animateEntrance ? 0 : 1
+    enabled: opacity > 0.01
+    onAnimateEntranceChanged: {
+        if (!animateEntrance && entranceBehavior) {
+            entranceBehavior.enabled = false
+            opacity = 1
+        }
+    }
+    Behavior on opacity {
+        id: entranceBehavior
+        enabled: root.animateEntrance
+        NumberAnimation {
+            duration: 500 / Global.animationSpeed
+        }
+    }
+    Component.onCompleted: root.opacity = 1
 
     //滚动条
     WheelHandler{

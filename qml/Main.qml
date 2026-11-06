@@ -169,16 +169,6 @@ XCWindow {
         }
         function typeSwitch(typeName,after) {   //为了方便后续调用，就把type原本的槽函数单独分离了出来，after用于区分是否后期调用
             if (workspaceEntrance.busy) return
-            if (!pageMotion.committing) {
-                var destination = typeName === "Global" ? Constants.pageOnTotal
-                        : !elementExplorer.started ? Constants.pageWithEmpty
-                        : ({UI: Constants.pageOnUI, Item: Constants.pageOnItem,
-                            Cost: Constants.pageOnCost, Display: Constants.pageOnDisplay})[typeName]
-                if (!pageMotion.running && Global.current_element === typeName
-                        && pageLoader.sourceComponent === destination) return
-                pageMotion.changeTo(function() { root.typeSwitch(typeName, after) }, true)
-                return
-            }
             Global.current_element = typeName
             // 中转区可以直接调用 typeSwitch；同步类型栏的视觉选中态，不能只依赖按钮点击。
             switch(typeName){
@@ -209,10 +199,6 @@ XCWindow {
         }
         function openElementFromRelay(filePath) {
             if (workspaceEntrance.busy) return
-            if (!pageMotion.committing) {
-                pageMotion.changeTo(function() { root.openElementFromRelay(filePath) }, true)
-                return
-            }
             var element = Global.parseElementPath(filePath)
             if (!element)
                 return
@@ -220,8 +206,12 @@ XCWindow {
             var typeChanged = Global.current_element !== element.type
             var sameFile = Global.normalizeElementPath(Global.get_filePath()) === element.path
 
+            // 先卸载旧页面，避免它响应目标工作区的文件绑定。
+            if (typeChanged || !sameFile)
+                pageLoader.sourceComponent = null
+            // 切换类型会触发 startedChanged 并立即加载页面，必须先准备目标类型的文件。
+            Global.set_file(element.folder, element.name, element.type)
             Global.current_element = element.type
-            Global.set_file(element.folder, element.name)
             SignalBus.elementOpened(element.type, element.path, element.name)
 
             if (typeChanged) {
@@ -233,7 +223,7 @@ XCWindow {
 
             elementExplorer.openElementFolder(element.folder)
             if (!sameFile)
-                SignalBus.sendToMain("switched_file", {})
+                root.typeSwitch(element.type, true)
         }
 
         ElementExplorer{
@@ -337,7 +327,7 @@ XCWindow {
             height: mainWindow.surfaceHeight
             z: 98
             onCovered: {
-                pageMotion.reset(pageLoader.sourceComponent)
+                opcAnim.stop()
                 if (destinationPage) {
                     mainWindow.titleBarColorFilling = destinationPage === Constants.pageOnSettings
                     pageLoader.sourceComponent = destinationPage
@@ -371,6 +361,8 @@ XCWindow {
             }
             onFinished: {
                 destinationPage = null
+                typeBar.freeze = false
+                freeze.visible = false
                 if (pageLoader.item) pageLoader.item.forceActiveFocus()
             }
         }
@@ -387,36 +379,44 @@ XCWindow {
             height: Math.max(0, root.height - y - elementRelayBar.height)
             width: edgeToEdgePage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
             z: 96
-            opacity: pageMotion.contentOpacity
-            transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) + pageMotion.contentOffset }
+            transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) }
             sourceComponent: null
             onItemChanged: {
                 if (item)
                     item.mainWindow = mainWindow
             }
             onLoaded: {
-                if (workspaceEntrance.busy) pageMotion.reset(sourceComponent)
-                else if (!pageMotion.running) pageMotion.reveal(sourceComponent)
+                // Initialization already reveals the start page through its shared veil.
+                if (workspaceEntrance.destinationPage === Constants.pageOnStart)
+                    item.animateEntrance = false
             }
-            PageTransition {
-                id: pageMotion
-                objectName: "mainPageTransition"
-                onCommit: function(value) {
-                    if (typeof value === "function") value()
-                    else pageLoader.setPage(value)
-                    currentValue = pageLoader.sourceComponent
-                }
-                onFinished: { if (pageLoader.item) pageLoader.item.forceActiveFocus() }
+            MouseArea {
+                id: freeze
+                anchors.fill: parent
+                visible: false
+                hoverEnabled: true
+                z: 999
             }
-            function setPage(page_, reload = false) {
-                mainWindow.titleBarColorFilling = page_ !== Constants.pageOnStart
-                        && page_ !== Constants.pageOnInitialize && page_ !== Constants.pageOnAbout
-                if (reload) sourceComponent = null
-                sourceComponent = page_
+            property Component page: null
+            property bool reloadPage: false
+            NumberAnimation {
+                id: opcAnim
+                target: pageLoader.item
+                property: "opacity"
+                duration: 250 / Global.animationSpeed
+                to: 0
+                easing.type: Easing.OutQuad
+                onFinished: pageLoader.commitPage()
+            }
+            function commitPage() {
+                if (reloadPage) sourceComponent = null
+                sourceComponent = page
+                reloadPage = false
+                typeBar.freeze = false
+                freeze.visible = false
             }
             function pageSwitch(page_, reload = false){
                 if (workspaceEntrance.busy) return
-                if (pageMotion.committing) { setPage(page_, reload); return }
                 if ((pageLoader.sourceComponent === Constants.pageOnInitialize && page_ === Constants.pageOnStart)
                         || (pageLoader.sourceComponent === Constants.pageOnStart && page_ === Constants.pageOnSettings)
                         || (page_ === Constants.pageOnAbout && pageLoader.sourceComponent !== page_)) {
@@ -424,9 +424,17 @@ XCWindow {
                     workspaceEntrance.start(false, "")
                     return
                 }
-                if (!pageMotion.running && sourceComponent === page_ && !reload) return
-                if (reload) pageMotion.changeTo(function() { pageLoader.setPage(page_, true) }, true)
-                else pageMotion.changeTo(page_)
+                if (sourceComponent === page_ && !reload) return
+                typeBar.freeze = true
+                freeze.visible = true
+                page = page_
+                reloadPage = reload
+                mainWindow.titleBarColorFilling = page_ !== Constants.pageOnStart
+                        && page_ !== Constants.pageOnInitialize && page_ !== Constants.pageOnAbout
+                if (page_ === Constants.pageOnUI || page_ === Constants.pageOnItem
+                        || page_ === Constants.pageOnCost || page_ === Constants.pageOnDisplay)
+                    commitPage()
+                else opcAnim.start()
             }
 
 

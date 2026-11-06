@@ -142,15 +142,19 @@ QtObject{
     }
 
 
-    function set_file(folder, name){    //若folder参数为"*"，则表示不改变文件路径，只改变文件名
+    function set_file(folder, name, elementType){    //若folder参数为"*"，则表示不改变文件路径，只改变文件名
+        var type = elementType === undefined ? current_element : elementType
+        var index = ["Global", "UI", "Item", "Cost", "Display"].indexOf(type)
+        if (index < 0)
+            return
         // 重新赋值数组以触发 QML 属性通知；直接改 var 数组下标不会可靠地刷新绑定。
         if(folder !== "*"){
             var locations = current_fileLocation.slice()
-            locations[current_enum] = project_location + "/" + current_element + folder
+            locations[index] = project_location + "/" + type + folder
             current_fileLocation = locations
         }
         var names = current_fileName.slice()
-        names[current_enum] = name
+        names[index] = name
         current_fileName = names
     }
 

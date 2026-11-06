@@ -56,9 +56,12 @@ Item{
                     return success ? "" : "创建失败，请检查目录是否可写。"
                 }
             },
-            "callback": function() {
+            "callback": function(value) {
                 root.creatingEntry = false
                 root.creationFinished()
+                if (!isFolder && typeof value === "string"
+                        && Global.project_location === project && Global.current_element === elementType)
+                    SignalBus.elementOpenRequested(destinationFor(value))
             }
         })
     }

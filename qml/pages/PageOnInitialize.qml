@@ -9,6 +9,9 @@ BasePage {
     color: Colors.transparent
     fullScreen: true
     usePageScrollBar: false
+    animateEntrance: false
+    property real initialEntranceOffset: 10
+    transform: Translate { y: root.initialEntranceOffset }
 
     // welcome, update, theme, templates, items
     property string step: "welcome"
@@ -111,7 +114,23 @@ BasePage {
             })))
         }
     }
-    Component.onCompleted: Qt.callLater(function() { Updates.check() })
+    Component.onCompleted: {
+        initialEntrance.start()
+        Qt.callLater(function() { Updates.check() })
+    }
+    ParallelAnimation {
+        id: initialEntrance
+        NumberAnimation {
+            target: root; property: "opacity"; from: 0; to: 1
+            duration: 180 / Math.max(0.1, Global.animationSpeed)
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root; property: "initialEntranceOffset"; from: 10; to: 0
+            duration: 180 / Math.max(0.1, Global.animationSpeed)
+            easing.type: Easing.OutCubic
+        }
+    }
     Timer {
         interval: 2000
         running: Updates.checking && !root.checkComplete && root.displayedStep === "welcome"

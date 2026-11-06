@@ -14,6 +14,8 @@ Window {
     property var tree: null
     property var controls: null
     property var lastMoves: []
+    property string lastOpenRequest: ""
+    property int openRequestCount: 0
     XCFile { id: files }
     Component { id: itemPage; PageOnItem {} }
     Rectangle {
@@ -57,6 +59,10 @@ Window {
             menu.openFor(target, x, y)
         }
         function onElementFilesMoved(moves) { root.lastMoves = moves }
+        function onElementOpenRequested(filePath) {
+            root.lastOpenRequest = filePath
+            root.openRequestCount++
+        }
     }
     function check(condition, message) { if (!condition) throw new Error(message) }
     function find(item, name) {
@@ -222,16 +228,19 @@ Window {
         check(popup.item, "Duplicate folder name accepted")
         cancel()
         check(tree.activeFocus, "Cancel did not restore explorer focus")
+        check(openRequestCount === 0, "Folder creation or cancellation must not open an element")
         tree.forceActiveFocus()
         UiInput.key(tree, Qt.Key_N, Qt.ControlModifier)
         enterName("新元素")
         var createdFile = target + "/新元素.xcseItem"
         var contents = files.read(createdFile)
         check(contents.length && JSON.parse(contents).operations !== undefined, "New element contents invalid")
+        check(openRequestCount === 1 && lastOpenRequest === createdFile, "New element must request navigation after creation")
         controls.requestCreate(false)
         enterName("新元素")
         check(popup.item && files.read(createdFile) === contents, "Duplicate creation overwrote element")
         cancel()
+        check(openRequestCount === 1, "Duplicate creation or cancellation must not navigate")
 
         controls.requestCreate(true)
         field = input()
@@ -248,11 +257,12 @@ Window {
         UiInput.settle(80)
         check(!popup.item && !files.isDirectory(target + "/取消后不创建"), "Enter during cancellation still created a folder")
         tree.currentFolder = "/不存在的目录"
-        controls.requestCreate(true)
+        controls.requestCreate(false)
         enterName("保留输入")
         check(popup.item && popup.item.submissionError.length > 0 && input().text === "保留输入",
               "Write failure did not retain dialog and input")
         cancel()
+        check(openRequestCount === 1, "Failed creation must not navigate")
         tree.currentFolder = "/新目录.v2"
         check(files.folder(target + "/empty"), "Seed empty directory")
         check(tree.renameDirectory(target + "/empty", "empty-renamed") === ""

@@ -315,7 +315,9 @@ Window {
                     UiInput.settle(190)
                     root.check(loader.sourceComponent === Constants.pageOnStart && entrance.busy
                                && entrance.veil === 1 && entrance.reveal === 0, "switch to the start page only under the opaque veil")
-                    root.check(!root.find(root.appWindow.contentItem, "mainPageTransition").running, "completion must not run a second page animation")
+                    root.check(!root.find(root.appWindow.contentItem, "mainPageTransition")
+                               && !loader.item.animateEntrance && loader.item.opacity === 1,
+                               "completion must not run a second page animation")
                 } else if (root.stage === 14) {
                     var completedEntrance = root.find(root.appWindow.contentItem, "workspaceEntrance")
                     if (loader.sourceComponent !== Constants.pageOnStart || completedEntrance.busy) return
