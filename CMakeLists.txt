@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(xcshop VERSION 0.0.1 LANGUAGES CXX)
+project(xcshop VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -346,6 +346,11 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME about_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME workspace_transition_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME page_transitions_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME settings_sections_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(settings_sections_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/SettingsSectionsUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "SETTINGS_SECTIONS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 20)
     set_tests_properties(page_transitions_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/PageTransitionsUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "PAGE_TRANSITIONS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"

@@ -269,7 +269,7 @@ ContentBar {
 
                 XCTextField {
                     id: newName
-                    width: Math.max(64, parent.width * 0.30)
+                    width: Math.max(64, parent.width - newContainer.width - addButton.width - parent.spacing * 2)
                     height: parent.height
                     placeholderText: "注册名"
                     editorFontSize: 11
@@ -280,7 +280,7 @@ ContentBar {
                 XCComboBox {
                     id: newContainer
                     objectName: "newShopContainerChoice"
-                    width: Math.max(64, parent.width - newName.width - addButton.width - parent.spacing * 2)
+                    width: Math.max(64, parent.width * 0.30)
                     height: parent.height
                     compact: true
                     options: root.containerOptions

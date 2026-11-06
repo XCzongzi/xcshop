@@ -183,21 +183,36 @@ Window {
                 } else if (root.stage === 4) {
                     if (loader.item.opacity < 1) { root.inStep = false; return }
                     root.check(loader.sourceComponent === Constants.pageOnSettings && !motion, "settings entry")
-                    root.check(!root.find(loader.item, "settingsSectionTransition"), "settings categories must not use initialization animations")
+                    var sectionMotion = root.find(loader.item, "settingsSectionTransition")
+                    root.check(sectionMotion && !sectionMotion.running, "settings category animation must start idle")
                     var previousSection = root.find(loader.item, "settingsSectionLoader").item
                     loader.item.currentSection = 1
-                    root.check(root.find(loader.item, "settingsSectionLoader").item !== previousSection,
-                               "settings categories must switch immediately")
+                    root.check(sectionMotion.running && root.find(loader.item, "settingsSectionLoader").item === previousSection,
+                               "settings must keep outgoing content until it fades out")
+                    root.check(sectionMotion.activeExitDuration === 500 && sectionMotion.activeEnterDuration === 500,
+                               "settings must use the initialization fade durations")
+                    UiInput.settle(40)
+                    root.check(sectionMotion.contentOpacity > 0 && sectionMotion.contentOpacity < 1 && sectionMotion.contentOffset === 0,
+                               "settings must fade out in place")
                     loader.item.currentSection = 2
                     loader.item.currentSection = 3
                     root.stage++
                 } else if (root.stage === 5) {
-                    root.check(loader.item.currentSection === 3, "settings navigation must keep latest destination")
+                    var sections = root.find(loader.item, "settingsSectionTransition")
+                    if (sections.running) { root.inStep = false; return }
+                    root.check(loader.item.currentSection === 3 && loader.item.displayedSection === 3,
+                               "settings navigation must keep latest destination")
                     root.check(root.find(loader.item, "settingsSectionLoader").item.itemsRootPath.length > 0, "settings content mismatch")
                     Global.animationSpeed = 2
-                    loader.item.currentSection = 0
-                    UiInput.settle(220)
-                    root.check(loader.item.currentSection === 0, "settings categories must remain immediate at another animation speed")
+                    loader.item.currentSection = 2
+                    UiInput.settle(360)
+                    root.check(loader.item.displayedSection === 2 && sections.running
+                               && sections.contentOpacity > 0 && sections.contentOpacity < 1 && sections.contentOffset > 0,
+                               "settings must fade in upward and honor the animation speed: section=" + loader.item.displayedSection
+                               + " opacity=" + sections.contentOpacity + " offset=" + sections.contentOffset + " running=" + sections.running)
+                    UiInput.settle(260)
+                    root.check(!sections.running && loader.item.currentSection === 2 && loader.item.displayedSection === 2,
+                               "settings animation must finish and release input")
                     Global.animationSpeed = 1
                     loader.item.pageEvent("Settings.back", {})
                     root.stage++

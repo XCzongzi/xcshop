@@ -4,6 +4,7 @@
 #include <QQuickWindow>
 #include "WindowStateController.h"
 #include <QFont>
+#include <QFile>
 #include <QImage>
 #include <QPixmap>
 #include <QScreen>
@@ -41,6 +42,50 @@ private:
         m_window->setWindowStates(m_window->windowStates() & ~Qt::WindowMinimized);
         m_window->setVisible(true);
 #endif
+    }
+
+    void verifyMaximizedCoverage()
+    {
+        QCOMPARE(m_window->visibility(), QWindow::Maximized);
+        QCOMPARE(m_window->property("margins").toReal(), 0.0);
+        QCOMPARE(m_window->property("surfaceWidth").toInt(), m_window->width());
+        QCOMPARE(m_window->property("surfaceHeight").toInt(), m_window->height());
+#ifdef Q_OS_WIN
+        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        MONITORINFO monitor = {};
+        monitor.cbSize = sizeof(monitor);
+        QVERIFY(GetMonitorInfo(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), &monitor));
+        RECT client = {};
+        POINT origin = {};
+        QVERIFY(GetClientRect(handle, &client));
+        QVERIFY(ClientToScreen(handle, &origin));
+        RECT frame = {};
+        QVERIFY(GetWindowRect(handle, &frame));
+        QVERIFY(frame.left <= origin.x && frame.top <= origin.y);
+        QVERIFY2(frame.right >= origin.x + client.right && frame.bottom >= origin.y + client.bottom,
+                 "The native frame must contain the entire maximized client area");
+        QCOMPARE(origin.x, monitor.rcWork.left);
+        QCOMPARE(origin.y, monitor.rcWork.top);
+        QCOMPARE(client.right, monitor.rcWork.right - monitor.rcWork.left);
+        QCOMPARE(client.bottom, monitor.rcWork.bottom - monitor.rcWork.top);
+#endif
+        // Geometry alone misses a stale scene-graph texture or transparent strip.
+        QVERIFY(QTest::qWaitForWindowExposed(m_window));
+        const QImage image = m_window->grabWindow();
+        QVERIFY(!image.isNull());
+#ifdef Q_OS_WIN
+        // Qt rounds the logical window size before scaling grabWindow's image.
+        const int roundingTolerance = qCeil(m_window->devicePixelRatio());
+        QVERIFY(qAbs(image.width() - client.right) <= roundingTolerance);
+        QVERIFY(qAbs(image.height() - client.bottom) <= roundingTolerance);
+#endif
+        for (const QPoint &sample : {QPoint(image.width() - 1, image.height() / 2),
+                                     QPoint(image.width() / 2, image.height() - 1),
+                                     QPoint(image.width() - 1, image.height() - 1)}) {
+            QVERIFY2(image.pixelColor(sample).alpha() > 250,
+                     qPrintable(QString("Transparent maximized edge at (%1, %2)")
+                                    .arg(sample.x()).arg(sample.y())));
+        }
     }
 
     void verifyTransparentFrame()
@@ -207,6 +252,7 @@ private slots:
         clickAt(m_window->width() - margin - 48, margin + 18);
         QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
         QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
+        verifyMaximizedCoverage();
         QTest::mouseDClick(m_window, Qt::LeftButton, Qt::NoModifier, QPoint(220, 18));
         QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
         QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
@@ -214,6 +260,7 @@ private slots:
         QTest::mouseDClick(m_window, Qt::LeftButton, Qt::NoModifier, QPoint(margin + 220, margin + 18));
         QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
         QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
+        verifyMaximizedCoverage();
         clickAt(m_window->width() - 54, 18);
         QTRY_COMPARE(m_window->visibility(), QWindow::Windowed);
         QTRY_VERIFY(!m_window->property("windowTransitionRunning").toBool());
@@ -324,6 +371,7 @@ private slots:
         const QRect normalGeometry = m_window->geometry();
         m_window->showMaximized();
         QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        verifyMaximizedCoverage();
         const QRect maximizedGeometry = m_window->geometry();
         const QRect workArea = m_window->screen()->availableGeometry();
         QVERIFY((maximizedGeometry.topLeft() - workArea.topLeft()).manhattanLength() <= 2);
@@ -355,6 +403,40 @@ private slots:
         }
         m_window->showNormal();
         QTRY_COMPARE(m_window->geometry(), normalGeometry);
+    }
+
+    void maximizedClientStaysInsideNativeFrame()
+    {
+#ifdef Q_OS_WIN
+        m_window->showMaximized();
+        QTRY_COMPARE(m_window->visibility(), QWindow::Maximized);
+        const HWND handle = reinterpret_cast<HWND>(m_window->winId());
+        MONITORINFO monitor = {};
+        monitor.cbSize = sizeof(monitor);
+        QVERIFY(GetMonitorInfo(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), &monitor));
+        const RECT &work = monitor.rcWork;
+        // A transient maximize/DPI placement can be smaller than the work area.
+        // Asking for a larger client hides the mismatch from WM_SIZE and clips
+        // the rendered surface at the native window's right and bottom edges.
+        const RECT proposed = {work.left, work.top, work.right - 8, work.bottom - 8};
+        WINDOWPOS position = {};
+        position.hwnd = handle;
+        position.x = proposed.left;
+        position.y = proposed.top;
+        position.cx = proposed.right - proposed.left;
+        position.cy = proposed.bottom - proposed.top;
+        NCCALCSIZE_PARAMS calculation = {};
+        calculation.rgrc[0] = proposed;
+        calculation.rgrc[1] = work;
+        calculation.rgrc[2] = work;
+        calculation.lppos = &position;
+        SendMessage(handle, WM_NCCALCSIZE, TRUE, reinterpret_cast<LPARAM>(&calculation));
+        QCOMPARE(calculation.rgrc[0].left, proposed.left);
+        QCOMPARE(calculation.rgrc[0].top, proposed.top);
+        QCOMPARE(calculation.rgrc[0].right, proposed.right);
+        QCOMPARE(calculation.rgrc[0].bottom, proposed.bottom);
+        verifyMaximizedCoverage();
+#endif
     }
 
     void normalMinimizeRestore()
@@ -515,6 +597,11 @@ int runWindowFrameTests(QQmlApplicationEngine &engine)
     QTemporaryDir directory;
     if (!directory.isValid())
         return 1;
+    QFile settings(directory.filePath(QStringLiteral("settings.json")));
+    if (!settings.open(QIODevice::WriteOnly))
+        return 1;
+    settings.write("{\"initializationCompleted\":true}");
+    settings.close();
     engine.rootContext()->setContextProperty("APP_DIRPATH", directory.path());
     engine.loadFromModule("xcshop", "Main");
     if (engine.rootObjects().isEmpty())
@@ -527,7 +614,10 @@ int runWindowFrameTests(QQmlApplicationEngine &engine)
         global->setProperty("animationSpeed", 1.0);
     WindowFrameTests tests(window);
     // Keep the application-specific switch out of Qt Test's arguments.
-    return QTest::qExec(&tests, QStringList{QStringLiteral("window_frame_tests")});
+    QStringList arguments = QCoreApplication::arguments();
+    arguments.removeAll(QStringLiteral("--window-frame-tests"));
+    arguments[0] = QStringLiteral("window_frame_tests");
+    return QTest::qExec(&tests, arguments);
 }
 
 #include "WindowFrameTests.moc"

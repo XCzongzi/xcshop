@@ -95,15 +95,21 @@ public:
         if (msg->message != WM_NCCALCSIZE || !msg->wParam || !IsZoomed(msg->hwnd)
             || m_window->windowStates().testFlag(Qt::WindowFullScreen))
             return false;
+        auto *client = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
         MONITORINFO monitor = {};
         monitor.cbSize = sizeof(monitor);
-        if (!GetMonitorInfo(MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST), &monitor))
+        if (!GetMonitorInfo(MonitorFromRect(&client->rgrc[0], MONITOR_DEFAULTTONEAREST), &monitor))
             return false;
         // The native resizable style normally maximizes beyond the work area
-        // to hide its frame. Our frame is QML, so use the exact work area.
-        auto *client = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
-        client->rgrc[0] = monitor.rcWork;
-        *result = 0;
+        // to hide its frame. Clip that frame, but never grow the client beyond
+        // the proposed window: a transient undersized maximize/DPI placement
+        // must reach Qt's WM_SIZE correction instead of being hidden from it.
+        RECT boundedClient = {};
+        if (!IntersectRect(&boundedClient, &client->rgrc[0], &monitor.rcWork))
+            return false;
+        client->rgrc[0] = boundedClient;
+        // Reusing pixels from the animated size can retain stale edge strips.
+        *result = WVR_REDRAW;
         return true;
     }
 
