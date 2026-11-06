@@ -11,8 +11,10 @@ Item {
     property string selectedTheme: ""
     property bool themeConfirmed: false
     property string hoveredMode: ""
+    property string neutralAccent: ""
     readonly property real tempo: Math.max(0.1, Global.animationSpeed)
     readonly property bool expanded: mode.length > 0
+    readonly property bool canChooseAccent: expanded && (selectedTheme === "midnight" || selectedTheme === "cloud")
     readonly property var themes: Colors.colorSchemes.filter(function(scheme) {
         return scheme.mode === (root.mode === "dark" ? "深色" : "浅色")
     })
@@ -31,12 +33,20 @@ Item {
 
     function applyScheme(scheme) {
         if (Colors.colorScheme === scheme) return
+        if (!neutralAccent.length && (Colors.colorScheme === "midnight" || Colors.colorScheme === "cloud"))
+            neutralAccent = Colors.themeColor.toString()
         paletteTransition.stop()
         var previous = ({})
         for (var animation of paletteTransition.animations)
             previous[animation.properties] = Colors[animation.properties].toString()
+        var accent = Colors.accentForColorScheme(scheme)
+        if (!accent.length) {
+            accent = neutralAccent || (Colors.colorScheme === "midnight" || Colors.colorScheme === "cloud"
+                                      ? Colors.themeColor.toString() : Colors.accentChoices[0])
+            neutralAccent = accent
+        }
         Colors.applyColorScheme(scheme)
-        Colors.setThemeColor(Colors.accentForColorScheme(scheme) || Colors.accentChoices[0])
+        Colors.setThemeColor(accent)
         for (var change of paletteTransition.animations) {
             change.from = previous[change.properties]
             change.to = Colors[change.properties].toString()
@@ -46,6 +56,14 @@ Item {
 
     function finishPreview() {
         paletteTransition.complete()
+    }
+
+    function chooseAccent(color) {
+        if (!canChooseAccent) return
+        // Finish any palette fade before changing its accent animation targets.
+        finishPreview()
+        neutralAccent = color.toString()
+        Colors.setThemeColor(neutralAccent)
     }
 
     function themeForMode(nextMode) {
@@ -245,7 +263,7 @@ Item {
         objectName: "initializationThemeBack"
         x: root.mode === "dark" ? (root.dividerX - width) / 2
                                 : root.dividerX + (root.width - root.dividerX - width) / 2
-        y: root.contentBottom / 2 + 94
+        y: root.contentBottom / 2 + (root.canChooseAccent ? 136 : 94)
         text: "返回"
         buttonColor: Colors.transparent
         opacity: root.expanded ? 1 : 0
@@ -254,7 +272,73 @@ Item {
         Behavior on opacity {
             NumberAnimation { duration: 240 / root.tempo; easing.type: Easing.OutCubic }
         }
+        Behavior on y {
+            NumberAnimation { duration: 240 / root.tempo; easing.type: Easing.OutCubic }
+        }
         onClicked: root.back()
+    }
+
+    Item {
+        id: accentPicker
+        objectName: "initializationAccentPicker"
+        width: accentButtons.width
+        height: 50
+        x: root.mode === "dark" ? (root.dividerX - width) / 2
+                                : root.dividerX + (root.width - root.dividerX - width) / 2
+        y: root.contentBottom / 2 + 66
+        opacity: root.canChooseAccent ? 1 : 0
+        visible: opacity > 0
+        enabled: root.canChooseAccent
+        transform: Translate { y: 10 * (1 - accentPicker.opacity) }
+        Behavior on opacity {
+            NumberAnimation { duration: 240 / root.tempo; easing.type: Easing.OutCubic }
+        }
+
+        XCText {
+            width: parent.width
+            onCenter: false
+            horizontalAlignment: Text.AlignHCenter
+            xcText: "强调色"
+            xcFontSize: 12
+            boldFont: false
+            textColor: Colors.banned
+        }
+        Row {
+            id: accentButtons
+            y: 24
+            spacing: 10
+            Repeater {
+                model: Colors.accentChoices
+                delegate: Rectangle {
+                    id: accentChoice
+                    required property int index
+                    required property string modelData
+                    readonly property bool selected: Qt.colorEqual(Colors.themeColor, modelData)
+                    objectName: "initializationAccent_" + index
+                    width: 26; height: 26; radius: 13
+                    color: modelData
+                    scale: accentPointer.containsMouse ? 1.10 : 1
+                    Behavior on scale {
+                        NumberAnimation { duration: 120 / root.tempo; easing.type: Easing.OutCubic }
+                    }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width + 8; height: width; radius: width / 2
+                        color: Colors.transparent
+                        border.width: 1.5
+                        border.color: Colors.text
+                        visible: accentChoice.selected
+                    }
+                    MouseArea {
+                        id: accentPointer
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.chooseAccent(accentChoice.modelData)
+                    }
+                }
+            }
+        }
     }
 
     Item {
