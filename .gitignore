@@ -38,7 +38,6 @@ __pycache__/
 /item-mappings.json
 /projects/
 /backgrounds/
-/builder/
 .xcshop-relay.json
 
 # Keep generated Minecraft assets and caches local; include only bundled GUI images.
