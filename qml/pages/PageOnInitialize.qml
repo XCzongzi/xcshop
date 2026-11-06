@@ -340,11 +340,37 @@ BasePage {
         Column {
             id: mappings
             spacing: 16
+            Rectangle {
+                width: parent.width
+                height: versionInfo.height + 28
+                visible: root.mappedItems.length > 0
+                radius: 9
+                color: Colors.changeA(Colors.accentFill, 0.08)
+                border.width: 1
+                border.color: Colors.changeA(Colors.accentFill, 0.26)
+                Column {
+                    id: versionInfo
+                    x: 14; y: 14; width: parent.width - 28
+                    spacing: 6
+                    XCText {
+                        onCenter: false; xcText: "来源游戏版本"
+                        xcFontSize: 12; boldFont: false; textColor: Colors.banned
+                    }
+                    XCText {
+                        objectName: "initializationMappingVersion"
+                        width: parent.width; onCenter: false; xcWrapMode: true
+                        elide: Text.ElideNone; textFormat: Text.PlainText
+                        xcText: root.mappingVersion.length ? "Minecraft Java " + root.mappingVersion : "未记录游戏版本"
+                        xcFontSize: 20
+                        textColor: root.mappingVersion.length ? Colors.accentText : Colors.banned
+                    }
+                }
+            }
             XCText {
                 objectName: "initializationMappingSummary"
                 width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 14; boldFont: false
-                xcText: root.mappedItems.length ? (root.mappingVersion.length ? "游戏版本 " + root.mappingVersion + "，" : "已有物品映射，")
-                      + "共 " + root.mappedItems.length + " 项" + (root.missingIcons ? "，缺少 " + root.missingIcons + " 个图标" : "")
+                xcText: root.mappedItems.length ? "共 " + root.mappedItems.length + " 项物品映射"
+                      + (root.missingIcons ? "，缺少 " + root.missingIcons + " 个图标" : "")
                       : "当前包未包含物品映射"
             }
             Flow {
@@ -361,10 +387,28 @@ BasePage {
                         XCToolTip { active: itemHover.containsMouse; text: mappingTile.modelData.name }
                     }
                 }
+                Rectangle {
+                    objectName: "initializationMappingMore"
+                    width: 44; height: 44; radius: 6
+                    color: Colors.changeA(Colors.card, 0.5)
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 3
+                        Repeater {
+                            model: 3
+                            delegate: Rectangle { width: 4; height: 4; radius: 2; color: Colors.banned }
+                        }
+                    }
+                    MouseArea { id: moreHover; anchors.fill: parent; hoverEnabled: true }
+                    XCToolTip {
+                        active: moreHover.containsMouse
+                        text: root.mappedItems.length > 24 ? "另有 " + (root.mappedItems.length - 24) + " 项物品映射" : "物品映射预览"
+                    }
+                }
             }
             ActionButton {
                 objectName: "initializationImportGame"
-                visible: !root.showImport; text: "从游戏导入"
+                visible: !root.showImport; text: "从游戏中重新导入"
                 onClicked: root.showImport = true
             }
             Column {
