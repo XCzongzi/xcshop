@@ -302,11 +302,26 @@ Window {
                     Global.settingsPath = APP_DIRPATH // Atomic write to a directory must fail.
                     root.click("initializationNext")
                     root.check(page.step === "items" && page.errorText.length > 0 && !Global.initializationCompleted, "save failure must preserve setup")
+                    var entrance = root.find(root.appWindow.contentItem, "workspaceEntrance")
+                    root.check(!entrance.busy, "save failure must not start the completion transition")
                     Global.settingsPath = APP_DIRPATH + "/settings.json"
                     root.click("initializationNext")
+                    root.check(entrance.busy && entrance.destinationPage === Constants.pageOnStart, "completion must use the shared entrance animation")
+                    root.check(loader.sourceComponent === Constants.pageOnInitialize, "initialization must remain visible until covered")
+                    UiInput.settle(35)
+                    root.check(entrance.veil > 0 && entrance.veil < 1 && entrance.contentOpacity < 1, "completion must fade through the shared veil")
+                    root.click("initializationBack")
+                    root.check(page.step === "items", "completion transition must block navigation input")
+                    UiInput.settle(190)
+                    root.check(loader.sourceComponent === Constants.pageOnStart && entrance.busy
+                               && entrance.veil === 1 && entrance.reveal === 0, "switch to the start page only under the opaque veil")
+                    root.check(!root.find(root.appWindow.contentItem, "mainPageTransition").running, "completion must not run a second page animation")
                 } else if (root.stage === 14) {
-                    if (loader.sourceComponent !== Constants.pageOnStart) return
+                    var completedEntrance = root.find(root.appWindow.contentItem, "workspaceEntrance")
+                    if (loader.sourceComponent !== Constants.pageOnStart || completedEntrance.busy) return
                     root.check(!root.appWindow.initializing && Global.initializationCompleted, "finish route")
+                    root.check(completedEntrance.contentOpacity === 1 && completedEntrance.reveal === 1
+                               && !completedEntrance.visible, "completion must finish revealing the start page and release input")
                     root.check(JSON.parse(files.read(Global.settingsPath)).initializationCompleted, "completion must persist")
                     root.reopen()
                 } else if (root.stage === 15) {

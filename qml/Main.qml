@@ -417,7 +417,8 @@ XCWindow {
             function pageSwitch(page_, reload = false){
                 if (workspaceEntrance.busy) return
                 if (pageMotion.committing) { setPage(page_, reload); return }
-                if ((pageLoader.sourceComponent === Constants.pageOnStart && page_ === Constants.pageOnSettings)
+                if ((pageLoader.sourceComponent === Constants.pageOnInitialize && page_ === Constants.pageOnStart)
+                        || (pageLoader.sourceComponent === Constants.pageOnStart && page_ === Constants.pageOnSettings)
                         || (page_ === Constants.pageOnAbout && pageLoader.sourceComponent !== page_)) {
                     workspaceEntrance.destinationPage = page_
                     workspaceEntrance.start(false, "")
