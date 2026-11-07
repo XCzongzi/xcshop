@@ -79,12 +79,7 @@ QtObject {
     }
 
     function isMonochromeUiIcon(source) {
-        return String(source) === "qrc:/assets/gui/controls/delete.svg" || /^qrc:\/assets\/gui\/(?:typeBar\/(?:Global|UI|Item|Cost|Display|Extra)_(?:dark|light)\.png|element\/File_(?:dark|light)\.png|element\/Bar\/new(?:File|Menu)_(?:dark|light)\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
-    }
-
-    function whiteUiIconSource(source) {
-        var path = String(source)
-        return isMonochromeUiIcon(path) ? path.replace(/_dark\.png$/, "_light.png") : path
+        return String(source) === "qrc:/assets/gui/controls/delete.svg" || /^qrc:\/assets\/gui\/(?:typeBar\/(?:Global|UI|Item|Cost|Display|Extra)_light\.png|element\/File_light\.png|element\/Bar\/new(?:File|Menu)_light\.png|titleBar\/(?:close|maximize|minimize|restore)\.png|controls\/(?:about|settings|new_project|open_project|expand_up|expand_down)\.png)$/.test(String(source))
     }
 
     function setThemeColor(color) {

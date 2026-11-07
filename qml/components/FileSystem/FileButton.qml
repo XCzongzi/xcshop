@@ -81,7 +81,7 @@ Rectangle {
         Drag.keys: ["xcshop-element-paths"]
         Drag.hotSpot.x: width / 2
         Drag.hotSpot.y: height / 2
-        Drag.imageSource: Colors.whiteUiIconSource("qrc:/assets/gui/element/" + root.icon + ".png")
+        Drag.imageSource: "qrc:/assets/gui/element/" + root.icon + ".png"
 
         ThemedIcon {
             visible: dragProxy.Drag.active

@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
             engine.load(QUrl("qrc:/tests/ThemedIconUiSmoke.qml"));
         } else if (app.arguments().contains("--light-theme-ui-smoke")) {
             const auto testFile = qEnvironmentVariable("XCSHOP_THEME_TEST_FILE");
-            if (testFile.endsWith("WorkspaceTransitionUiSmoke.qml") || testFile.endsWith("AboutUiSmoke.qml")
+            if (testFile.endsWith("CurrentFormatUiSmoke.qml") || testFile.endsWith("WorkspaceTransitionUiSmoke.qml") || testFile.endsWith("AboutUiSmoke.qml")
                 || testFile.endsWith("PageTransitionsUiSmoke.qml")) {
                 engine.rootContext()->setContextProperty("APP_DIRPATH", smokeDirectory->path());
                 xcfile.writeAtomic(smokeDirectory->filePath("settings.json"), "{\"initializationCompleted\":true}");

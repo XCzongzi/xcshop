@@ -12,7 +12,7 @@ BasePage {
     property var registeredShops: []
     readonly property var templateOptions: {
         var catalog = BuildKits.templates
-        return BuildKits.options(projectData.dataVersion === undefined ? BuildKits.dataVersion : Number(projectData.dataVersion))
+        return typeof projectData.dataVersion === "number" ? BuildKits.options(projectData.dataVersion) : []
     }
     property var elementCounts: ({ "UI": 0, "Item": 0, "Cost": 0, "Display": 0 })
     property var preflightProblems: []

@@ -278,31 +278,24 @@ BaseIOPage {
         var previews = ({})
         for (var sourceIndex = 0; sourceIndex < root.eledata.slots.length; ++sourceIndex) {
             var storedSlot = root.eledata.slots[sourceIndex]
-            if (Array.isArray(storedSlot))
-                storedSlot = { "items": storedSlot }
-            if (!storedSlot || typeof storedSlot !== "object")
-                continue
-
-            var slotIndex = storedSlot.index === undefined
-                    ? sourceIndex : Number(storedSlot.index)
+            if (!storedSlot || Array.isArray(storedSlot)
+                    || !Number.isInteger(storedSlot.index) || !Array.isArray(storedSlot.items))
+                throw new Error("槽位必须使用包含 index 和 items 的对象格式")
+            var slotIndex = storedSlot.index
             if (!Number.isInteger(slotIndex) || slotIndex < 0
                     || slotIndex >= root.currentSlotCount)
                 continue
             var sourceItems = Array.isArray(storedSlot.items) ? storedSlot.items : []
             var normalizedItems = []
-            var previewIndex = 0
             for (var itemIndex = 0; itemIndex < sourceItems.length; ++itemIndex) {
                 var normalized = root.normalizeSaleItem(sourceItems[itemIndex])
                 if (!root.saleItemHasData(normalized))
                     continue
-                if (sourceItems[itemIndex] && sourceItems[itemIndex].preview === true)
-                    previewIndex = normalizedItems.length
                 normalizedItems.push(normalized)
             }
             if (normalizedItems.length) {
                 normalizedSlots.push({ "index": slotIndex, "items": normalizedItems })
-                previews[String(slotIndex)] = Math.min(previewIndex,
-                                                       normalizedItems.length - 1)
+                previews[String(slotIndex)] = 0
             }
         }
         normalizedSlots.sort(function(first, second) { return first.index - second.index })
@@ -375,9 +368,7 @@ BaseIOPage {
             connections.push({
                 "element": typeof connection.element === "string"
                            ? Global.projectRelativeElementPath(connection.element) : "",
-                "value": typeof connection.value === "string" ? connection.value
-                       : (typeof connection.value === "number"
-                          ? String(connection.value) : "1")
+                "value": typeof connection.value === "string" ? connection.value : "1"
             })
         }
         return {
@@ -388,9 +379,7 @@ BaseIOPage {
                               ? result.scoreboard : "",
                 "target": typeof result.target === "string" ? result.target : ""
             },
-            "defaultValue": typeof source.defaultValue === "string" ? source.defaultValue
-                          : (typeof source.defaultValue === "number"
-                             ? String(source.defaultValue) : ""),
+            "defaultValue": typeof source.defaultValue === "string" ? source.defaultValue : "",
             "connections": connections
         }
     }
@@ -1050,6 +1039,9 @@ BaseIOPage {
     }
 
     function elementReading() {
+        if (typeof root.eledata.containerType !== "string" || root.eledata.container !== undefined
+                || !Array.isArray(root.eledata.slots) || !Array.isArray(root.eledata.nestedGroups))
+            throw new Error("界面元素格式不正确，请使用当前格式的项目")
         root.clearWorkspaceHistory()
         root.pageInitialized = false
         root.containerType = -1
@@ -1060,16 +1052,9 @@ BaseIOPage {
                 ? root.eledata.openCommand : ""
         root.eledata.customName = root.customName
         root.eledata.openCommand = root.openCommand
-        if (root.eledata.containerType === undefined
-                || root.eledata.containerType === null)
-            root.eledata.containerType = ""
         if (!root.eledata.placeholderItem
                 || typeof root.eledata.placeholderItem !== "object")
             root.eledata.placeholderItem = { "enabled": false, "element": "" }
-        if (!Array.isArray(root.eledata.slots))
-            root.eledata.slots = []
-        if (!Array.isArray(root.eledata.nestedGroups))
-            root.eledata.nestedGroups = []
 
         var storedInterfaceId = root.layoutKinds.indexOf(root.eledata.containerType)
         delete root.eledata.container

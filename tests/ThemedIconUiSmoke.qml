@@ -43,7 +43,6 @@ Window {
         {file: "controls/open_project.png", tint: true},
         {file: "controls/expand_up.png", tint: true},
         {file: "controls/expand_down.png", tint: true},
-        {file: "typeBar/Global_dark.png", reference: "typeBar/Global_light.png", tint: true},
         {file: "element/UI.png", tint: false},
         {file: "element/Item.png", tint: false}
     ]
@@ -167,7 +166,7 @@ Window {
                         root.verify(path)
                         ++root.captures
                         if (++root.modeIndex === root.modes.length) {
-                            console.log("THEMED_ICON_UI_SMOKE_PASSED: 22 icons, 6 dark/6 light themes, exact text RGB, original dark pixels, colored assets preserved, custom text and source swaps; screenshots=" + root.captures)
+                            console.log("THEMED_ICON_UI_SMOKE_PASSED: 21 icons, 6 dark/6 light themes, exact text RGB, original dark pixels, colored assets preserved, custom text and source swaps; screenshots=" + root.captures)
                             Qt.exit(0)
                             return
                         }

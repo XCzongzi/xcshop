@@ -11,6 +11,6 @@ Impl.IconImage {
     property color tintColor: Colors.text
     readonly property bool monochrome: Colors.isMonochromeUiIcon(iconSource)
 
-    source: Colors.whiteUiIconSource(iconSource)
+    source: iconSource
     color: Colors.isLight && tintIcon && monochrome ? tintColor : Colors.transparent
 }

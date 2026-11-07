@@ -944,7 +944,7 @@ Window {
                     selector.value = "third"
                     root.check(selector.currentLabel === "丙", "Programmatic index selection lost")
                     selector.activated(1)
-                    root.check(selector.value === "second" && selector.currentLabel === "乙", "Menu selection did not update legacy index")
+                    root.check(selector.value === "second" && selector.currentLabel === "乙", "Menu selection did not update the value")
                     var full = root.find("fullSelection"), compact = root.find("compactSelection")
                     full.requestElementSelection()
                     compact.requestElementSelection()
