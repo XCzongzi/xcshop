@@ -490,6 +490,16 @@ Window {
         var historyLength = page.workspaceUndoHistory.length
         var source = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 9 })
         var target = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 17 })
+        UiInput.hover(source)
+        UiInput.settle(20)
+        check(UiInput.cursorShape(source) === Qt.CrossCursor, "Drawing mode did not use the cross cursor")
+        page.setNestingDrawMode(false)
+        UiInput.settle(20)
+        check(UiInput.cursorShape(source) === Qt.ArrowCursor, "Leaving drawing mode kept the cross cursor")
+        UiInput.hover(target)
+        UiInput.settle(20)
+        check(UiInput.cursorShape(target) === Qt.ArrowCursor, "Normal mode used the drawing cursor on another slot")
+        page.setNestingDrawMode(true)
         var end = target.mapToItem(source, target.width / 2, target.height / 2)
         // A single move skips all intermediate slots at the event level.
         UiInput.dragSelect(source, source.width / 2, source.height / 2, end.x, end.y, 1)

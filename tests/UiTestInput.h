@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QColor>
+#include <QCursor>
 #include <QImage>
 #include <QRect>
 #include <QQuickItem>
@@ -22,6 +23,9 @@ class UiTestInput : public QObject {
     Q_OBJECT
 public:
     using QObject::QObject;
+    Q_INVOKABLE int cursorShape(QQuickItem *item) {
+        return item && item->window() ? int(item->window()->cursor().shape()) : -1;
+    }
     Q_INVOKABLE QStringList renderedFontFamilies(const QFont &font, const QString &text) {
         QTextLayout layout(text, font);
         layout.beginLayout();

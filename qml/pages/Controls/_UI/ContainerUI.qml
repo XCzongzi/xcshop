@@ -27,9 +27,10 @@ Rectangle{
         anchors.fill: parent
         z: 2000
         enabled: root.uiPage !== null && root.uiPage.nestingDrawMode
+        visible: enabled
         acceptedButtons: Qt.LeftButton
         preventStealing: true
-        cursorShape: Qt.CrossCursor
+        cursorShape: enabled ? Qt.CrossCursor : Qt.ArrowCursor
 
         property var strokeEdit: null
         property bool adding: true
