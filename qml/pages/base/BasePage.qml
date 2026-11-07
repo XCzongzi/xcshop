@@ -4,6 +4,8 @@ import xcshop
 Rectangle{
     id: root
     property Window mainWindow
+    // Page-owned background decorations can join the real window backdrop.
+    property Item backgroundHost: null
     property bool usePageScrollBar: true // 自带 Flickable 的页面可关闭旧滚动逻辑。
     property bool layout: headContentMinWidth + 16*(maxHeadContentCount + 1) < width //用于决定布局是否自适应窗口大小而改变
     property int content_height: 0                                  //用于记录内容高度，以便滚动条的高度变化

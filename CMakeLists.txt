@@ -316,6 +316,12 @@ if(XCSHOP_BUILD_TESTS)
             ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=d3d11;QT_FORCE_STDERR_LOGGING=1"
             RUN_SERIAL TRUE
             TIMEOUT 60)
+        add_test(NAME workspace_background_gpu_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+        set_tests_properties(workspace_background_gpu_ui_smoke PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=d3d11;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/BackgroundSceneUiSmoke.qml"
+            FAIL_REGULAR_EXPRESSION "BACKGROUND_SCENE_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+            RUN_SERIAL TRUE
+            TIMEOUT 40)
     endif()
     qt_add_resources(appxcshop editor_ui_smoke PREFIX "/" FILES tests/EditorUiSmoke.qml tests/MinecraftItemsSmoke.qml tests/OperationsUiSmoke.qml tests/SharedUiSmoke.qml tests/DropdownUiSmoke.qml tests/LightThemeUiSmoke.qml tests/ThemedIconUiSmoke.qml tests/ExplorerUiSmoke.qml tests/EditorFontsUiSmoke.qml tests/UpdateUiSmoke.qml tests/InitializationUiSmoke.qml)
     foreach(mode IN ITEMS update current offline skip)

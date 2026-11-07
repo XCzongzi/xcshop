@@ -148,7 +148,12 @@ BasePage {
         }
     }
 
-    AmbientBackground { anchors.fill: parent; animated: true }
+    AmbientBackground {
+        parent: root.backgroundHost || root
+        anchors.fill: parent
+        animated: true
+        opacity: root.opacity
+    }
 
     Item {
         id: transitionContent

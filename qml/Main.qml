@@ -66,7 +66,7 @@ XCWindow {
         typeBar.isEnabled = false
         Global.mainWindow_background = mainWindow.background
         Global.mainWindow_backdrop = mainWindow.backdrop
-        Global.mainWindow_popupBackdrop = popupBlurSource
+        Global.mainWindow_popupBackdrop = mainWindow.scene
         Global.mainWindow_popupHost = root
         pageLoader.sourceComponent = initializing ? Constants.pageOnInitialize : Constants.pageOnStart
     }
@@ -125,27 +125,17 @@ XCWindow {
             }
         }
 
-        // 独立的背景与页面内容层，不包含弹窗，供磨砂面板安全取样。
+        // Put the actual foreground beside the background in the window scene.
+        // Dialogs stay in this separate WindowSurface, outside their own capture.
         Item {
-            id: popupBlurSource
-            anchors.fill: parent
-            ShaderEffectSource {
-                // Keep the backdrop viewport fixed to the whole window surface.
-                // Only page content moves down when the titlebar is reserved.
-                x: mainWindow.margins - root.x
-                y: mainWindow.margins - root.y
-                width: mainWindow.surfaceWidth
-                height: mainWindow.surfaceHeight
-                visible: GraphicsInfo.api !== GraphicsInfo.Software
-                sourceItem: mainWindow.backdrop
-                sourceRect: Qt.rect(0, 0, width, height)
-            }
-            Item {
-                id: workspaceForeground
-                objectName: "workspaceForeground"
-                anchors.fill: parent
-                opacity: workspaceEntrance.contentOpacity
-            }
+            id: workspaceForeground
+            objectName: "workspaceForeground"
+            parent: mainWindow.scene
+            x: root.x - mainWindow.margins
+            y: root.y - mainWindow.margins
+            width: root.width
+            height: root.height
+            opacity: workspaceEntrance.contentOpacity
         }
         
         TypeBar{
@@ -374,16 +364,19 @@ XCWindow {
             
             readonly property bool aboutPage: sourceComponent === Constants.pageOnAbout
             readonly property bool edgeToEdgePage: aboutPage || sourceComponent === Constants.pageOnInitialize
+                                                  || sourceComponent === Constants.pageOnStart
             x: edgeToEdgePage ? 0 : Math.max(root.pageX, Constants.typeBarWidth)
             y: root.workspaceChromeVisible ? fileControlsBar.height : 0
             height: Math.max(0, root.height - y - elementRelayBar.height)
-            width: edgeToEdgePage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width - x + 65
+            width: edgeToEdgePage ? root.width : root.workspaceChromeVisible ? root.width - x : root.width
             z: 96
             transform: Translate { y: 16 * (1 - workspaceEntrance.reveal) }
             sourceComponent: null
             onItemChanged: {
-                if (item)
+                if (item) {
+                    item.backgroundHost = mainWindow.backdrop
                     item.mainWindow = mainWindow
+                }
             }
             onLoaded: {
                 // Initialization already reveals the start page through its shared veil.

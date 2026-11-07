@@ -5,6 +5,7 @@ import xcshop
 
 BasePage {
     id: root
+    x: 0
     color: Colors.transparent
     fullScreen: true
     readonly property real layoutExpansion: Math.max(0, Math.min(1, (height - 500) / 60, (width - 800) / 100))
@@ -148,38 +149,11 @@ BasePage {
         color: Colors.transparent
         clip: true
 
-        Item {
-            id: startBackdrop
+        AmbientBackground {
+            parent: root.backgroundHost || shell
             anchors.fill: parent
-
-            // Capture the image and ambient gradient together, without any
-            // cards or controls, so hover blur preserves the background tint.
-            ShaderEffectSource {
-                anchors.fill: parent
-                sourceItem: Global.mainWindow_backdrop
-                live: true
-                sourceRect: {
-                    var geometry = 0
-                    var items = [startBackdrop, sourceItem]
-                    for (var index = 0; index < items.length; ++index) {
-                        var item = items[index]
-                        while (item) {
-                            geometry += item.x + item.y + item.width + item.height
-                                    + item.scale + item.rotation
-                            item = item.parent
-                        }
-                    }
-                    if (!isFinite(geometry) || !sourceItem)
-                        return Qt.rect(0, 0, 0, 0)
-                    return startBackdrop.mapToItem(sourceItem,
-                                                   Qt.rect(0, 0, width, height))
-                }
-            }
-
-            AmbientBackground {
-                anchors.fill: parent
-                animated: true
-            }
+            animated: true
+            opacity: root.opacity
         }
 
         Item {
@@ -417,7 +391,7 @@ BasePage {
                     // Keep the form alive to preserve inputs when going back.
                     fullScreen: false
                     mainWindow: root.mainWindow
-                    backdropSource: startBackdrop
+                    backdropSource: root.backgroundHost || Global.mainWindow_backdrop
                     embeddedBackAction: function() {
                         root.closeCreation()
                     }

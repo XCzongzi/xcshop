@@ -18,6 +18,7 @@ Window {
     readonly property int titleBarHeight: titleBar.height
     readonly property Image background: backgroundImage
     readonly property Item backdrop: rawBackdrop
+    readonly property Item scene: windowScene
     property string backgroundMode: Global.backgroundMode
     property color backgroundColor: Colors.backgroundColor
     property string backgroundSource: Global.backgroundImage
@@ -71,37 +72,45 @@ Window {
         y: root.margins
         width: root.width - 2*root.margins
         height: root.height - 2*root.margins
-        // Keep hover captures separate from the rounded, shadowed display
-        // layer so a cropped capture cannot alter the window's own texture.
-        Rectangle {
-            id: rawBackdrop
+        // The actual background and page content share one scene. Popups sample
+        // this scene without needing another visible copy of the background.
+        Item {
+            id: windowScene
+            objectName: "windowScene"
             anchors.fill: parent
-            color: Colors.background_n
 
-            Behavior on color {
-                ColorAnimation { duration: 500 / Global.animationSpeed }
-            }
-
-            Image {
-                id: backgroundImage
+            Rectangle {
+                id: rawBackdrop
                 anchors.fill: parent
-                source: root.backgroundSource.length ? root.backgroundSource : "qrc:/assets/backgrounds/望夜城.png"
-                visible: root.backgroundMode === "image"
-                fillMode: Image.PreserveAspectCrop
-                layer.enabled: root.backgroundBlur > 0
-                layer.effect: MultiEffect {
-                    blurEnabled: root.backgroundBlur > 0
-                    blur: root.backgroundBlur
+                color: Colors.background_n
+
+                Behavior on color {
+                    ColorAnimation { duration: 500 / Global.animationSpeed }
+                }
+
+                Image {
+                    id: backgroundImage
+                    anchors.fill: parent
+                    source: root.backgroundSource.length ? root.backgroundSource : "qrc:/assets/backgrounds/望夜城.png"
+                    visible: root.backgroundMode === "image"
+                    fillMode: Image.PreserveAspectCrop
+                    layer.enabled: root.backgroundBlur > 0 && GraphicsInfo.api !== GraphicsInfo.Software
+                    layer.effect: MultiEffect {
+                        blurEnabled: root.backgroundBlur > 0
+                        blur: root.backgroundBlur
+                    }
                 }
             }
         }
 
         ShaderEffectSource {
+            objectName: "windowSceneDisplay"
             anchors.fill: parent
-            sourceItem: rawBackdrop
-            // Keep nested image effects visible to the renderer while hiding
-            // the original backdrop from the normal scene composition.
-            hideSource: true
+            sourceItem: windowScene
+            visible: GraphicsInfo.api !== GraphicsInfo.Software
+            // Only this masked output is displayed. The software renderer draws
+            // the scene directly because it cannot render shader effects.
+            hideSource: visible
             live: true
             // Keep the render graph alive across maximize/restore. Recreating
             // the mask and shadow layers at the endpoints stalls or flashes.
@@ -114,7 +123,7 @@ Window {
                 }
             }
         }
-        layer.enabled: true
+        layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowOpacity: 1 - windowState.frameProgress
