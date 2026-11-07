@@ -51,7 +51,10 @@ try {
         trigger: {mode, execute: index === 1 ? {kind: 'function', value: 'external:action'}
             : {kind: 'grant_item'}}}));
     write('Item/stone.xcseItem', product);
-    write('Item/placeholder.xcseItem', {...fresh(schema.item()), item: 'white_wool'});
+    write('Item/placeholder.xcseItem', {...fresh(schema.item()), item: 'white_wool',
+        operations: [{...fresh(schema.operation()), successHint: false, failHint: false,
+            trigger: {mode: {kind: 'drop_item', quantity: 'single'},
+                execute: {kind: 'command', value: 'say placeholder'}}}]});
 
     for (const namespace of ['xcshop', 'custom_shop', 'other.namespace-42', 'minecraft']) {
         const generatePath = path.join(manifest.generatePath, namespace);
@@ -79,11 +82,31 @@ try {
         assert.equal(advancement.rewards.function, `${namespace}:opened/test`);
         assert.ok(read(`${runtime}opened/test.mcfunction`).includes(`only ${namespace}:opened/test`));
         assert.ok(read(`${runtime}opened/test.mcfunction`).includes('function external:on_open'));
-        assert.ok(read(`${runtime}shop/test/0/0/trigger/1.mcfunction`).includes('function external:action'));
-        assert.ok(read(`${runtime}shop/test/0/0/trigger/0.mcfunction`)
-            .includes(`return run function ${namespace}:shop/test/0/0/failure`));
+        const summon = read(`${runtime}_summon/test.mcfunction`);
+        const deduplicate = 'execute align xyz run kill @e[type=minecraft:marker,tag=xcshop.shop,distance=0]';
+        assert.equal(summon.trim().split(/\r?\n/)[0], deduplicate);
+        assert.ok(summon.indexOf(deduplicate) < summon.indexOf('run summon marker'));
+        const opened = read(`${runtime}opened/test.mcfunction`);
+        const cleanup = 'execute as @e[type=minecraft:marker,tag=xcshop.shop] at @s '
+            + 'unless block ~ ~ ~ minecraft:barrel unless block ~ ~ ~ minecraft:chest '
+            + 'unless block ~ ~ ~ minecraft:trapped_chest unless block ~ ~ ~ #minecraft:shulker_boxes run kill @s';
+        assert.ok(opened.includes(cleanup));
+        assert.ok(opened.indexOf(cleanup) < opened.indexOf(`run function ${namespace}:shop/test/set`));
+        assert.ok(!read(`${runtime}tick.mcfunction`).includes(cleanup));
+        assert.ok(read(`${runtime}shop/test/0/1/trigger/1.mcfunction`).includes('function external:action'));
+        assert.ok(read(`${runtime}shop/test/0/1/trigger/0.mcfunction`)
+            .includes(`return run function ${namespace}:shop/test/0/1/failure`));
         assert.ok(fs.existsSync(path.join(output, runtime, 'input/test/input/0.mcfunction')));
-        assert.ok(read(`${runtime}shop/test/placeholder.mcfunction`).includes('minecraft:custom_data'));
+        assert.ok(!fs.existsSync(path.join(output, runtime, 'shop/test/placeholder.mcfunction')));
+        assert.ok(!read(`${runtime}shop/test/set.mcfunction`).includes(`${namespace}:shop/test/placeholder`));
+        const placeholder = read(`${runtime}shop/test/26/0/set.mcfunction`);
+        assert.ok(placeholder.includes('container.26 with white_wool'));
+        assert.match(placeholder, /item:\s*"26:0"/);
+        assert.ok(read(`${runtime}shop/test/drop.mcfunction`).includes('item:"26:0"'));
+        assert.ok(read(`${runtime}shop/test/26/0/trigger/0/sell.mcfunction`).includes('say placeholder'));
+        const set = read(`${runtime}shop/test/set.mcfunction`);
+        assert.ok(set.indexOf(`function ${namespace}:shop/test/0/0/set`)
+            < set.indexOf(`function ${namespace}:shop/test/0/1/set`));
         assert.ok(read(`${runtime}load.mcfunction`).includes('__xcshop__'));
 
         for (const file of walk(output).filter(file => file.endsWith('.mcfunction'))) {

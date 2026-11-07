@@ -1,3 +1,0 @@
-{{shopPath}}/placeholder.mcfunction
-item replace block ~ ~ ~ container.{{slotNumber}} with {{@parent[0].placeholderItem}}
-data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:custom_data" set value {xcshop: {xcshop: 1b, shop: {{shopJson}}}}

@@ -1,3 +1,4 @@
 opened/{{shopName}}.mcfunction
 advancement revoke @s only {{@namespace}}:opened/{{shopName}}
+execute as @e[type=minecraft:marker,tag=xcshop.shop] at @s unless block ~ ~ ~ minecraft:barrel unless block ~ ~ ~ minecraft:chest unless block ~ ~ ~ minecraft:trapped_chest unless block ~ ~ ~ #minecraft:shulker_boxes run kill @s
 execute as @e[tag=xcshop.shop, tag=xcshop.shop.{{shopName}}] at @s run function {{@namespace}}:{{shopPath}}/set

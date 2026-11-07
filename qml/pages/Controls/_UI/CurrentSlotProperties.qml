@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls as Controls
 import xcshop
 
 Item {
@@ -36,6 +37,7 @@ Item {
     Flickable {
         id: editorFlickable
         anchors.fill: parent
+        anchors.rightMargin: 16
         visible: root.hasCurrentSlot
         clip: true
         contentWidth: width
@@ -124,15 +126,15 @@ Item {
             }
         }
 
-        onContentYChanged: {
-            // While the handle is pressed it is the source of truth. Feeding
-            // the rounded content offset back into it makes a held handle
-            // creep toward its previous position.
-            if (!slotScrollBar.dragging)
-                slotScrollBar.setContentOffset(contentY)
+        Controls.ScrollBar.vertical: XCScrollBar {
+            objectName: "currentSlotScrollBar"
+            parent: root
+            x: root.width - width
+            y: 0
+            height: root.height
+            visible: root.hasCurrentSlot && size < 1
+            interactive: true
         }
-        onMovementStarted: slotScrollBar.animatePosition = false
-        onMovementEnded: slotScrollBar.animatePosition = true
     }
 
     XCText {
@@ -143,20 +145,6 @@ Item {
         xcFontSize: 13
         boldFont: false
         textColor: Colors.banned
-    }
-
-    ScrollBar {
-        id: slotScrollBar
-        visible: root.hasCurrentSlot
-        z: 1
-        x: parent.width + 8
-        height: parent.height
-        content_height: editorFlickable.contentHeight
-        layout_determines: root.slotIndex
-        onHeight_outputChanged: {
-            if (!editorFlickable.moving)
-                editorFlickable.contentY = height_output
-        }
     }
 
     Connections {

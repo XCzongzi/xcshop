@@ -1,2 +1,0 @@
-{{shopPath}}/set.mcfunction
-function {{@namespace}}:{{shopPath}}/placeholder

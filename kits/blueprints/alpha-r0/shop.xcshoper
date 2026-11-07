@@ -13,11 +13,9 @@ build onOpen
 cd . "advancement"
 build "opened-advancement.xcontent"
 cd . "function"
-if (placeholderItem != "") { build "placeholder-call.xcontent" }
 foreach (slots[]) {
     int slotNumber = index;
-    if (@parent[0].placeholderItem != "") { build "placeholder.xcontent" }
-    else if (items.length > 0) { build "slot-clear.xcontent" }
+    if (items.length > 0) { build "slot-clear.xcontent" }
     build "modifier-slot.xcontent"
     foreach (items[]) {
         int productNumber = @index;
