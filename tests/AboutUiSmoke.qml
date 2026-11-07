@@ -126,7 +126,7 @@ Window {
                     var moreContent = root.find(page, "aboutMoreInformationContent")
                     if (root.detailStage === 0) {
                         root.check(root.find(page, "aboutDataVersionLimit").value === String(BuildKits.dataVersion), "editor data version limit")
-                        root.check(root.find(page, "aboutReleaseDate").value === "2026-11-07", "release date")
+                        root.check(root.find(page, "aboutReleaseDate").value === "2026-11-08", "release date")
                         root.check(!moreButton.checked && moreContent.height === 0, "more information should start collapsed")
                         root.collapsedContentHeight = view.contentHeight
                         UiInput.click(moreButton)
