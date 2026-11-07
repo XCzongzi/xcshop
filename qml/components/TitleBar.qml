@@ -35,10 +35,23 @@ Rectangle {
     }
 
 
+    Image {
+        id: appIcon
+        objectName: "windowAppIcon"
+        x: 8
+        anchors.verticalCenter: parent.verticalCenter
+        width: 24
+        height: 24
+        source: "qrc:/assets/gui/png/xcs-app-icon-blue-flow.png"
+        sourceSize: Qt.size(48, 48)
+        fillMode: Image.PreserveAspectFit
+    }
+
     XCText{
         id: titleText
         objectName: "windowTitle"
-        x:8
+        x: appIcon.x + appIcon.width + 8
+        width: Math.max(0, root.width - x - (root.showControls ? btnRow.width + 16 : 8))
         xcText: root.mainWindow.titleBarText
         xcFontSize: 16
     }
