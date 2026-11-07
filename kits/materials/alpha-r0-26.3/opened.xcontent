@@ -1,3 +1,3 @@
 opened/{{shopName}}.mcfunction
-advancement revoke @s only xcshop:opened/{{shopName}}
-execute as @e[tag=xcshop.shop, tag=xcshop.shop.{{shopName}}] at @s run function xcshop:{{shopPath}}/set
+advancement revoke @s only {{@namespace}}:opened/{{shopName}}
+execute as @e[tag=xcshop.shop, tag=xcshop.shop.{{shopName}}] at @s run function {{@namespace}}:{{shopPath}}/set

@@ -1,6 +1,6 @@
 tick.json
 {
   "values": [
-    "xcshop:tick"
+    "{{@namespace}}:tick"
   ]
 }

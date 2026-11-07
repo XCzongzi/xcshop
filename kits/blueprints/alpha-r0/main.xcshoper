@@ -2,7 +2,7 @@ build "pack.xcontent"
 cd "minecraft" "tags/function"
 build "load-tag.xcontent"
 build "tick-tag.xcontent"
-cd "xcshop" "function"
+cd . "function"
 build "runtime.xclist"
 build "load-start.xcontent"
 string declaredObjectives = "|__xcshop__|__xcshop.drop__|";

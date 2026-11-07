@@ -1,2 +1,2 @@
 {{shopPath}}/set.mcfunction
-function xcshop:{{shopPath}}/modifier
+function {{@namespace}}:{{shopPath}}/modifier

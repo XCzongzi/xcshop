@@ -1,2 +1,2 @@
 {{shopPath}}/drop.mcfunction
-execute {{eventClause}}if function xcshop:{{operationPath}} run return run function xcshop:{{shopPath}}/set
+execute {{eventClause}}if function {{@namespace}}:{{operationPath}} run return run function {{@namespace}}:{{shopPath}}/set

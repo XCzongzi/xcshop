@@ -1,2 +1,3 @@
 tick.mcfunction
-execute as @a run function xcshop:detection
+execute as @a run function {{@namespace}}:detection
+kill @e[type=item,nbt={Item:{components:{"minecraft:custom_data":{xcshop:{xcshop:1b}}}}}]

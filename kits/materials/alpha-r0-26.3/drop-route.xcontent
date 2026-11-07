@@ -1,2 +1,2 @@
 drop.mcfunction
-execute if items entity @s contents *[custom_data ~ {xcshop:{shop:{{shopJson}}}}] run function xcshop:{{shopPath}}/drop
+execute if items entity @s contents *[custom_data ~ {xcshop:{shop:{{shopJson}}}}] run function {{@namespace}}:{{shopPath}}/drop

@@ -1,2 +1,2 @@
 {{productPath}}/sell.mcfunction
-execute {{eventClause}}run function xcshop:{{operationPath}}
+execute {{eventClause}}run function {{@namespace}}:{{operationPath}}

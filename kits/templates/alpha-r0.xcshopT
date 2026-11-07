@@ -5,7 +5,7 @@
 ../materials/alpha-r0-26.3
 [
     "Alpha r0：按 xcshop 测试数据包的标记实体、拿取/掷出、独立操作和布局匹配逻辑生成，面向 Minecraft Java 26.3。",
-    "使用固定命名空间 xcshop；27 格方块容器。布局输入器仅提供 function 入口，不自动调用。"
+    "使用项目设置的命名空间；27 格方块容器。布局输入器仅提供 function 入口，不自动调用。"
 ]
 foreach (Shop[]) {
     if (slots.length != 27 || (containerType != "barrel" && containerType != "chest"

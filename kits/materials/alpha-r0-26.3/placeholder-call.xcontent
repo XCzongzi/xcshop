@@ -1,2 +1,2 @@
 {{shopPath}}/set.mcfunction
-function xcshop:{{shopPath}}/placeholder
+function {{@namespace}}:{{shopPath}}/placeholder

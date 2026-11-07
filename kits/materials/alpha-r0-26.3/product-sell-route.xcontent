@@ -1,2 +1,2 @@
 {{shopPath}}/sell.mcfunction
-function xcshop:{{productPath}}/sell
+function {{@namespace}}:{{productPath}}/sell

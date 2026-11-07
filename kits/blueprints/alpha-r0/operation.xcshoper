@@ -2,7 +2,7 @@ string blank = "";
 content start blank (operationPath + ".mcfunction")
 build start
 string failureCommand = "return fail";
-if (failHint) { failureCommand = "return run function xcshop:" + productPath + "/failure"; }
+if (failHint) { failureCommand = "return run function " + @namespace + ":" + productPath + "/failure"; }
 if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot") {
     build "slot-restore.xcontent"
 }

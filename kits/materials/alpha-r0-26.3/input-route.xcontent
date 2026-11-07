@@ -1,2 +1,2 @@
 {{inputPath}}/match.mcfunction
-execute if function xcshop:{{inputPath}}/{{connectionNumber}} run scoreboard players set {{@parent[0].result.target}} {{@parent[0].result.scoreboard}} {{value}}
+execute if function {{@namespace}}:{{inputPath}}/{{connectionNumber}} run scoreboard players set {{@parent[0].result.target}} {{@parent[0].result.scoreboard}} {{value}}

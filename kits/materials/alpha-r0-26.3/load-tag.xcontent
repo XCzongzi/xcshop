@@ -1,6 +1,6 @@
 load.json
 {
   "values": [
-    "xcshop:load"
+    "{{@namespace}}:load"
   ]
 }

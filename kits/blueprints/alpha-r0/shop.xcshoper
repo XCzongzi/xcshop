@@ -10,9 +10,9 @@ build "summon-end.xcontent"
 build "opened.xcontent"
 content onOpen openCommand ("opened/" + shopName + ".mcfunction")
 build onOpen
-cd "xcshop" "advancement"
+cd . "advancement"
 build "opened-advancement.xcontent"
-cd "xcshop" "function"
+cd . "function"
 if (placeholderItem != "") { build "placeholder-call.xcontent" }
 foreach (slots[]) {
     int slotNumber = index;

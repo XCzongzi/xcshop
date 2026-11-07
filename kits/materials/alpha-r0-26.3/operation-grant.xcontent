@@ -1,2 +1,2 @@
 {{operationPath}}.mcfunction
-function xcshop:{{productPath}}/gain
+function {{@namespace}}:{{productPath}}/gain

@@ -1,2 +1,2 @@
 {{operationPath}}.mcfunction
-function xcshop:{{productPath}}/success
+function {{@namespace}}:{{productPath}}/success
