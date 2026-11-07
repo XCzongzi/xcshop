@@ -1,14 +1,12 @@
 import QtQuick
 import xcshop
 
-// Opens the visual Minecraft text-component editor for a text input.
-// The target may be an XCTextField or a VariableTextField.
+// Opens the full editor for a RichTextEditor and commits its applied result.
 TextButton {
     id: root
 
-    property var targetInput: null
-    property string editorTitle: "编辑 JSON 文本"
-    property string sourceText: currentText()
+    required property RichTextEditor targetInput
+    property string editorTitle: "文本内容"
 
     text: "彩字编辑"
     height: 26
@@ -22,28 +20,20 @@ TextButton {
     textColor: Colors.text
 
     function currentText() {
-        if (!targetInput)
-            return ""
-        if (targetInput.inputContent !== undefined)
-            return targetInput.inputContent
-        return targetInput.text || ""
+        return targetInput.getContent()
     }
 
     function applyText(value) {
-        if (!targetInput)
-            return
-        if (typeof targetInput.setContent === "function")
-            targetInput.setContent(value)
-        else
-            targetInput.text = value
-        targetInput.forceActiveFocus()
+        targetInput.setContent(value)
+        targetInput.commit()
+        targetInput.input.forceActiveFocus()
     }
 
     onClicked: SignalBus.sendToMain("Popup.show", {
         "component": Constants.popupJsonTextEditor,
         "properties": {
             "title": root.editorTitle,
-            "jsonText": root.sourceText
+            "jsonText": root.currentText()
         },
         "callback": function(result) {
             if (result && result.jsonText !== undefined)

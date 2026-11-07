@@ -95,11 +95,6 @@ QtObject {
     function colorFromSettings(value) {
         if (typeof value === "string" && value.length)
             return value
-        if (value && value.r !== undefined && value.g !== undefined
-                && value.b !== undefined) {
-            return Qt.rgba(Number(value.r), Number(value.g), Number(value.b),
-                           value.a !== undefined ? Number(value.a) : 1)
-        }
         return null
     }
 

@@ -40,7 +40,7 @@ BasePage {
         var catalog = Global.minecraftPackPath.length
                 ? readJson(Global.minecraftPackPath + "/catalog.json", null) : null
         var entries = catalog && catalog.schemaVersion === 2 && Array.isArray(catalog.items)
-                ? catalog.items : readJson(itemsRoot + "/items.json", [])
+                ? catalog.items : []
         mappingVersion = catalog ? String(catalog.gameVersion || "") : ""
         if (!Array.isArray(entries)) entries = []
         var result = []

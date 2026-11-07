@@ -79,7 +79,6 @@ PanelSurface {
         onClicked: {
             if (typeValue == "更多") return
             typeBar.currentType = z
-            setColor()
             typeBar.typeBtnClicked(typeValue)
         }
         XCToolTip {

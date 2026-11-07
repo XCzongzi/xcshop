@@ -33,8 +33,8 @@ bool validProtocol(const QJsonObject &object) {
     if (object["protocol"] != "xcshop-builder/result" || object["version"].toInt(-1) != 0) return false;
     for (const auto &name : {"buildEndedNormally", "buildSucceeded", "terminatedEarly"})
         if (!object[name].isBool()) return false;
-    if (object.contains("mode") && object["mode"] != "check" && object["mode"] != "build") return false;
-    if (object.contains("outputWritten") && !object["outputWritten"].isBool()) return false;
+    if (object["mode"] != "check" && object["mode"] != "build") return false;
+    if (!object["outputWritten"].isBool()) return false;
     if (!object["internalError"].isNull() && !object["internalError"].isString()) return false;
     for (const auto &name : {"errors", "warnings"}) {
         if (!object[name].isArray()) return false;
@@ -353,9 +353,8 @@ void BuildManager::finish(int exitCode, QProcess::ExitStatus status) {
         success = exitCode == 0 && m_result["buildSucceeded"].toBool()
                 && m_result["buildEndedNormally"].toBool() && !m_result["terminatedEarly"].toBool()
                 && m_result["errorCount"].toInt() == 0;
-        const bool checkOnly = m_result.contains("mode") ? m_result["mode"].toString() == "check"
-                                                        : m_process.arguments().contains("--check");
-        const bool outputWritten = !checkOnly && (!m_result.contains("outputWritten") || m_result["outputWritten"].toBool());
+        const bool checkOnly = m_result["mode"].toString() == "check";
+        const bool outputWritten = !checkOnly && m_result["outputWritten"].toBool();
         if (checkOnly || !outputWritten) m_outputPath.clear();
         m_state = checkOnly ? (success ? "检查通过" : "检查失败") : (success ? "构建成功" : "构建失败");
         m_summary = success ? (outputWritten ? "数据包已生成" : "未生成数据包")

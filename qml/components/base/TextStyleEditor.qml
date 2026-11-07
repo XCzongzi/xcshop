@@ -3,132 +3,56 @@ import QtQuick
 import xcshop
 import "../../../js/MinecraftTextColors.js" as MinecraftTextColors
 
-// Minecraft text color and decoration editor. The owning view reads the
-// complete state whenever propertyEdited is emitted.
 Item {
     id: root
-
     property var colorOptions: MinecraftTextColors.colors
     property string color: "white"
-    // UI-only fallback used when the custom-colour field is cleared.  The
-    // persisted/editor API remains the single `color` property.
-    property string lastPresetColor: "white"
     property bool bold: false
     property bool italic: false
     property bool underlined: false
     property bool strikethrough: false
     property bool obfuscated: false
     property bool showObfuscated: true
-
     signal propertyEdited
 
-    implicitWidth: Math.max(colorRow.width, formatRow.width)
-    implicitHeight: formatRow.y + formatRow.height
+    readonly property bool stacked: width < 600
+    implicitWidth: 360
+    implicitHeight: stacked ? palette.height + formatRow.height + 8 : Math.max(palette.height, formatRow.height)
     width: implicitWidth
     height: implicitHeight
-
-    function isPresetColor(value) {
-        for (var index = 0; index < colorOptions.length; ++index) {
-            if (colorOptions[index].value === value)
-                return true
-        }
-        return false
-    }
-
-    onColorChanged: {
-        if (isPresetColor(color))
-            lastPresetColor = color
-    }
-
-    Row {
-        id: colorRow
-        spacing: 4
-
-        Repeater {
-            model: root.colorOptions
-
-            delegate: Rectangle {
-                id: colorSwatch
-                required property var modelData
-
-                width: 17
-                height: 17
-                radius: 4
-                color: modelData.preview
-                border.width: root.color === modelData.value ? 2 : 1
-                border.color: root.color === modelData.value
-                              ? Colors.border : Colors.changeA(Colors.text, 0.30)
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        root.color = colorSwatch.modelData.value
-                        root.propertyEdited()
-                    }
-                }
-            }
-        }
-    }
-
-    XCTextField {
-        id: colorInput
-        y: colorRow.height + 8
-        width: 100
-        height: 28
-        text: root.isPresetColor(root.color) ? "" : root.color
-        placeholderText: "#RRGGBB"
-        editorFontSize: 12
-        onTextEdited: {
-            root.color = text.length ? text : root.lastPresetColor
+    TextColorPalette {
+        id: palette
+        width: root.stacked ? root.width : Math.max(0, root.width - formatRow.width - 16)
+        swatchSize: 17
+        colorOptions: root.colorOptions
+        color: root.color
+        onColorEdited: function(value) {
+            root.color = value
             root.propertyEdited()
         }
     }
-
     Row {
         id: formatRow
-        x: colorInput.width + 8
-        y: colorInput.y
+        x: parent.width - width
+        y: root.stacked ? palette.height + 8 : 0
         spacing: 4
-
-        BooleanSwitch {
-            label: "粗"
-            checked: root.bold
-            onToggled: function(value) {
-                root.bold = value
-                root.propertyEdited()
-            }
-        }
-        BooleanSwitch {
-            label: "斜"
-            checked: root.italic
-            onToggled: function(value) {
-                root.italic = value
-                root.propertyEdited()
-            }
-        }
-        BooleanSwitch {
-            label: "下"
-            checked: root.underlined
-            onToggled: function(value) {
-                root.underlined = value
-                root.propertyEdited()
-            }
-        }
-        BooleanSwitch {
-            label: "删"
-            checked: root.strikethrough
-            onToggled: function(value) {
-                root.strikethrough = value
-                root.propertyEdited()
-            }
-        }
-        BooleanSwitch {
-            visible: root.showObfuscated
-            label: "乱"
-            checked: root.obfuscated
-            onToggled: function(value) {
-                root.obfuscated = value
-                root.propertyEdited()
+        Repeater {
+            model: [
+                {key: "bold", label: "粗", tip: "粗体"},
+                {key: "italic", label: "斜", tip: "斜体"},
+                {key: "underlined", label: "下", tip: "下划线"},
+                {key: "strikethrough", label: "删", tip: "删除线"}
+            ].concat(root.showObfuscated ? [{key: "obfuscated", label: "乱", tip: "混淆"}] : [])
+            delegate: BooleanSwitch {
+                id: toggle
+                required property var modelData
+                label: modelData.label
+                checked: root[modelData.key]
+                onToggled: function(value) {
+                    root[toggle.modelData.key] = value
+                    root.propertyEdited()
+                }
+                XCToolTip { active: toggle.hovered; text: toggle.modelData.tip }
             }
         }
     }

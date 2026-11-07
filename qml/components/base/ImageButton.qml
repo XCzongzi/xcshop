@@ -21,8 +21,6 @@ Rectangle {
 
     signal clicked()
 
-    // 保留旧接口；选中状态由 btnSelected 统一驱动。
-    function setColor() {}
 
     width: btnSize
     height: btnSize

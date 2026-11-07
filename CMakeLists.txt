@@ -119,6 +119,8 @@ qt_add_qml_module(appxcshop
         qml/components/base/TextStyleEditor.qml
         qml/components/base/XCTextArea.qml
         qml/components/base/JsonTextEditorButton.qml
+        qml/components/base/RichTextEditor.qml
+        qml/components/base/TextColorPalette.qml
         qml/components/base/XCKeyInput.qml
         qml/components/base/XCFileDialog.qml
         qml/components/base/XCFolderDialog.qml
@@ -223,6 +225,8 @@ qt_add_qml_module(appxcshop
         header/EditorFonts.h
         header/EditorHighlighter.h
         src/EditorHighlighter.cpp
+        header/RichTextDocument.h
+        src/RichTextDocument.cpp
         header/MinecraftAssetImporter.h
         header/MinecraftImportSupport.h
         header/ElementIO.h

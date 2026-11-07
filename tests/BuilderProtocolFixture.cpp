@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
     QJsonObject problem{{"file", arguments[index + 1] + "/Item/物品.xcseItem"},
         {"property", "$.operations[0].cost[0].amount"}, {"reason", "测试中文错误/警告"}, {"solution", "请修改原始属性"}, {"terminatesBuild", failed}};
     QJsonObject result{{"protocol", "xcshop-builder/result"}, {"version", mode == "unsupported" ? 2 : 0},
+        {"mode", "build"}, {"outputWritten", true},
         {"builderVersion", "0.1.0"}, {"maxSupportedDataVersion", 0},
         {"buildEndedNormally", !failed}, {"buildSucceeded", !failed}, {"terminatedEarly", failed},
         {"errorCount", failed ? 1 : 0}, {"errors", failed ? QJsonArray{problem} : QJsonArray{}},
@@ -55,6 +56,8 @@ int main(int argc, char **argv) {
     }
     if (mode == "invalid-mode") result["mode"] = "unknown";
     if (mode == "invalid-output") result["outputWritten"] = "true";
+    if (mode == "missing-mode") result.remove("mode");
+    if (mode == "missing-output") result.remove("outputWritten");
     if (mode == "large") {
         const QByteArray line(1024, 'a');
         for (int n = 0; n < 400; ++n) { std::fwrite(line.data(), 1, line.size(), stdout); std::fputc('\n', stdout); }

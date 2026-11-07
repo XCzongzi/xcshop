@@ -696,33 +696,155 @@ Window {
         page.loadJson(plain)
         UiInput.settle(60)
         check(!page.parseError.length && JSON.parse(page.exportedJson()).text === plain,
-              "Plain text was not preserved in the first segment")
-        var field = find("jsonSegmentText0")
-        check(field && field.text.indexOf("普通文本") >= 0, "Plain text input is empty")
+              "Plain text and line breaks were not preserved")
+        var field = find("richTextInput")
+        var editor = find("popupRichTextEditor")
+        check(field && field.getText(0, field.length).replace(/\u2029/g, "\n") === plain,
+              "Rich editor text differs: " + (field ? JSON.stringify(field.getText(0, field.length)) + "/" + field.length : "missing"))
         field.forceActiveFocus()
         field.selectAll()
         UiInput.commitText(field, "\\")
-        check(field.text === "\\" && JSON.parse(page.exportedJson()).text === "\\",
+        check(JSON.parse(page.exportedJson()).text === "\\",
               "A lone backslash was rewritten while typing")
         UiInput.commitText(field, "n")
-        check(field.text === "\\n" && JSON.parse(page.exportedJson()).text === "\n",
-              "Typed backslash-n did not export a newline")
+        check(JSON.parse(page.exportedJson()).text === "\\n", "Rich text rewrote a literal escape")
         UiInput.key(field, Qt.Key_Backspace)
-        check(field.text === "\\" && JSON.parse(page.exportedJson()).text === "\\",
+        check(JSON.parse(page.exportedJson()).text === "\\",
               "Deleting an escape changed the remaining backslash")
         UiInput.commitText(field, "q")
         check(JSON.parse(page.exportedJson()).text === "\\q", "Unknown escape was lost")
-        page.loadJson(JSON.stringify({text: "line\nnext\\n"}))
-        UiInput.settle(60)
-        field = find("jsonSegmentText0")
-        check(page.textFromEditor(field.text) === "line\nnext\\n", "Existing escapes did not round trip")
-        page.addSegment(0)
-        UiInput.settle(60)
-        page.moveSegment(1, -1)
-        UiInput.settle(60)
-        check(find("jsonSegmentText0").text === "文字", "Moving a segment left stale input text")
+
+        page.loadJson("甲乙丙丁")
+        field.select(1, 3)
+        UiInput.click(find("richTextColor_red"))
+        UiInput.click(find("richTextStyle_bold"))
+        var result = JSON.parse(page.exportedJson())
+        check(result.extra.length === 3 && result.extra[0].text === "甲"
+              && result.extra[1].text === "乙丙" && result.extra[1].color === "red"
+              && result.extra[1].bold && result.extra[2].text === "丁"
+              && !result.extra[2].bold, "Toolbar changed text outside its selection")
+        field.undo()
+        check(!JSON.parse(page.exportedJson()).extra[1].bold, "Format undo failed")
+        field.redo()
+        check(JSON.parse(page.exportedJson()).extra[1].bold, "Format redo failed")
+        field.select(1, 3)
+        UiInput.click(find("richTextResetStyle"))
+        check(JSON.parse(page.exportedJson()).text === "甲乙丙丁", "Reset did not merge equivalent styles")
+
+        page.loadJson("")
+        UiInput.click(find("richTextColor_gold"))
+        UiInput.click(find("richTextStyle_italic"))
+        UiInput.preedit(field, "中")
+        check(field.inputMethodComposing && JSON.parse(page.exportedJson()).text === "",
+              "Preedit was saved before commit")
+        UiInput.commitText(field, "中文🙂")
+        result = JSON.parse(page.exportedJson())
+        check(result.text === "中文🙂" && result.color === "gold" && result.italic,
+              "New typing did not use the chosen style")
+        UiInput.key(field, Qt.Key_Return)
+        UiInput.commitText(field, "换行")
+        var multiline = page.exportedJson()
+        page.loadJson(multiline)
+        check(field.getText(0, field.length).replace(/\u2029/g, "\n") === "中文🙂\n换行", "Real newline did not round trip")
+        field.cursorPosition = field.length
+        UiInput.key(field, Qt.Key_B, Qt.ControlModifier)
+        UiInput.commitText(field, "粗")
+        check(editor.document.currentStyle.bold, "Formatting shortcut failed")
+
+        page.loadJson('{"text":"A","bold":true,"extra":[{"text":"B","bold":false},{"text":"C"}]}')
+        field.select(1, 2)
+        check(!editor.document.currentStyle.bold, "Explicit false style was not loaded")
+        field.select(2, 3)
+        check(editor.document.currentStyle.bold, "Sibling inherited a previous sibling's style")
+        field.select(0, 1)
+        var custom = find("richTextCustomColor")
+        custom.forceActiveFocus()
+        custom.selectAll()
+        UiInput.commitText(custom, "#12ab34")
+        result = JSON.parse(page.exportedJson())
+        check(result.extra[0].color === "#12ab34" && !result.extra[1].color,
+              "Custom colour did not preserve the editor selection")
+        field.forceActiveFocus()
+        page.loadJson('{"text":"保留事件","clickEvent":{"action":"run_command","value":"/help"}}')
+        field.selectAll()
+        UiInput.click(find("richTextStyle_underlined"))
+        check(JSON.parse(page.exportedJson()).clickEvent.value === "/help",
+              "Editing styles discarded existing component metadata")
+
+        var advanced = '{"translate":"chat.type.text","with":["A","B"]}'
+        page.loadJson(advanced)
+        check(field.readOnly && page.parseError.length && page.exportedJson() === advanced,
+              "Unsupported components were silently destroyed")
         page.loadJson(original)
         UiInput.settle(60)
+    }
+    function checkRichTextPaletteAndScrolling() {
+        var original = page.exportedJson()
+        var previousColors = Global.customTextColors.slice()
+        var field = find("richTextInput")
+        var palette = find("richTextPalette")
+        var custom = find("richTextCustomColor")
+        var add = find("addTextColorPreset")
+        check(page.title === "文本内容", "Text editor lost its field heading or restored the unwanted suffix")
+        page.loadJson('{"text":"测试","color":"red"}')
+        field.selectAll()
+        check(custom.text === "red", "Game colour is displayed as RGB instead of its name")
+        var red = find("richTextColor_red")
+        check(red.width === red.height, "Colour swatches are not square")
+        check(palette.displayColor("#ff5555") === "red", "Equivalent game RGB was not named")
+        custom.forceActiveFocus()
+        custom.selectAll()
+        UiInput.commitText(custom, "#123456")
+        check(custom.text === "#123456" && add.enabled, "Custom RGB cannot be saved")
+        UiInput.click(add)
+        UiInput.settle(30)
+        check(Global.customTextColors.indexOf("#123456") >= 0 && !add.enabled,
+              "Adding a preset failed or allowed a duplicate")
+        check(JSON.parse(file.read(Global.settingsPath)).customTextColors.indexOf("#123456") >= 0,
+              "Custom colour was not persisted")
+        var swatch = find("richTextColor_#123456")
+        check(swatch && swatch.width === swatch.height, "Custom square swatch was not created")
+        UiInput.rightClick(swatch)
+        check(slotContextMenu.opened && slotContextMenu.menuItems[6].text === "删除预设",
+              "Custom colour right-click did not open the project context menu")
+        slotContextMenu.invoke(slotContextMenu.menuItems[6], 6, -1)
+        UiInput.settle(30)
+        check(Global.customTextColors.indexOf("#123456") < 0, "Context menu did not remove the custom colour")
+
+        var samples = []
+        for (var i = 1; i <= 30; ++i) samples.push("#" + (0x100000 + i * 117).toString(16))
+        Global.customTextColors = samples
+        UiInput.settle(40)
+        var toolbar = find("richTextToolbar"), actions = find("richTextActions")
+        check(palette.height > 24 && palette.x === 0, "Colour palette did not wrap on the left")
+        check(Math.abs(actions.x + actions.width - toolbar.width) < 1,
+              "Formatting actions are not aligned to the right")
+        var oldWidth = root.width, oldHeight = root.height
+        root.width = 680; root.height = 520
+        UiInput.settle(60)
+        check(actions.y >= palette.height && actions.x >= 0,
+              "Narrow toolbar overlaps the wrapped palette")
+        Global.customTextColors = previousColors
+        Global.saveSettings()
+        root.width = oldWidth; root.height = oldHeight
+        page.loadJson(("长文本，检查滚动条与光标位置。\n").repeat(70))
+        field.forceActiveFocus()
+        field.cursorPosition = 0
+        UiInput.settle(60)
+        var viewport = find("richTextViewport"), frame = find("richTextEditingFrame")
+        var bar = find("richTextScrollBar")
+        check(bar.parent === frame && bar.visible && bar.size < 1
+              && bar.x >= frame.width - bar.width - 8 && bar.height >= frame.height - 12,
+              "Scrollbar is not attached to the editing frame's right edge")
+        var barY = bar.y
+        UiInput.wheel(viewport, -240)
+        UiInput.settle(60)
+        check(viewport.contentY > 0 && bar.y === barY, "Scrolling moved the scrollbar out of its frame")
+        field.cursorPosition = field.length
+        UiInput.settle(60)
+        check(viewport.contentY > viewport.height, "Cursor did not scroll into view")
+        page.loadJson(original)
+        UiInput.settle(40)
     }
     Component.onCompleted: {
         Global.animationSpeed = 20
@@ -891,7 +1013,10 @@ Window {
                 case 8:
                     root.check(root.page.exportedJson().indexOf('"gold"') >= 0, "JSON editor lost text style")
                     root.checkingFocus = true
-                    try { root.checkJsonTextEditing() }
+                    try {
+                        root.checkJsonTextEditing()
+                        root.checkRichTextPaletteAndScrolling()
+                    }
                     finally { root.checkingFocus = false }
                     root.screenshot("json-light", function () {
                         root.page.close({

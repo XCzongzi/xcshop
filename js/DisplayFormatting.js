@@ -1,36 +1,10 @@
 .pragma library
 
-function isJsonText(value) {
-    try { JSON.parse(value); return true }
-    catch (error) { return false }
-}
-
-// Plain-text fields use editable escape tokens. JSON components already have
-// their own escaping and must pass through unchanged.
-function textForEditor(value) {
-    var text = String(value === undefined || value === null ? "" : value)
-    if (isJsonText(text)) return text
-    return text.replace(/\\/g, "\\\\").replace(/\n/g, "\\n")
-               .replace(/\r/g, "\\r").replace(/\t/g, "\\t")
-}
-
-function textFromEditor(value) {
-    var text = String(value === undefined || value === null ? "" : value)
-    if (isJsonText(text)) return text
-    return text.replace(/\\(.)/g, function(match, escaped) {
-        if (escaped === "n") return "\n"
-        if (escaped === "r") return "\r"
-        if (escaped === "t") return "\t"
-        if (escaped === "\\") return "\\"
-        return match
-    })
-}
-
 function style(source, inherited) {
     var base = inherited || {color: "white"}
     var result = {color: source.color || base.color || "white"}
     var keys = ["bold", "italic", "underlined", "strikethrough", "obfuscated"]
-    keys.forEach(function(key) { result[key] = !!(source[key] || base[key]) })
+    keys.forEach(function(key) { result[key] = !!(source[key] === undefined ? base[key] : source[key]) })
     return result
 }
 function source(text, inherited) {
@@ -38,13 +12,13 @@ function source(text, inherited) {
     var base = style({}, inherited)
     function component(value, parent) {
         if (Array.isArray(value)) {
-            var last = parent
-            var all = []
-            value.forEach(function(child) {
-                var part = component(child, last)
-                all = all.concat(part.segments); last = part.style
+            if (!value.length) return {segments: [], style: parent}
+            var first = component(value[0], parent)
+            var all = first.segments
+            value.slice(1).forEach(function(child) {
+                all = all.concat(component(child, first.style).segments)
             })
-            return {segments: all, style: last}
+            return {segments: all, style: first.style}
         }
         if (typeof value === "string" || typeof value === "number")
             return {segments: [Object.assign({text: String(value)}, parent)], style: parent}
@@ -52,7 +26,9 @@ function source(text, inherited) {
         var own = Object.assign({}, parent)
         Object.keys(parent).forEach(function(key) { if (value[key] !== undefined) own[key] = value[key] })
         var segments = value.text === undefined ? [] : [Object.assign({text: String(value.text)}, own)]
-        if (value.extra !== undefined) segments = segments.concat(component(value.extra, own).segments)
+        if (Array.isArray(value.extra)) value.extra.forEach(function(child) {
+            segments = segments.concat(component(child, own).segments)
+        })
         return {segments: segments, style: own}
     }
     try { return component(JSON.parse(original.trim()), base).segments }

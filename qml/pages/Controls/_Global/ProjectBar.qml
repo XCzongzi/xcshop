@@ -32,7 +32,7 @@ ContentBar {
                 return String(templateOptions[i].label)
         }
         return value === undefined || value === null || String(value).length === 0
-                ? "未设置 / 旧模板" : "未安装的模板"
+                ? "未设置" : "未安装的模板"
     }
 
     Item {

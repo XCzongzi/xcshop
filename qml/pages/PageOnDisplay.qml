@@ -14,8 +14,6 @@ BaseIOPage {
     function elementReading() {
         if (!eledata.operation || typeof eledata.operation.order !== "string")
             throw new Error("此页面只支持操作组展示格式，请使用新建项目");
-        if (eledata.operation.enabled === undefined)
-            eledata.operation.enabled = false;
         operationEditor.load();
         memberEditor.load();
         loadFrame();
@@ -191,7 +189,7 @@ BaseIOPage {
                 id: frameText
                 objectName: "frameTextEditor"
                 width: parent.width
-                caption: frameTabs.selected === 3 ? "同一操作内的代价分隔" : frameTabs.selected === 2 ? "操作之间的分隔" : "JSON 内容"
+                caption: frameTabs.selected === 3 ? "同一操作内的代价分隔" : frameTabs.selected === 2 ? "操作之间的分隔" : "文本内容"
                 onEdited: function (value) {
                     if (!root.dataLoaded)
                         return;

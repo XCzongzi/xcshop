@@ -85,6 +85,7 @@ Item {
                 visible: root.editingStyle
                 TextStyleEditor {
                     id: style
+                    width: parent.width
                     objectName: "pairTextStyle"
                     onPropertyEdited: {
                         if (root.loading || !root.value)
@@ -101,6 +102,7 @@ Item {
                     }
                 }
                 TextButton {
+                    anchors.right: parent.right
                     y: style.height + 8
                     height: 28
                     textSize: 12

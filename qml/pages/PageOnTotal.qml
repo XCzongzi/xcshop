@@ -134,8 +134,6 @@ BasePage {
             if (Object.prototype.hasOwnProperty.call(changes, key))
                 next[key] = changes[key]
         }
-        if (changes.templateId !== undefined)
-            delete next.template // Retire numeric identity only after an explicit template selection.
         saveManifest(next, registeredShops)
     }
 

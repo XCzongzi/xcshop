@@ -1,20 +1,14 @@
 import QtQuick
 import xcshop
-import "../../../../js/DisplayFormatting.js" as Formatting
 
 Item {
     id: root
     property string content: ""
-    property string caption: "JSON 内容"
-    property bool loading: false
+    property string caption: "文本内容"
     readonly property bool resizing: input.resizing
     signal edited(string value)
     height: 30 + input.height
-    function setContent(value) {
-        loading = true;
-        input.setContent(Formatting.textForEditor(value));
-        loading = false;
-    }
+    function setContent(value) { input.setContent(value) }
     XCText {
         xcText: root.caption
         xcFontSize: 12
@@ -26,17 +20,16 @@ Item {
         anchors.right: parent.right
         y: -3
         targetInput: input
-        sourceText: Formatting.textFromEditor(input.inputContent)
         editorTitle: root.caption
     }
-    VariableTextField {
+    RichTextEditor {
         id: input
         objectName: "displayTextInput"
         y: 30
         width: parent.width
-        height: 128
-        content: Formatting.textForEditor(root.content)
-        onContentChanged: if (!root.loading)
-            root.edited(Formatting.textFromEditor(content))
+        height: implicitHeight
+        compact: true
+        content: root.content
+        onEdited: function(value) { root.edited(value) }
     }
 }

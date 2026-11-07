@@ -142,7 +142,7 @@ private slots:
     void process_data() {
         QTest::addColumn<QString>("mode");
         QTest::addColumn<bool>("success");
-        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large", "arguments", "invalid-mode", "invalid-output"})
+        for (const auto &mode : {"success", "error", "missing", "malformed", "unsupported", "duplicate", "exit", "crash", "large", "arguments", "invalid-mode", "invalid-output", "missing-mode", "missing-output"})
             QTest::newRow(mode) << QString(mode) << (QString(mode) == "success" || QString(mode) == "large" || QString(mode) == "arguments");
     }
     void process() {
@@ -184,12 +184,11 @@ private slots:
         QVERIFY(makeKit(temp.path() + "/kits"));
         BuildManager builder;
         builder.setExecutablePath(fixture);
-        for (const auto &mode : {"check", "check-error", "no-output", "written", "legacy-check"}) {
-            const bool legacy = QString(mode) == "legacy-check";
-            const bool checkOnly = QString(mode).startsWith("check") || legacy;
+        for (const auto &mode : {"check", "check-error", "no-output", "written"}) {
+            const bool checkOnly = QString(mode).startsWith("check");
             const bool success = QString(mode) != "check-error";
-            QVERIFY(makeManifest(project, legacy ? "success" : mode));
-            builder.setStartupArguments(legacy ? "--check" : "");
+            QVERIFY(makeManifest(project, mode));
+            builder.setStartupArguments(checkOnly ? "--check" : "");
             QSignalSpy finished(&builder, &BuildManager::completed);
             QVERIFY(builder.start(project, temp.path() + "/kits"));
             QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 10000);

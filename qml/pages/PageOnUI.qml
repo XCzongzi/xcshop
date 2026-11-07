@@ -251,8 +251,6 @@ BaseIOPage {
 
     function storageData() {
         var stored = JSON.parse(JSON.stringify(root.eledata))
-        // Concrete Minecraft containers are no longer part of UI element data.
-        delete stored.container
         var slots = []
         var sourceSlots = Array.isArray(stored.slots) ? stored.slots : []
         for (var slotIndex = 0; slotIndex < sourceSlots.length; ++slotIndex) {
@@ -1005,7 +1003,6 @@ BaseIOPage {
             return false
 
         root.eledata.containerType = containerTypeName
-        delete root.eledata.container
         if (!root.updateDataOut())
             return false
 

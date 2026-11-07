@@ -62,17 +62,14 @@ Item {
                     + " 个近似图标 · " + catalog.missing + " 项缺少图标"
             loaded = catalog.items
         } else {
-            loaded = readJson(itemsRootPath + "/items.json", [])
-            if (!Array.isArray(loaded)) loaded = []
-            catalogSummary = loaded.length ? "当前为旧版物品列表。完成官方数据导入后自动切换，已有自定义图标保留。"
-                                            : "尚无物品资源。选择本地游戏，或在线下载后导入。"
+            catalogSummary = "尚无物品资源。选择本地游戏，或在线下载后导入。"
         }
         var combined = []
         for (var i = 0; i < loaded.length; ++i) {
             var item = loaded[i]
             if (!item || !item.name || item.name === "minecraft:air") continue
             combined.push({itemId: item.name, builtIn: true,
-                           iconStatus: item.iconStatus || (file.exists(Global.getItemTexturePath(item.name)) ? "legacy" : "missing"),
+                           iconStatus: item.iconStatus,
                            iconReason: item.iconReason || ""})
         }
         customItems = readJson(itemsRootPath + "/custom-items.json", [])
@@ -113,7 +110,6 @@ Item {
         case "rendered": return "默认图标"
         case "approximate": return "近似预览"
         case "custom": return "自定义图标"
-        case "legacy": return "已有图标"
         case "empty": return "无默认图标"
         default: return "缺少图标"
         }

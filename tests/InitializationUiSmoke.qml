@@ -84,7 +84,6 @@ Window {
     }
     Component.onCompleted: {
         files.folder(itemsRoot)
-        files.write(itemsRoot + "/items.json", JSON.stringify([{name: "minecraft:stone"}, {name: "minecraft:diamond"}]))
         reopen()
         var page = find(appWindow.contentItem, "mainPageLoader").item
         check(page && page.step === "welcome" && !page.checkComplete, "first launch must wait for checking")
@@ -274,7 +273,7 @@ Window {
                     root.check(root.find(page, "initializationDownloadTemplates").enabled, "online acquisition entry")
                     root.click("initializationNext")
                 } else if (root.stage === 9) {
-                    root.check(page.step === "items" && page.mappedItems.length === 2 && page.missingIcons === 2, "legacy mappings")
+                    root.check(page.step === "items" && page.mappedItems.length === 0 && page.missingIcons === 0, "fresh resource catalog must be empty")
                     files.folder(root.itemsRoot + "/" + root.pack)
                     files.write(root.itemsRoot + "/active.json", JSON.stringify({schemaVersion: 2, pack: root.pack}))
                     files.write(root.itemsRoot + "/" + root.pack + "/catalog.json", JSON.stringify({schemaVersion: 2, gameVersion: "26.3", items: [{name: "minecraft:stone", iconStatus: "missing"}]}))
@@ -293,7 +292,6 @@ Window {
                     root.check(page.errorText.length > 0 && !Global.initializationCompleted, "import failure must remain recoverable")
                     root.capture("import-error")
                     files.remove_file(root.itemsRoot + "/active.json")
-                    files.remove_file(root.itemsRoot + "/items.json")
                     page.loadMappings()
                     root.check(page.mappedItems.length === 0, "empty distribution")
                     root.click("initializationBack")

@@ -23,6 +23,7 @@ QtObject{
     property bool initializationCompleted: false
     property string editorChineseFont: "Microsoft YaHei"
     property string editorLatinFont: "Consolas"
+    property var customTextColors: []
     property var recentProjects: []
     readonly property int recentProjectLimit: 9
     property int elementRelayHeight: 160
@@ -376,6 +377,7 @@ QtObject{
 
     function loadSettings(){
         initializationCompleted = false
+        customTextColors = []
         reloadMinecraftResources()
         settingsPath = APP_DIRPATH + "/settings.json"
         var text = xcfile.read(settingsPath)
@@ -386,6 +388,7 @@ QtObject{
             if (typeof saved !== "object" || Array.isArray(saved))
                 return
             savedSettings = saved
+            customTextColors = normalizeTextColors(saved.customTextColors)
             initializationCompleted = saved.initializationCompleted === true
             editorChineseFont = typeof saved.editorChineseFont === "string" && saved.editorChineseFont.trim().length
                     ? saved.editorChineseFont.trim() : "Microsoft YaHei"
@@ -400,10 +403,7 @@ QtObject{
             Colors.loadSettings(saved)
             if (saved.animationSpeed) animationSpeed = saved.animationSpeed
             if (saved.backgroundMode)
-                // Older settings used a separate imageBlur mode. Blur is now
-                // controlled solely by backgroundBlur, so preserve the image
-                // while migrating the legacy mode.
-                backgroundMode = saved.backgroundMode === "imageBlur" ? "image" : saved.backgroundMode
+                backgroundMode = saved.backgroundMode === "image" ? "image" : "color"
             if (saved.backgroundImage) backgroundImage = saved.backgroundImage
             if (saved.backgroundBlur !== undefined) backgroundBlur = saved.backgroundBlur
             if (Array.isArray(saved.recentProjects)) recentProjects = saved.recentProjects.slice(0, recentProjectLimit)
@@ -427,6 +427,7 @@ QtObject{
         settings.animationSpeed = animationSpeed
         settings.editorChineseFont = editorChineseFont
         settings.editorLatinFont = editorLatinFont
+        settings.customTextColors = customTextColors
         settings.backgroundMode = backgroundMode
         settings.backgroundImage = backgroundImage
         settings.backgroundBlur = backgroundBlur
@@ -446,6 +447,44 @@ QtObject{
         }
         console.warn("无法保存设置：" + settingsPath)
         return false
+    }
+
+    function normalizeTextColors(values) {
+        var result = []
+        if (!Array.isArray(values)) return result
+        values.forEach(function(value) {
+            var color = String(value).toLowerCase()
+            if (/^#[0-9a-f]{6}$/.test(color) && result.indexOf(color) < 0)
+                result.push(color)
+        })
+        return result
+    }
+    function addTextColor(value) {
+        var next = normalizeTextColors(customTextColors.concat([value]))
+        if (next.length === customTextColors.length) return
+        customTextColors = next
+        saveSettings()
+    }
+    function removeTextColor(value) {
+        customTextColors = customTextColors.filter(function(color) { return color !== value })
+        saveSettings()
+    }
+    function moveTextColor(value, offset) {
+        var next = customTextColors.slice()
+        var index = next.indexOf(value), target = index + offset
+        if (index < 0 || target < 0 || target >= next.length) return
+        next.splice(index, 1)
+        next.splice(target, 0, value)
+        customTextColors = next
+        saveSettings()
+    }
+    function replaceTextColor(previous, value) {
+        var next = customTextColors.slice()
+        var index = next.indexOf(previous)
+        if (index < 0 || next.indexOf(value) >= 0 || !/^#[0-9a-fA-F]{6}$/.test(value)) return
+        next[index] = value.toLowerCase()
+        customTextColors = normalizeTextColors(next)
+        saveSettings()
     }
 
     function relayProjectKey(location){

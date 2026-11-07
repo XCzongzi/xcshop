@@ -12,11 +12,6 @@ BaseIOPage {
         "experience_level", "item_count", "scoreboard", "execute_condition"
     ]
 
-    function costKindIndex(kind) {
-        var index = root.costKinds.indexOf(kind)
-        return index >= 0 ? index : 0
-    }
-
     function updateItemSyntaxError(value) {
         root.eledata.itemSyntaxError = root.eledata.type.kind === "item_count"
                 && itemInput_field.isSyntaxError(value)
@@ -38,22 +33,14 @@ BaseIOPage {
     }
 
     function elementReading() {
-        if (typeof root.eledata.display !== "string")
-            root.eledata.display = ""
-        if (!root.eledata.type || typeof root.eledata.type !== "object")
-            root.eledata.type = { "kind": "experience_level", "value": "", "filter": false }
-        if (root.eledata.type.kind === undefined) {
-            var legacyIndex = Number(root.eledata.type.selected)
-            root.eledata.type.kind = root.costKinds[legacyIndex] || "experience_level"
-            delete root.eledata.type.selected
-            root.updateDataOut()
-        }
-        if (typeof root.eledata.type.value !== "string")
-            root.eledata.type.value = ""
-        root.eledata.type.filter = root.eledata.type.filter === true
+        var type = root.eledata.type
+        if (typeof root.eledata.display !== "string" || !type
+                || root.costKinds.indexOf(type.kind) < 0
+                || typeof type.value !== "string" || typeof type.filter !== "boolean")
+            throw new Error("代价元素格式不正确，请使用当前格式的项目")
         root.updateItemSyntaxError(root.eledata.type.value)
         displayInput_textField.text = root.eledata.display
-        typeInput_radioGroup.selected = root.costKindIndex(root.eledata.type.kind)
+        typeInput_radioGroup.selected = root.costKinds.indexOf(type.kind)
         checkBox.checked = root.eledata.type.filter
         itemInput_field.setContent(root.eledata.type.value)
         scoreboardInput.text = root.eledata.type.value

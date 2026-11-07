@@ -30,8 +30,6 @@ Rectangle{
     width:buttonText.width + widthBorderSize*2
     height:buttonText.height + heightBorderSize*2
 
-    // 保留旧接口以兼容现有调用；选中状态才是唯一的状态来源。
-    function setColor(){ btnSelected = true }
     function setSelected(selected, noAnimation){
         colorAnimationEnabled = !noAnimation
         btnSelected = selected

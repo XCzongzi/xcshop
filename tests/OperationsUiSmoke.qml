@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import xcshop
 import "qrc:/qt/qml/xcshop/js/WorkspaceSchema.js" as Schema
+import "qrc:/qt/qml/xcshop/js/DisplayFormatting.js" as Formatting
 
 Window {
     id: root
@@ -56,34 +57,71 @@ Window {
         return count
     }
     function check(ok, message) { if (!ok) throw new Error(message) }
+    function displayText(value) {
+        return Formatting.source(value).map(function(part) { return part.text }).join("")
+    }
+    function setDisplayText(field, value) { field.setContent(value); field.commit() }
     function checkDisplayNewlineInput() {
+        timer.stop()
         var tabs = find(page, "frameProperties")
         tabs.selectOption(2)
         var editor = find(page, "frameTextEditor")
         var field = find(editor, "displayTextInput")
+        check(field.height === 128 && !find(field, "richTextToolbar").visible,
+              "Inline editor contains the full toolbar or changed its original height")
+        check(find(field, "richTextExpand") && find(field, "richTextCollapse"),
+              "Inline editor lost its original resize icons")
         field.input.forceActiveFocus()
         field.input.selectAll()
-        UiInput.commitText(field.input, "first\\nsecond")
-        field.commit()
-        check(field.inputContent === "first\\nsecond", "Display rewrote the editable escape token")
+        UiInput.commitText(field.input, "first")
+        UiInput.key(field.input, Qt.Key_Return)
+        UiInput.commitText(field.input, "second")
+        check(field.input.getText(0, field.input.length).replace(/\u2029/g, "\n") === "first\nsecond", "Inline rich text lost a real newline")
         var saved = JSON.parse(file.read(project + "/Display/example.xcseDisplay"))
-        check(saved.frame.separator === "first\nsecond", "Display saved backslash-n as literal text")
+        check(displayText(saved.frame.separator) === "first\nsecond", "Display did not save the rich text newline")
         check(find(page, "operationsPreview").renderedHtml.indexOf("first<br>second") >= 0,
               "Display preview did not render the typed newline")
         tabs.selectOption(0)
         tabs.selectOption(2)
-        check(field.inputContent === "first\\nsecond", "Reloading Display changed newline editing")
+        check(field.input.getText(0, field.input.length).replace(/\u2029/g, "\n") === "first\nsecond", "Reloading Display changed newline editing")
         var jsonButton = null
         for (var child of editor.children)
             if (child.targetInput === field) jsonButton = child
-        check(jsonButton && jsonButton.sourceText === "first\nsecond",
-              "Opening the JSON editor would double-escape the Display newline")
+        check(jsonButton && displayText(jsonButton.currentText()) === "first\nsecond",
+              "Opening the popup would change the Display newline")
+        jsonButton.clicked()
+        UiInput.settle(120)
+        check(inheritancePopup.item && inheritancePopup.item.opened, "Rich text popup did not open")
+        var popupInput = find(inheritancePopup.item, "richTextInput")
+        check(popupInput.getText(0, popupInput.length).replace(/\u2029/g, "\n") === "first\nsecond",
+              "Popup opened stale inline content")
+        popupInput.selectAll()
+        UiInput.commitText(popupInput, "弹窗保存")
+        popupInput.selectAll()
+        UiInput.click(find(inheritancePopup.item, "richTextColor_green"))
+        inheritancePopup.item.apply()
+        UiInput.settle(80)
+        var applied = JSON.parse(file.read(project + "/Display/example.xcseDisplay")).frame.separator
+        check(displayText(applied) === "弹窗保存" && JSON.parse(applied).color === "green",
+              "Applying the popup did not save its styled result")
+        check(field.input.getText(0, field.input.length) === "弹窗保存",
+              "Applying the popup exposed raw component data inline")
+        jsonButton.clicked()
+        UiInput.settle(120)
+        popupInput = find(inheritancePopup.item, "richTextInput")
+        popupInput.selectAll()
+        UiInput.commitText(popupInput, "取消的内容")
+        inheritancePopup.item.close(null)
+        UiInput.settle(80)
+        check(JSON.parse(file.read(project + "/Display/example.xcseDisplay")).frame.separator === applied,
+              "Cancel saved the popup's draft")
         var json = '{"text":"literal\\\\n"}'
-        field.setContent(json)
+        setDisplayText(field, json)
         check(JSON.parse(file.read(project + "/Display/example.xcseDisplay")).frame.separator === json,
               "Display decoded an existing JSON escape twice")
-        field.setContent("")
+        setDisplayText(field, "")
         tabs.selectOption(0)
+        timer.start()
     }
     function find(item, name) {
         if (item.objectName === name) return item
@@ -260,25 +298,25 @@ Window {
                     page.eledata.member.middle = " × "
                     var tabs = find(editor, "pairProperties")
                     tabs.selectOption(2)
-                    check(typeof find(editor,"displayTextInput").isSyntaxError === "function", "JSON editor is not the original single-line input")
-                    find(editor, "displayTextInput").setContent(" → ")
+                    check(find(editor,"displayTextInput").input.textFormat === TextEdit.RichText, "Display input is not rich text")
+                    setDisplayText(find(editor, "displayTextInput"), " → ")
                     var frameProperties = find(page,"frameProperties")
                     check(frameProperties.options[2] === "分隔文本" && frameProperties.options[3] === "代价分隔", "frame separators not distinct")
                     frameProperties.selectOption(3)
                     var separatorEditor = find(page,"frameTextEditor")
                     check(separatorEditor.caption === "同一操作内的代价分隔", "cost separator scope is unclear")
-                    find(separatorEditor,"displayTextInput").setContent(" + ")
+                    setDisplayText(find(separatorEditor,"displayTextInput"), " + ")
                     frameProperties.selectOption(2)
                     check(separatorEditor.caption === "操作之间的分隔", "overall separator scope is unclear")
                     tabs.selectOption(0)
-                    find(editor, "displayTextInput").setContent('{"text":"• ","color":"green"}')
+                    setDisplayText(find(editor, "displayTextInput"), '{"text":"• ","color":"green"}')
                     tabs.selectOption(1)
                     var style = find(editor, "pairTextStyle")
                     style.color = "gold"; style.propertyEdited()
-                    check(JSON.parse(file.read(project + "/Display/example.xcseDisplay")).operation.middle === " → ", "display save")
+                    check(displayText(JSON.parse(file.read(project + "/Display/example.xcseDisplay")).operation.middle) === " → ", "display save")
                     var storedDisplay = JSON.parse(file.read(project + "/Display/example.xcseDisplay"))
                     check(storedDisplay.operation.head.indexOf('"green"') >= 0 && storedDisplay.operation.title.color === "gold", "JSON popup or text style not saved")
-                    check(storedDisplay.operation.separator === " + " && storedDisplay.frame.separator === "\n\n", "moving separator changed its storage")
+                    check(displayText(storedDisplay.operation.separator) === " + " && storedDisplay.frame.separator === "\n\n", "moving separator changed its storage")
                     var preview = find(page, "operationsPreview")
                     var text = preview.renderedComponent.extra.map(function(s) { return s.text }).join("")
                     check(text.indexOf("操作1 → 代价1 × 1") >= 0 && text.indexOf("\n\n• 操作2") >= 0, "two-layer preview incorrect: " + text)
@@ -290,8 +328,8 @@ Window {
                     check(operationEditor.editingStyle && !find(operationEditor,"displayTextInput").visible, "style tab shows the previous text editor")
                     var opTabs = find(operationEditor,"pairProperties")
                     opTabs.selectOption(3)
-                    find(operationEditor,"displayTextInput").setContent(";")
-                    check(page.eledata.operation.end === ";" && page.eledata.operation.middle === " → ", "last operation tab writes the wrong property")
+                    setDisplayText(find(operationEditor,"displayTextInput"), ";")
+                    check(displayText(page.eledata.operation.end) === ";" && displayText(page.eledata.operation.middle) === " → ", "last operation tab writes the wrong property")
                     root.width = 1440; root.height = 1000; break
                 case 8:
                     var panels = page.children.filter(function(child) { return typeof child.title === "string" && child.min_width !== undefined })
