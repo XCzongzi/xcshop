@@ -100,6 +100,19 @@ BaseIOPage {
 
         title: "代价类型"
 
+        Image {
+            objectName: "costItemTexture"
+            x: parent.width - width - 16
+            y: typeInput_propertyText.y - 12
+            width: 40
+            height: 40
+            source: typeInput_radioGroup.selected === 1
+                    ? Global.itemTextureSource(itemInput_field.inputContent) : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            visible: typeInput_radioGroup.selected === 1 && status === Image.Ready
+        }
+
         RadioGroup {
             id: typeInput_radioGroup
             x: 16
@@ -137,6 +150,7 @@ BaseIOPage {
         }
         VariableTextField {
             id: itemInput_field
+            objectName: "costItemInput"
             visible: typeInput_propertyText.visible && typeInput_radioGroup.selected !== 2
             x: 20
             y: typeInput_propertyText.y + typeInput_propertyText.height + 8

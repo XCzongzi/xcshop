@@ -1,5 +1,31 @@
 .pragma library
 
+function isJsonText(value) {
+    try { JSON.parse(value); return true }
+    catch (error) { return false }
+}
+
+// Plain-text fields use editable escape tokens. JSON components already have
+// their own escaping and must pass through unchanged.
+function textForEditor(value) {
+    var text = String(value === undefined || value === null ? "" : value)
+    if (isJsonText(text)) return text
+    return text.replace(/\\/g, "\\\\").replace(/\n/g, "\\n")
+               .replace(/\r/g, "\\r").replace(/\t/g, "\\t")
+}
+
+function textFromEditor(value) {
+    var text = String(value === undefined || value === null ? "" : value)
+    if (isJsonText(text)) return text
+    return text.replace(/\\(.)/g, function(match, escaped) {
+        if (escaped === "n") return "\n"
+        if (escaped === "r") return "\r"
+        if (escaped === "t") return "\t"
+        if (escaped === "\\") return "\\"
+        return match
+    })
+}
+
 function style(source, inherited) {
     var base = inherited || {color: "white"}
     var result = {color: source.color || base.color || "white"}

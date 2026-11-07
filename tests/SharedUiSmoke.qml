@@ -690,10 +690,55 @@ Window {
                 afterCapture()
         })
     }
+    function checkJsonTextEditing() {
+        var original = page.exportedJson()
+        var plain = "  普通文本\n第二行  "
+        page.loadJson(plain)
+        UiInput.settle(60)
+        check(!page.parseError.length && JSON.parse(page.exportedJson()).text === plain,
+              "Plain text was not preserved in the first segment")
+        var field = find("jsonSegmentText0")
+        check(field && field.text.indexOf("普通文本") >= 0, "Plain text input is empty")
+        field.forceActiveFocus()
+        field.selectAll()
+        UiInput.commitText(field, "\\")
+        check(field.text === "\\" && JSON.parse(page.exportedJson()).text === "\\",
+              "A lone backslash was rewritten while typing")
+        UiInput.commitText(field, "n")
+        check(field.text === "\\n" && JSON.parse(page.exportedJson()).text === "\n",
+              "Typed backslash-n did not export a newline")
+        UiInput.key(field, Qt.Key_Backspace)
+        check(field.text === "\\" && JSON.parse(page.exportedJson()).text === "\\",
+              "Deleting an escape changed the remaining backslash")
+        UiInput.commitText(field, "q")
+        check(JSON.parse(page.exportedJson()).text === "\\q", "Unknown escape was lost")
+        page.loadJson(JSON.stringify({text: "line\nnext\\n"}))
+        UiInput.settle(60)
+        field = find("jsonSegmentText0")
+        check(page.textFromEditor(field.text) === "line\nnext\\n", "Existing escapes did not round trip")
+        page.addSegment(0)
+        UiInput.settle(60)
+        page.moveSegment(1, -1)
+        UiInput.settle(60)
+        check(find("jsonSegmentText0").text === "文字", "Moving a segment left stale input text")
+        page.loadJson(original)
+        UiInput.settle(60)
+    }
     Component.onCompleted: {
         Global.animationSpeed = 20
         Global.settingsPath = SMOKE_DIR + "/settings.json"
         Global.project_location = project
+        check(file.folder(project + "/路径 # 测试"), "Create browse path fixture")
+        var folder = project + "/路径 # 测试"
+        var folderUrl = file.dialogFolderUrl(folder)
+        check(BuildKits.localPath(folderUrl.toString()) === folder, "Browse path did not escape local characters")
+        check(file.dialogFolderUrl(folderUrl.toString()).toString() === folderUrl.toString(),
+              "Browse path did not accept an existing file URL")
+        check(file.dialogFolderUrl(folder + "/missing/nested").toString() === folderUrl.toString(),
+              "Incomplete browse path did not select its nearest existing parent")
+        check(file.writeAtomic(folder + "/client.jar", "fixture"), "Create file path fixture")
+        check(file.dialogFolderUrl(folder + "/client.jar").toString() === folderUrl.toString(),
+              "File browse path did not select the containing folder")
         file.writeAtomic(project + "/UI/source.xcseUI", JSON.stringify({
             containerType: "generic_9x3",
             slots: [{index: 0, items: [{element: "", filter: {},
@@ -845,6 +890,9 @@ Window {
                     break
                 case 8:
                     root.check(root.page.exportedJson().indexOf('"gold"') >= 0, "JSON editor lost text style")
+                    root.checkingFocus = true
+                    try { root.checkJsonTextEditing() }
+                    finally { root.checkingFocus = false }
                     root.screenshot("json-light", function () {
                         root.page.close({
                             jsonText: root.page.exportedJson()

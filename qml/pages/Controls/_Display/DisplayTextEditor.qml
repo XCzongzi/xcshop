@@ -1,5 +1,6 @@
 import QtQuick
 import xcshop
+import "../../../../js/DisplayFormatting.js" as Formatting
 
 Item {
     id: root
@@ -11,7 +12,7 @@ Item {
     height: 30 + input.height
     function setContent(value) {
         loading = true;
-        input.setContent(value);
+        input.setContent(Formatting.textForEditor(value));
         loading = false;
     }
     XCText {
@@ -25,6 +26,7 @@ Item {
         anchors.right: parent.right
         y: -3
         targetInput: input
+        sourceText: Formatting.textFromEditor(input.inputContent)
         editorTitle: root.caption
     }
     VariableTextField {
@@ -33,8 +35,8 @@ Item {
         y: 30
         width: parent.width
         height: 128
-        content: root.content
+        content: Formatting.textForEditor(root.content)
         onContentChanged: if (!root.loading)
-            root.edited(content)
+            root.edited(Formatting.textFromEditor(content))
     }
 }

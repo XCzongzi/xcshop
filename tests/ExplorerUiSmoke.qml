@@ -273,6 +273,27 @@ Window {
         check(!pathBar.canLocateCurrentElement && !explorer.canLocateCurrentElement,
               "Locate enabled without an active element")
         Global.set_file("/新目录.v2/子目录", "示例")
+        // Context creation uses the clicked directory without navigating into it.
+        tree.currentFolder = ""
+        tree.directoryContextMenuItems(target).filter(function(entry) {
+            return entry.text === "新建文件夹…"
+        })[0].action()
+        SignalBus.contextMenuClosed()
+        check(tree.pendingOperation, "Closing the menu ended the naming operation")
+        enterName("右键目录")
+        check(files.isDirectory(target + "/右键目录") && tree.currentFolder === "",
+              "Context creation did not use the clicked directory")
+        tree.blankContextMenuItems().filter(function(entry) {
+            return entry.text === "新建元素…"
+        })[0].action()
+        enterName("右键元素")
+        check(JSON.parse(files.read(project + "/Item/右键元素.xcseItem")).operations !== undefined,
+              "Blank context creation did not initialize an Item")
+        tree.contextMenuItems([createdFile]).filter(function(entry) {
+            return entry.text === "新建文件夹…"
+        })[0].action()
+        cancel()
+        check(!tree.pendingOperation && tree.activeFocus, "Context creation cancellation did not restore focus")
         controls.requestCreate(true)
         input().text = "商品分类"
         screenshot("dark", function() {

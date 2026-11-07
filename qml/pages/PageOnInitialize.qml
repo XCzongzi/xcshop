@@ -438,8 +438,8 @@ BasePage {
                 }
                 Row {
                     spacing: 8
-                    ActionButton { text: "选择目录"; enabled: !MinecraftAssetImporter.importing; onClicked: gameDialog.openXC("import", "") }
-                    ActionButton { text: "选择 JAR"; enabled: !MinecraftAssetImporter.importing; onClicked: jarDialog.openXC(false, "minecraft") }
+                    ActionButton { text: "选择目录"; enabled: !MinecraftAssetImporter.importing; onClicked: gameDialog.openXC("import", gamePath.text) }
+                    ActionButton { text: "选择 JAR"; enabled: !MinecraftAssetImporter.importing; onClicked: jarDialog.openXC(false, "minecraft", gamePath.text) }
                 }
                 XCTextField {
                     id: javaPath; width: parent.width; placeholderText: "Java 路径（可选）"; enabled: !MinecraftAssetImporter.importing

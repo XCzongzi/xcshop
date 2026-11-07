@@ -56,6 +56,35 @@ Window {
         return count
     }
     function check(ok, message) { if (!ok) throw new Error(message) }
+    function checkDisplayNewlineInput() {
+        var tabs = find(page, "frameProperties")
+        tabs.selectOption(2)
+        var editor = find(page, "frameTextEditor")
+        var field = find(editor, "displayTextInput")
+        field.input.forceActiveFocus()
+        field.input.selectAll()
+        UiInput.commitText(field.input, "first\\nsecond")
+        field.commit()
+        check(field.inputContent === "first\\nsecond", "Display rewrote the editable escape token")
+        var saved = JSON.parse(file.read(project + "/Display/example.xcseDisplay"))
+        check(saved.frame.separator === "first\nsecond", "Display saved backslash-n as literal text")
+        check(find(page, "operationsPreview").renderedHtml.indexOf("first<br>second") >= 0,
+              "Display preview did not render the typed newline")
+        tabs.selectOption(0)
+        tabs.selectOption(2)
+        check(field.inputContent === "first\\nsecond", "Reloading Display changed newline editing")
+        var jsonButton = null
+        for (var child of editor.children)
+            if (child.targetInput === field) jsonButton = child
+        check(jsonButton && jsonButton.sourceText === "first\nsecond",
+              "Opening the JSON editor would double-escape the Display newline")
+        var json = '{"text":"literal\\\\n"}'
+        field.setContent(json)
+        check(JSON.parse(file.read(project + "/Display/example.xcseDisplay")).frame.separator === json,
+              "Display decoded an existing JSON escape twice")
+        field.setContent("")
+        tabs.selectOption(0)
+    }
     function find(item, name) {
         if (item.objectName === name) return item
         for (var i = 0; i < item.children.length; ++i) {
@@ -223,6 +252,7 @@ Window {
                     check(find(editor,"pairProperties").options.length === 4
                         && find(editor,"pairProperties").options.indexOf("代价文本") < 0, "operation members still expose cost text editing")
                     check(page.eledata.operation.cost === undefined, "duplicate operation cost style persisted")
+                    checkDisplayNewlineInput()
                     check(find(find(page,"costFormatEditor"),"pairProperties").options.length === 5, "cost member controls changed")
                     var enable = find(page,"operationFormatEnabled")
                     enable.checked = true; enable.toggled(true)

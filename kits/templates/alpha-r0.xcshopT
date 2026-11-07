@@ -16,6 +16,12 @@ foreach (Shop[]) {
         foreach (items[]) {
             if (count < 1) { error("商品数量必须大于 0。"); }
             foreach (operations[]) {
+                if (@parent[0].count == 1 && trigger.mode.kind == "take_item"
+                    && trigger.mode.filter.kind == "quantity") {
+                    warning("商品数量为 1 时使用了数量筛选。",
+                        "单个商品无法区分整组与部分取得，部分数量筛选可能永远无法触发；请检查数量或改用无筛选。"
+                    );
+                }
                 if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot"
                     && (int(trigger.mode.filter.slot) < 0 || int(trigger.mode.filter.slot) > 35)) {
                     error("玩家物品栏槽位超出 0 到 35。", "请选择快捷栏或背包中的有效槽位。");

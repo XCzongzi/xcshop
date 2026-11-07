@@ -31,7 +31,7 @@ Item {
                 Flow {
                     width: parent.width
                     spacing: 8
-                    SettingsActionButton { text: "浏览…"; enabled: !Builder.running && !Builder.queryingVersion; onClicked: executableDialog.openXC(false, "builder") }
+                    SettingsActionButton { text: "浏览…"; enabled: !Builder.running && !Builder.queryingVersion; onClicked: executableDialog.openXC(false, "builder", pathField.text) }
                     SettingsActionButton {
                         text: "应用路径"; height: 32; radius: 6; textSize: 12; enabled: !Builder.running && !Builder.queryingVersion
                         primary: true

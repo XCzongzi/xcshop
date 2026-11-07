@@ -25,7 +25,7 @@ Item {
 
     signal floderSwitched()
     signal fileSwitched()
-    signal createEntryRequested(bool isFolder)
+    signal createEntryRequested(bool isFolder, string directoryPath)
 
     focus: true
 
@@ -537,14 +537,27 @@ Item {
             showNotice("继承未完全成功", failed + " 个元素无法保存，请检查文件是否可写。")
     }
 
+    function creationMenuItems(directoryPath) {
+        var directory = Global.normalizeElementPath(directoryPath)
+        function create(isFolder) {
+            root.pendingOperation = true
+            root.createEntryRequested(isFolder, directory)
+        }
+        return [
+            { "text": "新建元素…", "action": function() { create(false) } },
+            { "text": "新建文件夹…", "action": function() { create(true) } },
+            { "separator": true }
+        ]
+    }
+
     function contextMenuItems(paths) {
         var targets = paths.slice()
         var single = targets.length === 1
-        var items = [
+        var items = creationMenuItems(currentDirectory).concat([
             { "text": "复制", "action": function() { root.copySelection(targets) } },
             { "text": "粘贴", "enabled": clipboardPaths.length > 0,
               "action": function() { root.pasteFiles(root.currentDirectory) } }
-        ]
+        ])
         if (single) {
             items.push({ "text": "克隆", "action": function() { root.cloneFile(targets[0]) } })
             items.push({ "text": "重命名…", "action": function() { root.requestRename(targets[0]) } })
@@ -571,7 +584,7 @@ Item {
 
     function directoryContextMenuItems(directoryPath) {
         var path = Global.normalizeElementPath(directoryPath)
-        return [
+        return creationMenuItems(path).concat([
             { "text": "打开", "action": function() { root.enterDirectory(path) } },
             { "text": "粘贴", "enabled": clipboardPaths.length > 0,
               "action": function() { root.pasteFiles(path) } },
@@ -585,11 +598,11 @@ Item {
                   fileOperations.revealInFileManager(path)
                   root.finishOperation()
               } }
-        ]
+        ])
     }
 
     function blankContextMenuItems() {
-        return [
+        return creationMenuItems(currentDirectory).concat([
             { "text": "粘贴", "enabled": clipboardPaths.length > 0,
               "action": function() { root.pasteFiles(root.currentDirectory) } },
             { "separator": true },
@@ -598,7 +611,7 @@ Item {
                   fileOperations.revealInFileManager(root.currentDirectory)
                   root.finishOperation()
               } }
-        ]
+        ])
     }
 
     function showContextMenu(target, x, y, path, index) {
@@ -650,7 +663,7 @@ Item {
 
     Keys.onPressed: function(event) {
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_N) {
-            createEntryRequested(!!(event.modifiers & Qt.ShiftModifier))
+            createEntryRequested(!!(event.modifiers & Qt.ShiftModifier), currentDirectory)
             event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_A) {
             selectAll()

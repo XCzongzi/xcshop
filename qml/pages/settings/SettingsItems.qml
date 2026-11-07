@@ -225,8 +225,8 @@ Item {
                     }
                     Flow {
                         width: parent.width; spacing: 8
-                        SettingsActionButton { text: "选择游戏文件…"; enabled: !root.busy; onClicked: jarDialog.openXC(false, "minecraftClient") }
-                        SettingsActionButton { text: "选择目录…"; enabled: !root.busy; onClicked: gameDialog.open() }
+                        SettingsActionButton { text: "选择游戏文件…"; enabled: !root.busy; onClicked: jarDialog.openXC(false, "minecraftClient", localField.text) }
+                        SettingsActionButton { text: "选择目录…"; enabled: !root.busy; onClicked: gameDialog.openXC("minecraft", localField.text) }
                     }
                     XCText {
                         objectName: "minecraftDetectedVersion"; width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
@@ -258,13 +258,13 @@ Item {
                     Row {
                         width: parent.width; spacing: 8
                         XCTextField { id: javaField; objectName: "minecraftJavaField"; width: Math.max(100, parent.width - 74); placeholderText: "java.exe 或 Java 安装目录"; enabled: !root.busy }
-                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: javaDialog.openXC(false, "minecraftJava") }
+                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: javaDialog.openXC(false, "minecraftJava", javaField.text) }
                     }
                     XCText { xcText: "依赖目录（留空自动查找）"; onCenter: false; xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                     Row {
                         width: parent.width; spacing: 8
                         XCTextField { id: librariesField; objectName: "minecraftLibrariesField"; width: Math.max(100, parent.width - 74); placeholderText: "libraries 目录"; enabled: !root.busy }
-                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: librariesDialog.open() }
+                        SettingsActionButton { text: "浏览…"; enabled: !root.busy; onClicked: librariesDialog.openXC("libraries", librariesField.text) }
                     }
                     XCCheckBox { id: networkCheck; objectName: "minecraftNetworkCheck"; text: "允许联网补齐缺失文件"; height: 32; checked: true; enabled: !root.busy }
                     XCCheckBox { id: rebuildCheck; text: "重新生成已有图标"; height: 32; enabled: !root.busy }
@@ -401,7 +401,7 @@ Item {
                 XCTextField { id: customIcon; width: parent.width; placeholderText: "选择本地物品图标"; enabled: !root.busy }
                 Flow {
                     width: parent.width; spacing: 8
-                    SettingsActionButton { text: "选择图标…"; enabled: !root.busy; onClicked: iconDialog.openXC(false, "customItemIcon") }
+                    SettingsActionButton { text: "选择图标…"; enabled: !root.busy; onClicked: iconDialog.openXC(false, "customItemIcon", customIcon.text) }
                     SettingsActionButton { text: "添加物品"; primary: true; enabled: !root.busy; onClicked: root.saveCustomItem() }
                 }
                 XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.error; xcText: root.formError; visible: root.formError.length > 0 }

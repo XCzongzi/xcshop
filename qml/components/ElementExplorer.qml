@@ -172,7 +172,9 @@ PanelSurface{
         y:xcPathText.y + xcPathText.height + 2
         height: root.height - y - 2
         opacity: root.contentOpacity
-        onCreateEntryRequested: function(isFolder) { fileCtrlBar.requestCreate(isFolder) }
+        onCreateEntryRequested: function(isFolder, directoryPath) {
+            fileCtrlBar.requestCreate(isFolder, directoryPath)
+        }
         onFloderSwitched:{
             root.floderSwitch()
         }

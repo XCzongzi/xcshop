@@ -82,7 +82,7 @@ PopupFrame {
         parseError = ""
         var input = source === undefined || source === null ? "" : String(source).trim()
         if (!input.length) {
-            appendSegment(defaultSegment(""))
+            appendSegment(defaultSegment(source === undefined || source === null ? "" : String(source)))
             return
         }
 
@@ -90,8 +90,7 @@ PopupFrame {
         try {
             parsed = JSON.parse(input)
         } catch (error) {
-            parseError = "原文本不是有效 JSON；已创建空白文本组件。取消即可保留原内容。"
-            appendSegment(defaultSegment(""))
+            appendSegment(defaultSegment(String(source)))
             return
         }
 
@@ -309,8 +308,12 @@ PopupFrame {
 
                 XCTextField {
                     id: segmentTextInput
+                    objectName: "jsonSegmentText" + segmentCard.index
                     x: 10; y: 34; width: parent.width - 20; height: 32
-                    text: root.textForEditor(segmentCard.model.text)
+                    // Initialize once. Feeding each keystroke back through
+                    // textForEditor would double a newly typed backslash before
+                    // the user can complete an escape such as \n.
+                    Component.onCompleted: text = root.textForEditor(segmentCard.model.text)
                     placeholderText: "输入文字"
                     onTextEdited: root.updateSegment(segmentCard.index, "text", root.textFromEditor(text))
                 }

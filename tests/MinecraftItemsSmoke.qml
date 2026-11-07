@@ -23,6 +23,8 @@ XCWindow {
     ]
     XCFile { id: file }
     Component { id: settings; SettingsItems {} }
+    Component { id: costPage; PageOnCost {} }
+    Component { id: relayCard; ElementCard {} }
     Rectangle {
         id: frame
         anchors.fill: parent
@@ -51,6 +53,37 @@ XCWindow {
             if (found) return found
         }
         return null
+    }
+    function checkCostPreview() {
+        var project = SMOKE_DIR + "/cost-preview"
+        check(file.writeAtomic(project + "/Cost/test.xcseCost", JSON.stringify({
+            display: "测试", type: {kind: "item_count", value: "stone 2", filter: false}
+        })), "Write Cost preview fixture")
+        Global.project_location = project
+        Global.current_element = "Cost"
+        Global.set_file("", "test")
+        var editor = costPage.createObject(frame, {width: frame.width, height: frame.height})
+        check(editor && editor.dataLoaded, "Cost preview page did not load")
+        var input = find(editor, "costItemInput")
+        var preview = find(editor, "costItemTexture")
+        var card = relayCard.createObject(frame, {path: project + "/Cost/test.xcseCost", name: "test",
+            elementType: "Cost", relativePath: "Cost/test.xcseCost", sourceIndex: 0})
+        check(card && card.iconSource === "qrc:/assets/gui/element/Cost.png", "Cost relay icon changed")
+        UiInput.settle(80)
+        check(preview.visible && preview.source.toString().indexOf("stone.png") >= 0,
+              "Cost preview did not match the stored item")
+        input.input.text = "minecraft:shield[custom_name=\"test\"] 2"
+        UiInput.settle(80)
+        check(preview.visible && preview.source.toString().indexOf("shield.png") >= 0,
+              "Cost preview did not follow uncommitted component syntax")
+        input.commit()
+        check(card.iconSource === "qrc:/assets/gui/element/Cost.png", "Saving the Cost preview changed its relay icon")
+        input.input.text = ""
+        UiInput.settle(40)
+        check(!preview.visible, "Empty item left a stale Cost texture")
+        card.destroy()
+        editor.destroy()
+        Global.current_element = "Global"
     }
     Component.onCompleted: {
         Global.loadSettings()
@@ -95,6 +128,7 @@ XCWindow {
         onTriggered: {
             try {
                 if (root.step === 0) {
+                    root.checkCostPreview()
                     root.check(root.page.currentVersion === "1.13", "Active game version")
                     root.check(root.page.items.length === 4, "Vanilla and custom entries")
                     root.check(Global.getItemTexturePath("minecraft:stone").indexOf("/packs/") >= 0, "Versioned icon path")

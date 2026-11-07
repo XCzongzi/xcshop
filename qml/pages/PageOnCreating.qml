@@ -194,14 +194,14 @@ BasePage {
                         XCKeyInput {
                             id: input_projectName
                             keyText: "项目名称"
-                            fieldText: "例如：my_shop"
+                            fieldText: ""
                             width: (parent.width - parent.spacing) / 2
                             onFieldContextChanged: root.projectNameValue = getContext()
                         }
                         XCKeyInput {
                             id: input_namespace
                             keyText: "命名空间"
-                            fieldText: "例如：myshop"
+                            fieldText: ""
                             width: (parent.width - parent.spacing) / 2
                             onFieldContextChanged: root.namespaceValue = getContext()
                         }

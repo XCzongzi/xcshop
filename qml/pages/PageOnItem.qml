@@ -81,11 +81,6 @@ BaseIOPage {
             root.operationDeleting = false;
         }
     }
-    function itemTextureSource(value) {
-        var match = String(value || "").trim().match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i);
-        var path = Global.getItemTexturePath(match ? match[1] : "");
-        return path.length ? "file:///" + path.replace(/\\/g, "/") : "";
-    }
     maxHeadContentCount: 2
     headContentMinWidth: itemBar.min_width + displayBar.min_width
     content_height: operationsBar.y + root.height_output + operationsBar.height + 16
@@ -117,7 +112,7 @@ BaseIOPage {
             y: 12
             width: 48
             height: 48
-            source: root.itemTextureSource(itemField.inputContent)
+            source: Global.itemTextureSource(itemField.inputContent)
             fillMode: Image.PreserveAspectFit
             smooth: false
             visible: status === Image.Ready

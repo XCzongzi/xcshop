@@ -15,11 +15,11 @@ Item{
     signal elementPathsDropped(var paths)
     signal creationFinished()
 
-    function requestCreate(isFolder) {
+    function requestCreate(isFolder, destinationDirectory) {
         if (creatingEntry)
             return
         creatingEntry = true
-        var directory = Global.normalizeElementPath(filePath)
+        var directory = Global.normalizeElementPath(destinationDirectory || filePath)
         var elementType = Global.current_element
         var project = Global.project_location
         var destinationFor = function(value) {

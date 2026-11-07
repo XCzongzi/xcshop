@@ -2,6 +2,7 @@
 #include <QtQml>    // QML_ELEMENT macro
 #include <QDir>
 #include <QFileInfo>
+#include <QUrl>
 
 
 class XCFile : public QObject {
@@ -27,6 +28,7 @@ public:
     Q_INVOKABLE QString clone(const QString& filePath);
     Q_INVOKABLE bool revealInFileManager(const QString& filePath);
     Q_INVOKABLE QString runtimePath();
+    Q_INVOKABLE QUrl dialogFolderUrl(const QString& path);
     Q_INVOKABLE QVariantList backgroundImages();
     Q_INVOKABLE QString importBackgroundImage(const QString& sourcePath);
     Q_INVOKABLE bool removeBackgroundImage(const QString& sourceUrl);

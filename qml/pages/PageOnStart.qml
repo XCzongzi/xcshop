@@ -27,7 +27,7 @@ BasePage {
     XCFolderDialog {
         id: projectFolderDialog
         onAccepted: {
-            var selectedPath = Qt.url(selectedFolder).toLocaleString().replace("file:///", "")
+            var selectedPath = BuildKits.localPath(selectedFolder.toString())
             root.openProject(selectedPath)
         }
     }
@@ -387,9 +387,10 @@ BasePage {
                             icon: "qrc:/assets/gui/controls/open_project.png"
                             layout_width: mainContent.width
                             layout_amount: 2
-                            onClicked: projectFolderDialog.openXC("project",
-                                                                  Global.recentProjects.length
-                                                                  ? Global.recentProjects[0].path : APP_DIRPATH)
+                            onClicked: {
+                                projectFile.folder(APP_DIRPATH + "/projects")
+                                projectFolderDialog.openXC("project", APP_DIRPATH + "/projects")
+                            }
                         }
                     }
 

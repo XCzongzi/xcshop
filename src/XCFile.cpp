@@ -75,6 +75,21 @@ bool XCFile::folder(const QString& folderPath){
     return true;
 }
 
+QUrl XCFile::dialogFolderUrl(const QString& path) {
+    const QDir runtime(QCoreApplication::applicationDirPath());
+    const QString input = QDir::fromNativeSeparators(localPath(path.trimmed()));
+    QFileInfo candidate(QDir::cleanPath(runtime.absoluteFilePath(input.isEmpty() ? "." : input)));
+    // File inputs start in their containing directory. Incomplete paths start
+    // at the nearest existing parent so native dialogs never fall back at random.
+    while (!candidate.isDir()) {
+        const QString parent = candidate.absolutePath();
+        if (parent == candidate.absoluteFilePath())
+            return QUrl::fromLocalFile(runtime.absolutePath());
+        candidate.setFile(parent);
+    }
+    return QUrl::fromLocalFile(candidate.absoluteFilePath());
+}
+
 
 bool XCFile::rename(const QString& oldPath, const QString& newPath){
     const QString source = localPath(oldPath);

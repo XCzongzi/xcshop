@@ -8,6 +8,7 @@ TextButton {
 
     property var targetInput: null
     property string editorTitle: "编辑 JSON 文本"
+    property string sourceText: currentText()
 
     text: "彩字编辑"
     height: 26
@@ -42,7 +43,7 @@ TextButton {
         "component": Constants.popupJsonTextEditor,
         "properties": {
             "title": root.editorTitle,
-            "jsonText": root.currentText()
+            "jsonText": root.sourceText
         },
         "callback": function(result) {
             if (result && result.jsonText !== undefined)

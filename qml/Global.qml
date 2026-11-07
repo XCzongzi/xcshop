@@ -575,6 +575,12 @@ QtObject{
         recentProjects = records.slice(0, recentProjectLimit)
         saveSettings()
     }
+    function itemTextureSource(value) {
+        var match = String(value || "").trim().match(/^([a-z0-9_.-]+(?::[a-z0-9_./-]+)?)/i)
+        var path = getItemTexturePath(match ? match[1] : "")
+        return path.length ? "file:///" + path.replace(/\\/g, "/") : ""
+    }
+
     function removeRecentProject(location){
         var records = []
         for (var i = 0; i < recentProjects.length; ++i) {
