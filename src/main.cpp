@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QDebug>
 #include <QLoggingCategory>
@@ -23,6 +24,7 @@ int runWindowFrameTests(QQmlApplicationEngine &engine);
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(QStringLiteral(":/assets/gui/png/xcs-app-icon-blue-flow.png")));
     QCoreApplication::setApplicationVersion(QStringLiteral(XCSHOP_VERSION));
     // This application customizes control backgrounds; native Windows style does not support that.
     QQuickStyle::setStyle("Basic");

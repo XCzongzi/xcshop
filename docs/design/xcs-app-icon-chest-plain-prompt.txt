@@ -1,0 +1,22 @@
+XCShop icon: upright type from UI-amber version with the earlier plain chest palette.
+Generated using the built-in image_gen tool.
+Typography/layout reference: assets/gui/png/xcs-app-icon-ui-amber.png
+Color reference: assets/gui/png/xcs-app-icon-chest-rounded.png
+PNG: assets/gui/png/xcs-app-icon-chest-plain.png (1254 x 1254 RGBA)
+ICO: assets/gui/png/xcs-app-icon-chest-plain.ico (16, 20, 24, 32, 48, 64, 128, 256 px)
+Changes: keep serious upright bold XCS, remove line and border, restore dark chocolate brown background and golden-tan lettering.
+QA: inspected on white at large, 64 and 32 px; sampled central interior alpha minimum 252, zero samples below 240, outer corner alpha zero.
+ICO export: System.Drawing high-quality resampling, PNG frames; frame bounds and signatures verified.
+
+Final prompt:
+Precise edit of an application icon using two images.
+IMAGE 1 is the typography and layout target. Preserve the EXACT upright bold standard "XCS" letter shapes, cap height, proportions, spacing, position, and outer rounded-square silhouette of image 1. Do NOT substitute the bubbly font from image 2.
+IMAGE 2 is a COLOR PALETTE and SIMPLICITY reference ONLY: its dark chocolate brown tile and warm golden ochre XCS text, without decoration.
+Requested changes to image 1 ONLY:
+1. Remove the horizontal orange line completely.
+2. Remove the thin outer border completely.
+3. Set the whole rounded-square background to one perfectly UNIFORM FLAT dark chocolate brown, approximately #382617, matching image 2's background.
+4. Recolor the existing XCS lettering to one perfectly UNIFORM FLAT warm golden-tan approximately #D5A357, matching image 2's letters.
+Final result: ONLY a plain solid dark-brown rounded-square background plus golden-tan "XCS" text, in the exact serious upright font of IMAGE 1. No line, no frame, no border, no other design elements. Keep the exact font from IMAGE 1.
+Keep all four rounded corners fully visible and transparent outside. Entire rounded-square interior, including the letters and the letter counters, must be fully opaque alpha 255. No transparent smears or spots inside. Smooth sharp antialiased lettering and external contour. No gradients, no texture, no illumination, no shadows, no bevels, no 3D, no mockup. One final software icon asset.
+

@@ -1,0 +1,38 @@
+Matching blue-flow and Minecraft chest-flow XCShop icons.
+Generated with the built-in image_gen tool.
+Preserve upright bold XCS font and simple text-only layout.
+
+Blue references:
+- User's attached screenshot of the app's blue-gradient dark/light selection page (color and gradient only).
+- assets/gui/png/xcs-app-icon-chest-plain.png (font and composition).
+Blue output:
+- assets/gui/png/xcs-app-icon-blue-flow.png (1254 x 1254 RGBA)
+- assets/gui/png/xcs-app-icon-blue-flow.ico (16, 20, 24, 32, 48, 64, 128, 256 px)
+
+Chest references:
+- Generated blue-flow icon (geometry, gradient direction, typography).
+- assets/gui/png/xcs-app-icon-chest-plain.png (chest palette).
+Chest output:
+- assets/gui/png/xcs-app-icon-chest-flow.png (1254 x 1254 RGBA)
+- assets/gui/png/xcs-app-icon-chest-flow.ico (16, 20, 24, 32, 48, 64, 128, 256 px)
+
+QA: both inspected on white at large, 64 and 32 px; sampled central interior minimum alpha blue 251, chest 249, no sampled alpha below 240; outside corner alpha zero. ICO frames exported through System.Drawing high-quality resampling; PNG signatures and frame bounds verified.
+
+Blue prompt:
+Use case: logo-brand. Precise application icon color/material edit using the two most recent reference images.
+The screenshot showing "Minecraft xcshop", a blue desktop app window and dark/light theme choices is a COLOR AND GRADIENT REFERENCE ONLY. Do not reproduce the window UI, Chinese text, moon, sun, divider, desktop or taskbar.
+The dark-brown square icon with gold "XCS" is the EDIT TARGET: preserve its EXACT upright standard bold XCS font, all letter shapes, cap height, proportions, spacing, optical centering, scale and rounded-square silhouette. No new typeface.
+Replace ONLY its colors:
+- Background becomes a sophisticated restrained flowing BLUE GRADIENT inspired closely by the screenshot. Use desaturated deep navy #203D5E, cool slate blue #324C68 and deep charcoal navy #202B38. A very broad soft diagonal light flow crosses the background from upper right toward lower left, smoothly blending slate blue light into dark navy. Atmospheric, subtle, silky, quiet and suitable for this professional desktop application's UI. The flow must be perceptible but never neon, not an illustrated wave or separate graphic. Prefer broad low-contrast smooth color fields like the reference window.
+- Lettering becomes uniform cool off-white #F1F6FC with no internal effects.
+Composition is ONLY this smoothly gradient-filled rounded-square tile and centered XCS. No horizontal line, no border/frame, no symbols, no other text, no texture or grain, no hard light streak, no sparkles, no lens flare, no metallic bevel, no 3D or shadows.
+Keep the four corners complete with transparent outside corners and equal small outer margins. CRITICAL alpha: the entire rounded-square interior, including all background color fields, text and letter counters, is fully opaque alpha 255. Actual transparency only outside the outer rounded-square silhouette. No semitransparent smudges, no holes, no white flecks. Smooth antialiasing at external contour only. One final software icon asset itself, not a mockup.
+
+Chest prompt:
+Create the matching warm Minecraft-chest-palette counterpart of the blue flowing-gradient XCS app icon.
+Image 1 is the blue icon and the EXACT edit target for geometry, lettering, gradient structure and layout. Preserve its EXACT upright standard bold XCS font, all letter shapes, cap height, weight, spacing, size, centered position, complete rounded-square silhouette and outer margins.
+Image 2 is a color reference only: the established dark chocolate brown tile and warm golden-tan text from the user's earlier chest-color XCS icon.
+Change ONLY the color palette of image 1. Background: the same soft broad diagonal flowing light pattern, now in restrained dark chocolate brown #382617, deep walnut #2B1C13 and muted warm wood-brown #59402B. A gently luminous golden-brown upper-right area blends through smooth broad soft fields to deep brown at the lower left, like the blue image translated into the Minecraft wooden chest palette. Keep the background dark for legibility, quietly warm, with the light-flow gradient perceptible but subtle. Letters: uniform solid warm golden-tan #D5A357, matching image 2, with crisp smooth edges.
+Composition: ONLY background plus text "XCS". No border, no accent line, no extra symbols, no literal chest, no latch, no plank lines, no pixel pattern. No shiny gold, no metallic effects, no bevel, no 3D, no shadow, no hard light streak or lens flare, no sparkles, no wood-grain texture.
+Critical alpha: entire rounded-square interior, text and letter counters fully opaque alpha 255. Genuine transparency only outside the rounded-square external contour. No translucent smudges or holes. Keep every corner complete and visible. One finished software icon asset, not a mockup or a comparison sheet.
+

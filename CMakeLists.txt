@@ -244,6 +244,11 @@ target_link_libraries(appxcshop
 )
 target_compile_definitions(appxcshop PRIVATE XCSHOP_VERSION="${PROJECT_VERSION}")
 if(WIN32)
+    enable_language(RC)
+    configure_file(assets/gui/app-icon.rc.in app-icon.rc @ONLY)
+    target_sources(appxcshop PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app-icon.rc")
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/app-icon.rc" PROPERTIES
+        OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/assets/gui/png/xcs-app-icon-blue-flow.ico")
     target_link_libraries(appxcshop PRIVATE dwmapi)
 endif()
 

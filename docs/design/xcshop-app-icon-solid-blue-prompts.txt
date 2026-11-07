@@ -1,0 +1,22 @@
+Lowercase xcshop software icon on a plain deep-blue background.
+Generated with the built-in image_gen tool.
+Reference: assets/gui/png/xcs-app-icon-blue-flow.png (typographic character and tile composition).
+PNG: assets/gui/png/xcshop-app-icon-solid-blue.png (1254 x 1254 RGBA)
+ICO: assets/gui/png/xcshop-app-icon-solid-blue.ico (16, 20, 24, 32, 48, 64, 128, 256 px)
+Text: xcshop (all lowercase).
+QA: inspected on white at large, 64 and 32 px; sampled central interior alpha minimum 253, no samples below 240, outer corner alpha zero. Initial background transparency smear corrected by a second image_gen edit.
+ICO export: System.Drawing high-quality resampling with PNG frames; frame bounds and PNG signatures verified.
+
+Generation prompt:
+Use case: logo-brand. Create a precise minimal XCShop software icon variant from the reference.
+Change the text to EXACTLY "xcshop", all six letters lowercase in this exact order x c s h o p. One single horizontal word, no spaces, no capitalization.
+Use the same sober upright normal bold humanist sans-serif character as the reference's XCS lettering, in lowercase: comparable to Segoe UI Bold / Microsoft YaHei UI Bold Latin glyphs. Standard clear lowercase letterforms, uniform solid weight, naturally smooth curves, straight stems and flat stroke terminals. No bubble rounded terminals, no custom ligatures, no italics, no decorative cuts or extra strokes. Set the lowercase word in white/cool off-white #F1F6FC and optically center the WHOLE word horizontally and vertically, including the p descender. Word width around 79% of tile width, comfortable equal side margins, bold enough for desktop-icon readability.
+Replace the reference gradient with an absolutely UNIFORM SOLID deep desaturated blue background #253F5D. This is a PURE SINGLE-COLOR background, no gradient whatsoever, no flowing light, no texture, no shading or glow, no grain.
+Keep the reference rounded-square tile format and entire four corners. Only contents are the single-color blue background and exact lowercase text "xcshop". No border, no line, no graphics, no other words, no 3D, no shadow, no mockup.
+Alpha requirements: every pixel inside the rounded-square tile, including blue background, letter counters and lettering, is fully opaque alpha 255. Genuine transparency is ONLY outside the outer rounded-square contour. No translucent blotches or smudges. Small equal transparent outside margins; smooth clean antialiasing at outer contour and text edges. Deliver one completed square icon asset.
+
+Cleanup prompt:
+Repair this icon's background ONLY. Keep the EXACT existing lowercase "xcshop" white word, every letterform, font, size, position and spacing, and the complete rounded-square silhouette.
+There is an unwanted translucent smear BELOW the word that becomes a conspicuous white scribble on a white background. Erase it COMPLETELY and fill this entire region with solid blue. Replace ALL pixels of the rounded-square background with ONE uniform flat blue color #253F5D, fully opaque alpha 255. Every background pixel throughout the tile must have the same blue color, including below the letters, around them, and inside letter counters. No gradient, no lighting, no dark swoosh, no underline, no shadow, no glow, no grain or texture. The only white pixels are the exact existing "xcshop" letters.
+The entire rounded square including all lettering and background must be fully opaque alpha 255. Actual transparency ONLY OUTSIDE the rounded-square outer contour. No semitransparent holes, smudges or ghost marks anywhere inside. Preserve the four rounded corners and smooth text edges. Deliver the exact same lowercase icon with a completely cleaned solid blue field.
+
