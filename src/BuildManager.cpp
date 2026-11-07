@@ -133,9 +133,9 @@ BuildManager::~BuildManager() {
 }
 QString BuildManager::defaultExecutablePath() const {
 #ifdef Q_OS_WIN
-    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.0.exe";
+    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.2.exe";
 #else
-    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.0";
+    return QCoreApplication::applicationDirPath() + "/builder/xcshop-builder-0.1.2";
 #endif
 }
 bool BuildManager::available() const {
