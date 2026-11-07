@@ -738,13 +738,13 @@ BaseIOPage {
         return false
     }
 
-    function toggleNestedSlot(slotIndex) {
+    function toggleNestedSlot(slotIndex, strokeEdit) {
         if (!root.nestingDrawMode)
             return
         var group = root.selectedNestedGroup()
         if (!group)
             return
-        var edit = root.beginWorkspaceEdit([], false, group)
+        var edit = strokeEdit || root.beginWorkspaceEdit([], false, group)
         var index = group.slots.indexOf(slotIndex)
         if (index >= 0)
             group.slots.splice(index, 1)
@@ -753,7 +753,8 @@ BaseIOPage {
             group.slots.sort(function(first, second) { return first - second })
         }
         root.saveLayoutChange(false)
-        root.finishWorkspaceEdit(edit)
+        if (!strokeEdit)
+            root.finishWorkspaceEdit(edit)
     }
 
     function slotItems(slotIndex) {

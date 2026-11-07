@@ -22,6 +22,92 @@ Rectangle{
         mipmap: false
     }
 
+    MouseArea {
+        id: drawMouse
+        anchors.fill: parent
+        z: 2000
+        enabled: root.uiPage !== null && root.uiPage.nestingDrawMode
+        acceptedButtons: Qt.LeftButton
+        preventStealing: true
+        cursorShape: Qt.CrossCursor
+
+        property var strokeEdit: null
+        property bool adding: true
+        property point lastPoint
+
+        function slotAt(x, y) {
+            var positions = Constants.containerSlot[root.containerType]
+            for (var index = 0; index < Constants.containerCount[root.containerType]; ++index) {
+                var left = positions[index][0] * root.uiscale
+                var top = positions[index][1] * root.uiscale
+                if (x >= left && x < left + 16 * root.uiscale
+                        && y >= top && y < top + 16 * root.uiscale)
+                    return index
+            }
+            return -1
+        }
+
+        function paintTo(x, y) {
+            if (!strokeEdit)
+                return
+            // Intersect the whole pointer segment with each slot, so fast moves
+            // also paint slots between successive mouse events.
+            var positions = Constants.containerSlot[root.containerType]
+            var start = [lastPoint.x / root.uiscale, lastPoint.y / root.uiscale]
+            var delta = [x / root.uiscale - start[0], y / root.uiscale - start[1]]
+            for (var index = 0; index < Constants.containerCount[root.containerType]; ++index) {
+                var enter = 0, leave = 1
+                for (var axis = 0; axis < 2; ++axis) {
+                    var low = positions[index][axis], high = low + 16
+                    if (delta[axis] === 0) {
+                        if (start[axis] < low || start[axis] >= high)
+                            leave = -1
+                    } else {
+                        var first = (low - start[axis]) / delta[axis]
+                        var second = (high - start[axis]) / delta[axis]
+                        enter = Math.max(enter, Math.min(first, second))
+                        leave = Math.min(leave, Math.max(first, second))
+                    }
+                }
+                if (enter <= leave && root.uiPage.isSlotInSelectedNestedGroup(index) !== adding)
+                    root.uiPage.toggleNestedSlot(index, strokeEdit)
+            }
+            lastPoint = Qt.point(x, y)
+        }
+
+        function finishStroke() {
+            if (strokeEdit) {
+                var edit = strokeEdit
+                strokeEdit = null
+                root.uiPage.finishWorkspaceEdit(edit)
+            }
+        }
+
+        onPressed: function(mouse) {
+            var index = slotAt(mouse.x, mouse.y)
+            if (index < 0) {
+                mouse.accepted = false
+                return
+            }
+            root.forceActiveFocus()
+            adding = !root.uiPage.isSlotInSelectedNestedGroup(index)
+            strokeEdit = root.uiPage.beginWorkspaceEdit([], false, root.uiPage.selectedNestedGroup())
+            lastPoint = Qt.point(mouse.x, mouse.y)
+            paintTo(mouse.x, mouse.y)
+        }
+        onPositionChanged: function(mouse) {
+            if (pressed)
+                paintTo(mouse.x, mouse.y)
+        }
+        onReleased: function(mouse) {
+            paintTo(mouse.x, mouse.y)
+            finishStroke()
+        }
+        onCanceled: finishStroke()
+        onEnabledChanged: if (!enabled) finishStroke()
+        onWheel: function(wheel) { wheel.accepted = false }
+    }
+
     Repeater{
         model: Constants.containerCount[root.containerType]
         delegate: ItemSlot{

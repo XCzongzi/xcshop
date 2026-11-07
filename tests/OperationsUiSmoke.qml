@@ -319,7 +319,7 @@ Window {
                     check(displayText(storedDisplay.operation.separator) === " + " && storedDisplay.frame.separator === "\n\n", "moving separator changed its storage")
                     var preview = find(page, "operationsPreview")
                     var text = preview.renderedComponent.extra.map(function(s) { return s.text }).join("")
-                    check(text.indexOf("操作1 → 代价1 × 1") >= 0 && text.indexOf("\n\n• 操作2") >= 0, "two-layer preview incorrect: " + text)
+                    check(text.indexOf("操作1 → 代价I × 1") >= 0 && text.indexOf("\n\n• 操作2") >= 0, "two-layer preview incorrect: " + text)
                     check(preview.width <= page.width - 64, "preview overflows")
                     screenshot("display-narrow")
                     break
@@ -369,7 +369,7 @@ Window {
                     check(find(page,"displayOperationBar").height === find(page,"displayMemberBar").height, "disabled member panel sizes differ")
                     check(find(page,"frameTextEditor").caption === "操作之间的分隔", "operation separator changed scope when names were hidden")
                     var flat = find(page,"operationsPreview").renderedComponent.extra.map(function(s) {return s.text}).join("")
-                    check(flat === "代价1 × 1 + 代价2 × 2 + 代价3 × 3\n\n代价1 × 1 + 代价2 × 2 + 代价3 × 3", "disabled operation members leaked wrapping or changed separators: " + flat)
+                    check(flat === "代价I × 1 + 代价II × 2 + 代价III × 3\n\n代价I × 1 + 代价II × 2 + 代价III × 3", "disabled operation members leaked wrapping or changed separators: " + flat)
                     check(find(page,"operationsPreview").renderedComponent.extra.every(function(part) { return part.color !== "gold" }), "disabled title style leaked")
                     var restored = find(page,"operationFormatEnabled")
                     restored.checked = true; restored.toggled(true)

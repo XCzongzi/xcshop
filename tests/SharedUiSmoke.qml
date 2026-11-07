@@ -296,6 +296,40 @@ Window {
             return item.options && item.options.indexOf && item.options.indexOf("当前栏位") >= 0
         })
     }
+    function checkCurrentSlotScrolling() {
+        var previousSlot = page.currentSlotIndex
+        var slotIndex = page.currentSlotCount - 1
+        check(page.slotItems(slotIndex).length === 0, "Scrollbar test slot is occupied")
+        for (var index = 0; index < 8; ++index)
+            page.addSaleItem(slotIndex)
+        page.setCurrentSlot(slotIndex)
+        UiInput.settle(200)
+        var editor = findWhere(page, function(item) { return item.hasCurrentSlot === true })
+        var viewport = findWhere(editor, function(item) { return item.contentY !== undefined })
+        var bar = findWhere(editor, function(item) {
+            return item.content_height !== undefined || item.objectName === "currentSlotScrollBar"
+        })
+        check(viewport && bar && viewport.contentHeight > viewport.height && bar.visible,
+              "Current slot scrollbar is missing")
+        UiInput.click(bar, bar.width / 2, bar.height * 0.75)
+        UiInput.settle(100)
+        check(viewport.contentY > 0, "Clicking the current slot scrollbar track did not scroll")
+        viewport.contentY = 0
+        UiInput.settle(100)
+        UiInput.dragSelect(bar, bar.width / 2, 12, bar.width / 2, bar.height - 12)
+        UiInput.settle(100)
+        check(viewport.contentY > viewport.contentHeight - viewport.height - 2,
+              "Dragging the current slot scrollbar did not reach the bottom")
+        UiInput.wheel(viewport, 120)
+        UiInput.settle(200)
+        check(viewport.contentY < viewport.contentHeight - viewport.height - 2,
+              "Wheel scrolling stopped working after dragging the current slot scrollbar")
+        page.setCurrentSlot(previousSlot)
+        check(viewport.contentY === 0, "Changing slots did not reset the scroll position")
+        page.clearSlotItems(slotIndex)
+        UiInput.settle(200)
+        check(!bar.visible, "Current slot scrollbar remained visible without overflow")
+    }
     function checkWorkspaceNavigation() {
         var tabs = inspectorTabs()
         page.selectBasicLayout()
@@ -446,6 +480,50 @@ Window {
         check(page.slotItems(2).length === 1, "Delete without a selected slot removed another slot")
     }
 
+    function checkNestedSlotDrawing() {
+        page.addNestedGroup()
+        var groupId = page.selectedNestedGroupId
+        page.setNestingDrawMode(true)
+        page.toggleNestedSlot(1)
+        var original = JSON.stringify(page.selectedNestedGroup().slots)
+        var currentSlot = page.currentSlotIndex
+        var historyLength = page.workspaceUndoHistory.length
+        var source = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 9 })
+        var target = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 17 })
+        var end = target.mapToItem(source, target.width / 2, target.height / 2)
+        // A single move skips all intermediate slots at the event level.
+        UiInput.dragSelect(source, source.width / 2, source.height / 2, end.x, end.y, 1)
+        for (var index = 9; index <= 17; ++index)
+            check(page.isSlotInSelectedNestedGroup(index), "Fast drawing skipped slot " + index)
+        check(page.currentSlotIndex === currentSlot, "Drawing selected a different item slot")
+        check(page.workspaceUndoHistory.length === historyLength + 1, "One stroke created multiple undo entries")
+        var painted = JSON.stringify(page.selectedNestedGroup().slots)
+        check(page.undoWorkspaceEdit() && JSON.stringify(page.selectedNestedGroup().slots) === original,
+              "Undo did not remove the complete stroke")
+        check(page.redoWorkspaceEdit() && JSON.stringify(page.selectedNestedGroup().slots) === painted,
+              "Redo did not restore the complete stroke")
+        UiInput.dragSelect(source, end.x, end.y, source.width / 2, source.height / 2, 1)
+        check(JSON.stringify(page.selectedNestedGroup().slots) === original, "Dragging from a selected slot did not erase")
+        var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
+        check(JSON.stringify(stored.nestedGroups.filter(function(group) { return group.id === groupId })[0].slots) === original,
+              "Drawn membership was not saved")
+        check(page.undoWorkspaceEdit() && JSON.stringify(page.selectedNestedGroup().slots) === painted,
+              "Erase stroke could not be undone")
+        check(page.redoWorkspaceEdit(), "Erase stroke could not be redone")
+        source = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 8 })
+        target = findWhere(page, function(item) { return item.isItemSlot === true && item.index === 0 })
+        end = target.mapToItem(source, target.width / 2, target.height / 2)
+        UiInput.dragSelect(source, source.width / 2, source.height / 2, end.x, end.y)
+        for (var index = 0; index <= 8; ++index)
+            check(page.isSlotInSelectedNestedGroup(index), "Add stroke erased an existing slot or skipped " + index)
+        check(page.undoWorkspaceEdit() && JSON.stringify(page.selectedNestedGroup().slots) === original,
+              "Mixed membership stroke could not be undone")
+        page.setNestingDrawMode(false)
+        page.removeNestedGroup(groupId)
+        page.setCurrentSlot(currentSlot)
+        UiInput.settle(35)
+    }
+
     function dragSlotItem(source, target) {
         var position = target.mapToItem(source, target.width / 2, target.height / 2)
         UiInput.dragSelect(source, source.width / 2, source.height / 2, position.x, position.y)
@@ -514,13 +592,17 @@ Window {
         UiInput.settle(40)
         check(JSON.stringify(page.eledata) === beforeCancel && !occupied.dragging,
               "Dropping outside the canvas changed slot contents or left a drag active")
+        check(JSON.stringify(page.nestedGroups()) === groups, "Moving items changed nested group membership")
         page.selectNestedGroup("group")
         page.setNestingDrawMode(true)
         dragSlotItem(occupied, target)
         check(JSON.stringify(page.slotItems(2)) === moved && JSON.stringify(page.slotItems(1)) === targetItems,
               "Nested drawing started an item transfer")
+        check(page.isSlotInSelectedNestedGroup(2) && page.isSlotInSelectedNestedGroup(1),
+              "Drawing over occupied item slots did not paint nested membership")
+        check(page.undoWorkspaceEdit() && JSON.stringify(page.nestedGroups()) === groups,
+              "Undo did not restore membership after drawing over items")
         page.setNestingDrawMode(false)
-        check(JSON.stringify(page.nestedGroups()) === groups, "Moving items changed nested group membership")
         var stored = JSON.parse(file.read(project + "/UI/source.xcseUI"))
         var storedTarget = stored.slots.find(function(record) { return record.index === 2 })
         var storedSource = stored.slots.find(function(record) { return record.index === 1 })
@@ -1111,7 +1193,9 @@ Window {
                 case 20:
                     root.checkingFocus = true
                     try {
+                        root.checkCurrentSlotScrolling()
                         root.checkWorkspaceNavigation()
+                        root.checkNestedSlotDrawing()
                         root.checkMacroFocus()
                         root.checkSlotContextMenu()
                         root.checkSlotDeleteKey()

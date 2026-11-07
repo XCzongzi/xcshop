@@ -68,9 +68,10 @@ function render(format, operations) {
 }
 function demo(format, operationCount, costCount) {
     var operations = []
+    var costNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI"]
     for (var i = 1; i <= operationCount; ++i) {
         var costs = []
-        for (var j = 1; j <= costCount; ++j) costs.push({display: "代价" + j, amount: j})
+        for (var j = 1; j <= costCount; ++j) costs.push({display: "代价" + costNumerals[j - 1], amount: j})
         operations.push({title: "操作" + i, showInDisplay: true, cost: costs})
     }
     return render(format, operations)

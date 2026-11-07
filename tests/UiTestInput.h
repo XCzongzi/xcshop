@@ -52,13 +52,14 @@ public:
             QTest::keyClick(item->window(), Qt::Key(key), Qt::KeyboardModifiers(modifiers));
     }
     Q_INVOKABLE void dragSelect(QQuickItem *item, qreal fromX, qreal fromY,
-                                qreal toX, qreal toY) {
+                                qreal toX, qreal toY, int steps = 12) {
         if (!item || !item->window()) return;
         const auto start = item->mapToScene(QPointF(fromX, fromY));
         const auto end = item->mapToScene(QPointF(toX, toY));
         QTest::mousePress(item->window(), Qt::LeftButton, Qt::NoModifier, start.toPoint());
-        for (int step = 1; step <= 12; ++step) {
-            QTest::mouseMove(item->window(), (start + (end - start) * (step / 12.0)).toPoint());
+        steps = qMax(1, steps);
+        for (int step = 1; step <= steps; ++step) {
+            QTest::mouseMove(item->window(), (start + (end - start) * (qreal(step) / steps)).toPoint());
             QTest::qWait(15);
         }
         QTest::mouseRelease(item->window(), Qt::LeftButton, Qt::NoModifier, end.toPoint());
