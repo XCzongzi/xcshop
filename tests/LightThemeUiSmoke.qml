@@ -183,8 +183,12 @@ Window {
         readable(Colors.changeA(Colors.placeholder, 0.78), focused, "focused placeholder")
         readable(Colors.text, over(Colors.selection, field), "selected input text")
         readable(Colors.text, over(Colors.selectedRow, panel), "opened file")
-        readable(Colors.error, card, "error")
-        readable(Colors.warning, card, "warning")
+        // Status colors need recognizable red/yellow chroma; forcing the body
+        // text contrast target here turns them into near-black burgundy/brown.
+        check(Colors.error.r >= 0.8 && Colors.error.g <= 0.25 && Colors.error.b <= 0.25,
+              "error lost its vivid red hue")
+        check(Colors.warning.r >= 0.8 && Colors.warning.g >= 0.55 && Colors.warning.b <= 0.25,
+              "warning lost its golden yellow hue")
         var original = Colors.themeColor.toString()
         for (var accent of Colors.accentChoices.concat(["#000000", "#ffffff"])) {
             Colors.setThemeColor(accent)

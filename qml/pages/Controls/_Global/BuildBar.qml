@@ -228,15 +228,33 @@ ContentBar {
                 }
             }
 
-            XCText {
+            Row {
                 anchors.right: parent.right
                 anchors.top: actionButton.bottom
                 anchors.topMargin: 5
-                xcText: root.errorCount + " 错误  ·  " + root.warningCount + " 警告"
-                onCenter: false
-                xcFontSize: 10
-                boldFont: false
-                textColor: root.errorCount ? Colors.error : Colors.banned
+                spacing: 4
+
+                XCText {
+                    xcText: root.errorCount + " 错误"
+                    onCenter: false
+                    xcFontSize: 10
+                    boldFont: false
+                    textColor: root.errorCount ? Colors.error : Colors.banned
+                }
+                XCText {
+                    xcText: "·"
+                    onCenter: false
+                    xcFontSize: 10
+                    boldFont: false
+                    textColor: Colors.banned
+                }
+                XCText {
+                    xcText: root.warningCount + " 警告"
+                    onCenter: false
+                    xcFontSize: 10
+                    boldFont: false
+                    textColor: root.warningCount ? Colors.warning : Colors.banned
+                }
             }
         }
 

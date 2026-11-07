@@ -18,8 +18,9 @@ QtObject {
     property color paletteMutedText: "#bbbbbb"
     property color banned: softenLightInk(imageMode ? surfaceColor("imageMuted", paletteMutedText) : paletteMutedText, 0.12)
 
-    readonly property color error: isLight ? (imageMode ? "#4f0b17" : "#961c2e") : "#FF0000"
-    readonly property color warning: isLight ? (imageMode ? "#3d2005" : "#6d400c") : "#e0a33b"
+    // Keep status hues vivid on both solid and image backgrounds.
+    readonly property color error: isLight ? "#d50000" : "#FF0000"
+    readonly property color warning: isLight ? "#d99a00" : "#e0a33b"
 
     readonly property color transparent: "transparent"
 

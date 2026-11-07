@@ -140,7 +140,10 @@ Item {
             anchors.fill: parent
             focused: editor.activeFocus
             idleOpacity: 0.50
-            color: Colors.isLight ? "#24262e" : Colors.changeA(Colors.input, focused ? 0.72 : 0.50)
+            color: root.compact
+                   ? Colors.changeA(Colors.isLight ? Qt.tint(Colors.input, "#33ffffff") : Colors.input,
+                                    focused ? 0.72 : idleOpacity)
+                   : Colors.isLight ? "#24262e" : Colors.changeA(Colors.input, focused ? 0.72 : idleOpacity)
         }
         Flickable {
             id: viewport
