@@ -1,0 +1,2 @@
+clear_marker.mcfunction
+execute as @e[type=minecraft:marker,tag=xcshop.shop] at @s run function {{@namespace}}:clear_marker/check

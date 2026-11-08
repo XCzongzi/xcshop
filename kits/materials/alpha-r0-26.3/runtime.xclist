@@ -5,3 +5,5 @@ read_cursor.xcontent
 locate-drop.xcontent
 drop-detection.xcontent
 item-return.xcontent
+clear-marker.xcontent
+clear-marker-check.xcontent

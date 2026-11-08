@@ -1,0 +1,6 @@
+clear_marker/check.mcfunction
+execute unless data block ~ ~ ~ Items run return run kill @s
+execute unless data block ~ ~ ~ components.minecraft:custom_data.xcshop.shop run return run kill @s
+execute unless data block ~ ~ ~ components.minecraft:custom_data.xcshop.id run return run kill @s
+execute store result score #clear_marker_id __xcshop__ run data get block ~ ~ ~ components.minecraft:custom_data.xcshop.id
+execute unless score @s __xcshop__ = #clear_marker_id __xcshop__ run kill @s

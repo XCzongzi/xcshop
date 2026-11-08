@@ -27,6 +27,8 @@
 
 创建商店前先删除创建位置（对齐到方块整数坐标）的旧商店 marker，避免重复创建时叠加标记。每次打开商店时，在刷新之前检查当前维度中已加载的商店 marker，删除所在方块已不含商店注册数据（`components.minecraft:custom_data.xcshop.shop`）的标记；不在 tick 中执行这项检查。
 
+手动执行 `/function <项目命名空间>:clear_marker`，检查所有维度中已加载、带有 `xcshop.shop` 标签的 `minecraft:marker`。若所在方块没有容器物品列表 `Items`、缺少 `components.minecraft:custom_data.xcshop.shop` 或 `id`，或容器的 `id` 与 marker 的 `__xcshop__` 分数不同（包括 marker 缺少分数），则删除该 marker。有效的空容器会保留；不修改容器及 marker 的实例编号。未加载区块中的 marker 需在加载后再次调用此函数；此函数不自动接入 tick 或打开商店流程。
+
 普通商品及嵌套组汇总后的筛选由 Shop IR 的 `items[].filters[]` 提供，需要使用支持此字段的构建器。条件按外层嵌套组、内层嵌套组、商品自身的顺序同时检查；显示、拿取、掷出均使用全部条件。每层嵌套组绘制的槽位范围都会生效。
 
 `load.mcfunction` 集中创建全部已注册商店配置引用的计分板：所有层级筛选、计分板代价（含仅筛选的代价）、布局输入器的筛选和结果。同名只声明一次，用户计分板采用 `dummy`，已有计分板不删除或重建。自定义指令和外部函数的文本内容不参与计分板名称收集。

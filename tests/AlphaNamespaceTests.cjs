@@ -92,6 +92,19 @@ try {
         assert.ok(opened.includes(cleanup));
         assert.ok(opened.indexOf(cleanup) < opened.indexOf(`run function ${namespace}:shop/test/set`));
         assert.ok(!read(`${runtime}tick.mcfunction`).includes(cleanup));
+        const clearMarker = read(`${runtime}clear_marker.mcfunction`);
+        assert.equal(clearMarker.trim(), 'execute as @e[type=minecraft:marker,tag=xcshop.shop] at @s '
+            + `run function ${namespace}:clear_marker/check`);
+        const clearMarkerCheck = read(`${runtime}clear_marker/check.mcfunction`);
+        for (const field of ['Items', 'components.minecraft:custom_data.xcshop.shop',
+            'components.minecraft:custom_data.xcshop.id'])
+            assert.ok(clearMarkerCheck.includes(`unless data block ~ ~ ~ ${field} run return run kill @s`));
+        assert.ok(clearMarkerCheck.includes('execute store result score #clear_marker_id __xcshop__ '
+            + 'run data get block ~ ~ ~ components.minecraft:custom_data.xcshop.id'));
+        assert.ok(clearMarkerCheck.includes('execute unless score @s __xcshop__ = #clear_marker_id __xcshop__ run kill @s'));
+        assert.ok(!clearMarkerCheck.includes('store result score @s'), 'Keep the marker instance ID unchanged');
+        assert.ok(!read(`${runtime}tick.mcfunction`).includes(':clear_marker'));
+        assert.ok(!opened.includes(':clear_marker'));
         assert.ok(read(`${runtime}shop/test/0/1/trigger/1.mcfunction`).includes('function external:action'));
         assert.ok(read(`${runtime}shop/test/0/1/trigger/0.mcfunction`)
             .includes(`return run function ${namespace}:shop/test/0/1/failure`));
