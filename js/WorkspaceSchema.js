@@ -9,7 +9,8 @@ function item() {
 }
 function operation(title) {
     return {title: title === undefined ? "" : String(title), showInDisplay: true,
-        successHint: true, failHint: true, returnOnSuccess: false, uniqueTrigger: false, cost: [],
+        successHint: true, failHint: true, returnOnSuccess: false, uniqueTrigger: false,
+        priority: false, cost: [],
         trigger: {mode: {kind: "take_item", filter: {kind: "none"}},
             execute: {kind: "grant_item"}}}
 }

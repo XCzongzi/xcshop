@@ -7,6 +7,7 @@ TextButton {
 
     required property RichTextEditor targetInput
     property string editorTitle: "文本内容"
+    property bool singleLine: targetInput.singleLine
 
     text: "彩字编辑"
     height: 26
@@ -33,7 +34,8 @@ TextButton {
         "component": Constants.popupJsonTextEditor,
         "properties": {
             "title": root.editorTitle,
-            "jsonText": root.currentText()
+            "jsonText": root.currentText(),
+            "singleLine": root.singleLine
         },
         "callback": function(result) {
             if (result && result.jsonText !== undefined)

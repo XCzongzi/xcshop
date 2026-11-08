@@ -192,6 +192,15 @@ Item {
                 width: parent.width
                 spacing: 16
                 XCCheckBox {
+                    objectName: "operationPriority"
+                    text: "优先执行"
+                    checked: root.operation.priority === true
+                    onToggled: function (value) {
+                        root.operation.priority = value;
+                        root.edited();
+                    }
+                }
+                XCCheckBox {
                     objectName: "operationShowInDisplay"
                     text: "在展示文本中显示"
                     checked: root.operation.showInDisplay

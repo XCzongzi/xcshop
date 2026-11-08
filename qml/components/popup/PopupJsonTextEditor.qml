@@ -7,6 +7,7 @@ PopupFrame {
     title: "文本内容"
     // Minecraft components are the persisted document format.
     property string jsonText: ""
+    property bool singleLine: false
     readonly property string parseError: editor.error
     dialogWidth: 1080
     dialogHeight: 760
@@ -21,6 +22,7 @@ PopupFrame {
     RichTextEditor {
         id: editor
         objectName: "popupRichTextEditor"
+        singleLine: root.singleLine
         x: 24; y: 82
         width: parent.width - 48
         height: Math.max(0, parent.height - y - 76)
@@ -29,7 +31,7 @@ PopupFrame {
     XCText {
         x: 24; anchors.bottom: parent.bottom; anchors.bottomMargin: 27
         width: Math.max(0, parent.width - root.actionWidth - 64)
-        xcText: "Enter 换行 · Ctrl+Enter 应用"
+        xcText: root.singleLine ? "仅支持单行 · Ctrl+Enter 应用" : "Enter 换行 · Ctrl+Enter 应用"
         xcFontSize: 11; boldFont: false; textColor: Colors.banned; onCenter: false
     }
     actions: [

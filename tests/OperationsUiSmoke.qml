@@ -230,6 +230,7 @@ Window {
                     check(page.eledata.operations.every(function(op) { return op.title === "" }), "operation names have presets")
                     check(page.eledata.operations.every(function(op) { return op.successHint === true && op.failHint === true }), "new operation feedback defaults")
                     check(page.eledata.operations.every(function(op) { return op.returnOnSuccess === false }), "return-on-success must default off")
+                    check(page.eledata.operations.every(function(op) { return op.priority === false }), "priority must default off")
                     check(find(card,"operationCardHeader").height === 32, "original header strip missing")
                     check(find(card,"operationNumber").xcText === "操作1", "number must be in header control area")
                     var title = find(card, "operationTitle")
@@ -240,6 +241,8 @@ Window {
                     find(card, "operationReturnOnSuccess").toggle()
                     check(!find(card,"operationUniqueTrigger").checked,"unique trigger must default off")
                     find(card,"operationUniqueTrigger").toggle()
+                    check(!find(card,"operationPriority").checked, "priority checkbox must default off")
+                    find(card,"operationPriority").toggle()
                     check(!find(card,"operationSuccessHint").checked && find(card,"operationFailHint").checked, "feedback switches are not independent")
                     find(find(page,"operationCard1"), "operationFailHint").toggle()
                     card.addCost(); card.addCost(); card.removeCost(0)
@@ -250,6 +253,10 @@ Window {
                         && saved.operations[1].successHint === true && saved.operations[1].failHint === false, "feedback switches save")
                     check(saved.operations[0].returnOnSuccess === true && saved.operations[1].returnOnSuccess === false,"return-on-success save")
                     check(saved.operations[0].uniqueTrigger === true,"unique trigger save")
+                    check(saved.operations[0].priority === true && saved.operations[1].priority === false, "priority switch save or independence")
+                    find(card,"operationPriority").toggle()
+                    check(JSON.parse(file.read(project + "/Item/example.xcseItem")).operations[0].priority === false, "priority switch clear")
+                    find(card,"operationPriority").toggle()
                     check(saved.cost === undefined && saved.trigger === undefined, "legacy roots persisted")
                     page.removeOperation(1)
                     screenshot("item-wide")
@@ -257,6 +264,7 @@ Window {
                 case 3:
                     var firstCard = find(page, "operationCard0")
                     check(find(firstCard,"operationReturnOnSuccess").checked,"return switch reset after other operation edits")
+                    check(find(firstCard,"operationPriority").checked, "priority reset after other operation edits")
                     var costTitle = find(firstCard, "operationCostTitle")
                     var costRow = find(firstCard, "operationCostRow0")
                     check(costRow.y >= costTitle.y + costTitle.height, "cost title overlaps a cost row")
@@ -265,7 +273,7 @@ Window {
                     check(page.content_height > page.height, "scroll height missing")
                     var card = find(page,"operationCard0")
                     var options = find(card,"operationOptions")
-                    for (var control of ["operationShowInDisplay","operationSuccessHint","operationFailHint","operationReturnOnSuccess","operationUniqueTrigger"]) {
+                    for (var control of ["operationPriority","operationShowInDisplay","operationSuccessHint","operationFailHint","operationReturnOnSuccess","operationUniqueTrigger"]) {
                         var checkbox = find(card,control)
                         check(checkbox.x + checkbox.width <= options.width + 1 && checkbox.y + checkbox.height <= options.height + 1, "feedback checkbox overflows narrow card")
                     }
@@ -613,6 +621,8 @@ Window {
                     seed.operations = [Schema.operation("上方"),Schema.operation("下方"),Schema.operation("第三项")]
                     seed.operations[0].returnOnSuccess = true
                     seed.operations[0].successHint = false
+                    seed.operations[0].priority = true
+                    delete seed.operations[2].priority
                     seed.operations[0].trigger.execute = {kind:"command",value:"say upper"}
                     seed.operations[1].cost = [{element:"Cost/example.xcseCost",amount:"7"}]
                     seed.operations[1].trigger.execute = {kind:"function",value:"example:lower\nexample:next"}
@@ -624,6 +634,8 @@ Window {
                     if (Date.now()-phaseStart < 650) { --root.step; return }
                     swapPrevious = find(page,"operationCard0")
                     swapCurrent = find(page,"operationCard1")
+                    check(find(swapPrevious,"operationPriority").checked, "priority did not reopen")
+                    check(!find(find(page,"operationCard2"),"operationPriority").checked, "missing priority must default off")
                     check(Math.abs(swapPrevious.height-swapCurrent.height)>30,"swap test needs different card heights")
                     var up = find(swapCurrent,"moveOperationUpButton")
                     var remove = find(swapCurrent,"removeOperationButton")
@@ -647,6 +659,7 @@ Window {
                     var saved=JSON.parse(file.read(project+"/Item/moving.xcseItem"))
                     check(saved.operations[0].title==="下方" && saved.operations[1].title==="上方" && saved.operations[2].title==="第三项","swap saved wrong order")
                     check(saved.operations[0].cost[0].amount==="7" && saved.operations[1].returnOnSuccess && !saved.operations[1].successHint,"swap detached operation settings")
+                    check(saved.operations[1].priority === true && saved.operations[0].priority === false, "swap detached priority setting")
                     check(find(swapCurrent,"operationNumber").xcText==="操作1" && !find(swapCurrent,"moveOperationUpButton").enabled,"header index did not follow swap")
                     var title=find(swapPrevious,"operationTitle")
                     title.text="上方已编辑"; title.editingFinished()

@@ -9,6 +9,19 @@ Item {
 
     property var uiPage: null
 
+    function syncCustomName() {
+        if (!root.uiPage || !customNameInput)
+            return
+        var value = root.uiPage.customName
+        // Local edits are already in the native document. Reload only external
+        // changes so saving preserves the current cursor, selection and undo.
+        if (customNameInput.getContent() !== value
+                && (value.length || customNameInput.input.length || customNameInput.error.length))
+            customNameInput.setContent(value)
+    }
+    onUiPageChanged: syncCustomName()
+    Component.onCompleted: syncCustomName()
+
     Column {
         width: parent.width
         spacing: 14
@@ -58,25 +71,42 @@ Item {
             }
         }
 
-        XCText {
+        Item {
             width: parent.width
-            xcText: "自定义名称"
-            onCenter: false
-            xcFontSize: 13
-            boldFont: false
-            textColor: Colors.changeA(Colors.text, 0.82)
+            height: 26
+
+            XCText {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                xcText: "自定义名称"
+                onCenter: false
+                xcFontSize: 13
+                boldFont: false
+                textColor: Colors.changeA(Colors.text, 0.82)
+            }
+
+            JsonTextEditorButton {
+                objectName: "customNameEditorButton"
+                anchors.right: parent.right
+                targetInput: customNameInput
+                editorTitle: "自定义名称"
+                singleLine: true
+                enabled: root.uiPage && root.uiPage.dataLoaded
+            }
         }
 
-        XCTextField {
+        RichTextEditor {
             id: customNameInput
+            objectName: "customNameInput"
             width: parent.width
             height: 34
+            compact: true
+            singleLine: true
             enabled: root.uiPage && root.uiPage.dataLoaded
             placeholderText: "留空则使用默认名称"
-            text: root.uiPage ? root.uiPage.customName : ""
-            onEditingFinished: {
+            onEdited: function(value) {
                 if (root.uiPage)
-                    root.uiPage.setCustomName(text)
+                    root.uiPage.setCustomName(!input.length && !error.length ? "" : value)
             }
         }
 
@@ -105,10 +135,7 @@ Item {
 
     Connections {
         target: root.uiPage
-        function onCustomNameChanged() {
-            if (!customNameInput.activeFocus)
-                customNameInput.text = root.uiPage.customName
-        }
+        function onCustomNameChanged() { root.syncCustomName() }
         function onOpenCommandChanged() {
             if (!openCommandInput.activeFocus)
                 openCommandInput.text = root.uiPage.openCommand

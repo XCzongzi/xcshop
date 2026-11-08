@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QColor>
+#include <QClipboard>
 #include <QCursor>
 #include <QImage>
 #include <QRect>
@@ -23,6 +24,9 @@ class UiTestInput : public QObject {
     Q_OBJECT
 public:
     using QObject::QObject;
+    Q_INVOKABLE void setClipboardText(const QString &text) {
+        QGuiApplication::clipboard()->setText(text);
+    }
     Q_INVOKABLE int cursorShape(QQuickItem *item) {
         return item && item->window() ? int(item->window()->cursor().shape()) : -1;
     }

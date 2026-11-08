@@ -21,8 +21,13 @@ Window {
         id: file
     }
     ContextMenu { id: slotContextMenu }
+    PopupLoader { id: editorPopup; anchors.fill: parent }
     Connections {
         target: SignalBus
+        function onSendToMain(signalType, parameters) {
+            if (signalType === "Popup.show")
+                editorPopup.open(parameters.component, parameters.properties, parameters.callback)
+        }
         function onContextMenuRequested(target, x, y, items, component) {
             slotContextMenu.menuItems = items
             slotContextMenu.contentComponent = component
@@ -870,6 +875,141 @@ Window {
         page.loadJson(original)
         UiInput.settle(60)
     }
+    function checkSingleLineTextEditing() {
+        var original = page.exportedJson()
+        var field = find("richTextInput")
+        page.singleLine = true
+        page.loadJson(JSON.stringify({text: "甲\r\n乙\u2028", color: "red",
+                                     extra: [{text: "丙\u2029丁", bold: true}]}))
+        var result = JSON.parse(page.exportedJson())
+        check(result.extra[0].text === "甲乙" && result.extra[0].color === "red"
+              && result.extra[1].text === "丙丁" && result.extra[1].bold,
+              "Single-line loading lost styles or retained separators")
+        check(field.lineCount === 1 && field.wrapMode === TextEdit.NoWrap,
+              "Single-line editor wraps its content")
+        field.forceActiveFocus()
+        field.cursorPosition = field.length
+        var before = page.exportedJson()
+        UiInput.key(field, Qt.Key_Return)
+        UiInput.key(field, Qt.Key_Enter)
+        UiInput.key(field, Qt.Key_Return, Qt.ShiftModifier)
+        check(page.exportedJson() === before && !page.closing,
+              "Return inserted a newline or applied the single-line dialog")
+
+        page.loadJson("原名")
+        field.cursorPosition = field.length
+        UiInput.setClipboardText("甲\r\n乙\u2028丙\u2029丁")
+        UiInput.key(field, Qt.Key_V, Qt.ControlModifier)
+        check(JSON.parse(page.exportedJson()).text === "原名甲乙丙丁" && field.lineCount === 1,
+              "Pasting multiline text inserted line breaks")
+        field.undo()
+        check(JSON.parse(page.exportedJson()).text === "原名", "Paste cleanup split the undo step")
+        field.redo()
+        check(JSON.parse(page.exportedJson()).text === "原名甲乙丙丁", "Paste redo restored line breaks")
+        field.selectAll()
+        UiInput.commitText(field, "输入\n法\u2028测试")
+        check(JSON.parse(page.exportedJson()).text === "输入法测试", "IME commit bypassed single-line filtering")
+        page.loadJson(JSON.stringify({text: "保留\\n字面量"}))
+        check(JSON.parse(page.exportedJson()).text === "保留\\n字面量", "Literal backslash-n was removed")
+        page.loadJson("长商店名".repeat(100))
+        field.cursorPosition = field.length
+        UiInput.settle(40)
+        check(field.lineCount === 1, "Long shop name wrapped visually")
+        var viewport = find("richTextViewport")
+        var caret = field.mapToItem(viewport, field.cursorRectangle.x, field.cursorRectangle.y)
+        check(caret.x >= 0 && caret.x <= viewport.width,
+              "Long single-line name did not scroll the caret into view: " + caret.x + "/" + viewport.width)
+        page.singleLine = false
+        page.loadJson(original)
+    }
+    function checkShopNameEditing() {
+        var tabs = findWhere(page, function(item) {
+            return item.options && item.options.indexOf && item.options.indexOf("全局属性") >= 0
+        })
+        tabs.selectOption(0)
+        UiInput.settle(40)
+        var input = find("customNameInput"), button = find("customNameEditorButton")
+        check(input && button && input.compact && input.singleLine && input.height === 34
+              && input.input.textFormat === TextEdit.RichText,
+              "Shop name is not a compact single-line rich text editor")
+        check(!findWhere(input, function(item) { return item.objectName === "richTextToolbar" }).visible
+              && !findWhere(input, function(item) { return item.objectName === "richTextExpand" }).visible,
+              "Single-line shop editor shows a toolbar or resize controls")
+        page.setCustomName("尚未失焦的名称")
+        input.input.forceActiveFocus()
+        button.clicked()
+        UiInput.settle(120)
+        check(editorPopup.item && editorPopup.item.singleLine && editorPopup.item.opened,
+              "Shop name did not open the single-line rich text popup")
+        var field = findWhere(editorPopup.item, function(item) { return item.objectName === "richTextInput" })
+        check(field.getText(0, field.length) === input.input.getText(0, input.input.length),
+              "Shop popup opened stale input")
+        field.selectAll()
+        UiInput.commitText(field, "彩色\n商店")
+        field.selectAll()
+        UiInput.click(findWhere(editorPopup.item, function(item) { return item.objectName === "richTextColor_gold" }))
+        UiInput.key(field, Qt.Key_Return, Qt.ControlModifier)
+        UiInput.settle(80)
+        var applied = page.customName
+        check(JSON.parse(applied).text === "彩色商店" && JSON.parse(applied).color === "gold"
+              && input.input.getText(0, input.input.length) === "彩色商店",
+              "Applying the shop name exposed JSON or lost text and styles inline")
+        input.input.selectAll()
+        check(input.document.currentStyle.color === "gold", "Inline shop name did not retain its color")
+        check(JSON.parse(file.read(project + "/UI/source.xcseUI")).customName === applied,
+              "Rich shop name was not saved")
+        button.clicked()
+        UiInput.settle(120)
+        field = findWhere(editorPopup.item, function(item) { return item.objectName === "richTextInput" })
+        check(field.getText(0, field.length) === "彩色商店", "Reopening shop name lost its content")
+        field.selectAll()
+        UiInput.commitText(field, "取消的名称")
+        editorPopup.item.close(null)
+        UiInput.settle(80)
+        check(page.customName === applied && input.input.getText(0, input.input.length) === "彩色商店",
+              "Cancel saved the shop name draft")
+
+        field = input.input
+        field.forceActiveFocus()
+        field.cursorPosition = 2
+        UiInput.commitText(field, "金")
+        check(JSON.parse(page.customName).text === "彩色金商店" && field.cursorPosition === 3,
+              "Saving an inline edit reloaded the document or moved its cursor")
+        field.undo()
+        check(page.customName === applied, "Inline shop editing lost undo history")
+        field.selectAll()
+        UiInput.key(field, Qt.Key_B, Qt.ControlModifier)
+        check(JSON.parse(page.customName).bold && JSON.parse(page.customName).color === "gold",
+              "Inline formatting failed or discarded the name color")
+        var styled = page.customName
+        UiInput.key(field, Qt.Key_Return)
+        UiInput.key(field, Qt.Key_Return, Qt.ShiftModifier)
+        check(page.customName === styled && field.lineCount === 1, "Inline shop name accepted Enter")
+        field.cursorPosition = field.length
+        UiInput.setClipboardText("一\r\n二\u2028三")
+        UiInput.key(field, Qt.Key_V, Qt.ControlModifier)
+        check(JSON.parse(page.customName).text === "彩色商店一二三" && field.lineCount === 1,
+              "Inline paste inserted a newline or exposed JSON")
+        field.undo()
+        check(page.customName === styled, "Inline paste cleanup lost undo history")
+        field.cursorPosition = 2
+        root.screenshot("shop-name-richtext-light")
+        UiInput.settle(80)
+        page.setCustomName(JSON.stringify({text: "长商店名".repeat(80), color: "gold"}))
+        field.cursorPosition = field.length
+        UiInput.settle(40)
+        var caret = field.mapToItem(input, field.cursorRectangle.x, field.cursorRectangle.y)
+        check(field.lineCount === 1 && caret.x >= 0 && caret.x <= input.width
+              && caret.y >= 0 && caret.y + field.cursorRectangle.height <= input.height,
+              "Long inline shop name wrapped or scrolled its caret out of view")
+        field.selectAll()
+        UiInput.key(field, Qt.Key_Backspace)
+        check(page.customName === "" && field.length === 0
+              && input.placeholderText === "留空则使用默认名称",
+              "Clearing the rich shop name did not restore the default-name placeholder")
+        page.setCustomName(applied)
+        check(field.getText(0, field.length) === "彩色商店", "External shop name reload exposed JSON")
+    }
     function checkRichTextPaletteAndScrolling() {
         var original = page.exportedJson()
         var previousColors = Global.customTextColors.slice()
@@ -1108,6 +1248,7 @@ Window {
                     try {
                         root.checkJsonTextEditing()
                         root.checkRichTextPaletteAndScrolling()
+                        root.checkSingleLineTextEditing()
                     }
                     finally { root.checkingFocus = false }
                     root.screenshot("json-light", function () {
@@ -1211,6 +1352,7 @@ Window {
                         root.checkSlotDeleteKey()
                         root.checkSlotItemDragging()
                         root.checkWorkspaceHistory()
+                        root.checkShopNameEditing()
                     } finally { root.checkingFocus = false }
                     console.log("SHARED_UI_SMOKE_PASSED: themes, actions, editors, choices, selection, settings, popup results/focus, layout row deletion, macro focus/persistence, workspace inspector navigation and edit commits")
                     Qt.exit(0)

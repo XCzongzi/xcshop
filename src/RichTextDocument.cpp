@@ -68,7 +68,8 @@ void RichTextDocument::setTarget(QObject *target) {
         connect(edit, &QQuickTextEdit::selectionEndChanged, this,
                 &RichTextDocument::currentStyleChanged);
         connect(document(), &QTextDocument::contentsChanged, this, [this] {
-            if (!m_loading) {
+            if (!m_loading && !m_normalizing) {
+                normalizeSingleLine();
                 emit currentStyleChanged();
                 emit edited();
             }
@@ -76,6 +77,40 @@ void RichTextDocument::setTarget(QObject *target) {
     }
     emit targetChanged();
     emit currentStyleChanged();
+}
+void RichTextDocument::setSingleLine(bool singleLine) {
+    if (m_singleLine == singleLine) return;
+    m_singleLine = singleLine;
+    if (normalizeSingleLine()) {
+        emit currentStyleChanged();
+        emit edited();
+    }
+    emit singleLineChanged();
+}
+bool RichTextDocument::normalizeSingleLine() {
+    auto *doc = document();
+    if (!m_singleLine || !doc || m_normalizing) return false;
+    const auto text = doc->toRawText();
+    QList<int> breaks;
+    for (int i = 0; i < text.size(); ++i) {
+        const auto ch = text.at(i).unicode();
+        if (ch == '\r' || ch == '\n' || ch == '\v' || ch == '\f'
+            || ch == 0x85 || ch == 0x2028 || ch == 0x2029)
+            breaks.append(i);
+    }
+    if (breaks.isEmpty()) return false;
+    m_normalizing = true;
+    QTextCursor edit(doc);
+    // Keep paste/IME input and its cleanup in the same undo step. Removing only
+    // separators preserves each remaining character's style and metadata.
+    edit.joinPreviousEditBlock();
+    for (auto it = breaks.crbegin(); it != breaks.crend(); ++it) {
+        edit.setPosition(*it);
+        edit.deleteChar();
+    }
+    edit.endEditBlock();
+    m_normalizing = false;
+    return true;
 }
 QVariantMap RichTextDocument::currentStyle() const {
     return style(cursor() ? cursor()->charFormat() : QTextCharFormat());
@@ -136,6 +171,7 @@ void RichTextDocument::load(const QString &source) {
         cursor.insertText(source, base);
     else
         append(wrapped.array().first(), base);
+    normalizeSingleLine();
     doc->clearUndoRedoStacks();
     qobject_cast<QQuickTextEdit *>(m_target.data())->setCursorPosition(doc->characterCount() - 1);
     if (doc->isEmpty()) this->cursor()->setCharFormat(base);

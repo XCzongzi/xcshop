@@ -6,15 +6,17 @@ import xcshop
 Item {
     id: root
     property bool compact: false
+    property bool singleLine: false
     property string content: ""
     property alias input: editor
     property alias document: document
+    property alias placeholderText: editor.placeholderText
     readonly property string error: document.error
     readonly property bool resizing: resizeAnimation.running
     property bool ready: false
     signal edited(string value)
     signal accepted()
-    implicitHeight: compact ? 128 : 450
+    implicitHeight: compact ? (singleLine ? 34 : 128) : 450
 
     function setContent(value) {
         var next = value === undefined || value === null ? "" : String(value)
@@ -43,6 +45,7 @@ Item {
     RichTextDocument {
         id: document
         target: editor
+        singleLine: root.singleLine
         onEdited: root.edited(document.serialize())
     }
     Rectangle {
@@ -134,7 +137,7 @@ Item {
         x: root.compact ? 0 : 1
         y: root.compact ? 0 : toolbar.y + toolbar.height + 12
         width: parent.width - x * 2
-        height: Math.max(0, parent.height - y - (root.compact ? 35 : 1)
+        height: Math.max(0, parent.height - y - (root.compact ? (root.singleLine ? 0 : 35) : 1)
                          - (root.error.length ? errorLabel.height + 8 : 0))
         InputBackground {
             anchors.fill: parent
@@ -149,7 +152,7 @@ Item {
             id: viewport
             objectName: "richTextViewport"
             anchors.fill: parent
-            anchors.rightMargin: 14
+            anchors.rightMargin: root.singleLine ? 0 : 14
             contentWidth: width
             contentHeight: editor.height
             clip: true
@@ -157,6 +160,7 @@ Item {
             Controls.ScrollBar.vertical: XCScrollBar {
                 id: scrollBar
                 objectName: "richTextScrollBar"
+                visible: !root.singleLine
                 parent: editingFrame
                 anchors.top: parent.top
                 anchors.right: parent.right
@@ -170,22 +174,33 @@ Item {
                 width: viewport.width
                 height: Math.max(viewport.height, implicitHeight)
                 textFormat: TextEdit.RichText
-                wrapMode: TextEdit.WrapAnywhere
+                wrapMode: root.singleLine ? TextEdit.NoWrap : TextEdit.WrapAnywhere
                 selectByMouse: true
                 persistentSelection: true
                 readOnly: root.error.length > 0
                 color: "#ffffff"
+                placeholderTextColor: Colors.changeA(Colors.placeholder, 0.78)
                 selectionColor: Colors.selection
                 selectedTextColor: Colors.selectionContent
                 leftPadding: root.compact ? 10 : 14
-                rightPadding: 10; topPadding: 8; bottomPadding: 8
+                rightPadding: 10
+                topPadding: root.compact && root.singleLine ? 0 : 8
+                bottomPadding: topPadding
+                verticalAlignment: root.compact && root.singleLine ? TextEdit.AlignVCenter : TextEdit.AlignTop
                 font: EditorFonts.mixedFont(Global.editorChineseFont, Global.editorLatinFont, root.compact ? 16 : 19)
                 background: Item {}
                 Keys.onPressed: function(event) {
+                    if (root.singleLine && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                        if (event.modifiers & Qt.ControlModifier) {
+                            root.commit(); root.accepted()
+                        }
+                        event.accepted = true
+                        return
+                    }
                     if (!(event.modifiers & Qt.ControlModifier)) return
                     var key = event.key === Qt.Key_B ? "bold" : event.key === Qt.Key_I ? "italic"
                               : event.key === Qt.Key_U ? "underlined" : ""
-                    if (!root.compact && key.length) {
+                    if ((!root.compact || root.singleLine) && key.length) {
                         root.format(key, !document.currentStyle[key]); event.accepted = true
                     }
                     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
@@ -204,7 +219,7 @@ Item {
         textColor: Colors.error; onCenter: false; xcWrapMode: true
     }
     Row {
-        visible: root.compact
+        visible: root.compact && !root.singleLine
         x: parent.width - width
         y: root.height - 32
         ImageButton {
