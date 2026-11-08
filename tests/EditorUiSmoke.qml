@@ -18,6 +18,8 @@ Window {
     property var popupRequest: null
     property string openedElement: ""
     property int detailsRequests: 0
+    property real consoleReadingOffset: 0
+    property string consoleSelection: ""
     XCFile { id: file }
     Rectangle {
         id: frame
@@ -242,6 +244,7 @@ Window {
                     var logs = []
                     for (var line = 0; line < 3000; ++line)
                         logs.push("构建日志 " + line + " : data/example/function/shop/example.mcfunction")
+                    find(page,"consoleSample").building = true
                     find(page,"consoleSample").consoleText = logs.join("\n")
                     break
                 case 18:
@@ -250,12 +253,20 @@ Window {
                     check(scroll.visible && scroll.size < 1,"long build console has no scrollbar")
                     check(find(page,"buildConsoleOutput").readOnly,"console is editable")
                     check(viewport.contentHeight > viewport.height,"console did not measure long output")
+                    check(Math.abs(viewport.contentY-viewport.contentHeight+viewport.height) < 2,"initial console output did not follow the latest log")
+                    var output = find(page,"buildConsoleOutput")
+                    output.select(100, 120)
+                    root.consoleSelection = output.selectedText
                     scroll.position = (1-scroll.size)/2
+                    root.consoleReadingOffset = viewport.contentY
+                    find(page,"consoleSample").consoleText += "\n翻阅历史时追加日志"
                     screenshot("console-long-dark")
                     break
                 case 19:
                     var viewport = find(page,"buildConsoleViewport")
                     check(viewport.contentY > 0 && viewport.contentY < viewport.contentHeight-viewport.height,"scrollbar does not control console position")
+                    check(Math.abs(viewport.contentY-root.consoleReadingOffset) < 2,"console append changed the history reading position")
+                    check(find(page,"buildConsoleOutput").selectedText === root.consoleSelection,"console append changed the text selection")
                     viewport.setScrollOffset(viewport.contentHeight)
                     Colors.applyColorScheme("cloud")
                     screenshot("console-long-light")
@@ -269,6 +280,9 @@ Window {
                     find(page,"consoleSample").consoleText += "\n末尾追加日志"
                     break
                 case 21:
+                    var viewport = find(page,"buildConsoleViewport")
+                    check(Math.abs(viewport.contentY-viewport.contentHeight+viewport.height) < 2,"console append stopped following the latest log")
+                    find(page,"consoleSample").building = false
                     var scroll = find(page,"buildConsoleScrollBar")
                     scroll.position = 1-scroll.size
                     root.height = 320

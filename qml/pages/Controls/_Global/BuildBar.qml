@@ -39,10 +39,14 @@ ContentBar {
         if (!consoleOutput)
             return
         consoleRefresh.stop()
+        consoleViewport.beginTextUpdate()
+        consoleViewport.followingTail = true
+        consoleViewport.savedOffset = 0
         consoleOutput.clear()
         consoleOutput.deselect()
         consoleOutput.cursorPosition = 0
         consoleViewport.setScrollOffset(consoleViewport.originY)
+        Qt.callLater(consoleViewport.finishTextUpdate)
     }
 
     function refreshConsole() {
@@ -52,10 +56,12 @@ ContentBar {
         var next = root.consoleText
         if (previous === next)
             return
+        consoleViewport.beginTextUpdate()
         if (previous.length && next.indexOf(previous) === 0)
             consoleOutput.insert(consoleOutput.length, next.substring(previous.length))
         else if (previous !== next)
             consoleOutput.text = next
+        Qt.callLater(consoleViewport.finishTextUpdate)
     }
 
     onBuildingChanged: {
@@ -166,7 +172,7 @@ ContentBar {
             XCText {
                 id: stateText
                 width: parent.width - actionButton.width - 18
-                xcText: root.buildStage.length ? root.buildState + " · " + root.buildStage : root.buildState
+                xcText: root.buildStage.length ? root.buildState + "：" + root.buildStage : root.buildState
                 onCenter: false
                 xcFontSize: 14
             }
@@ -242,7 +248,7 @@ ContentBar {
                     textColor: root.errorCount ? Colors.error : Colors.banned
                 }
                 XCText {
-                    xcText: "·"
+                    xcText: "，"
                     onCenter: false
                     xcFontSize: 10
                     boldFont: false
@@ -286,11 +292,34 @@ ContentBar {
                     boundsBehavior: Flickable.StopAtBounds
                     flickableDirection: Flickable.VerticalFlick
 
+                    property bool followingTail: true
+                    property bool updatingText: false
+                    property real savedOffset: 0
+
                     function setScrollOffset(offset) {
                         contentY = Math.max(originY, Math.min(originY + Math.max(0, contentHeight - height), offset))
                     }
-                    onContentHeightChanged: setScrollOffset(contentY)
-                    onHeightChanged: setScrollOffset(contentY)
+                    function rememberScroll() {
+                        savedOffset = contentY - originY
+                        followingTail = contentHeight - height - savedOffset <= 2
+                    }
+                    function beginTextUpdate() {
+                        if (!updatingText)
+                            rememberScroll()
+                        updatingText = true
+                    }
+                    function restoreScroll() {
+                        setScrollOffset(originY + (followingTail ? Math.max(0, contentHeight - height) : savedOffset))
+                    }
+                    function finishTextUpdate() {
+                        // TextArea 会在布局变化时把光标滚入视野；布局完成后恢复阅读位置。
+                        restoreScroll()
+                        updatingText = false
+                        rememberScroll()
+                    }
+                    onContentYChanged: if (!updatingText) rememberScroll()
+                    onContentHeightChanged: restoreScroll()
+                    onHeightChanged: restoreScroll()
 
                     Controls.TextArea.flickable: XCTextArea {
                         id: consoleOutput
