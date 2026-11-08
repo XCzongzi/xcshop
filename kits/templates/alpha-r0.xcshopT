@@ -5,12 +5,12 @@
 ../materials/alpha-r0-26.3
 [
     "Alpha r0：按 xcshop 测试数据包的标记实体、拿取/掷出、独立操作和布局匹配逻辑生成，面向 Minecraft Java 26.3。",
-    "使用项目设置的命名空间；27 格方块容器。布局输入器仅提供 function 入口，不自动调用。"
+    "使用项目设置的命名空间；除末影箱、大型箱子外均可使用。布局输入器仅提供 function 入口，不自动调用。"
 ]
 foreach (Shop[]) {
-    if (slots.length != 27 || (containerType != "barrel" && containerType != "chest"
-        && containerType != "trapped_chest" && containerType != "shulker_box")) {
-        error("Alpha r0 仅支持 27 格方块容器。", "请选择桶、单箱、陷阱单箱或潜影盒；不支持实体容器、末影箱或 54 格容器。");
+    if (containerType == "ender_chest" || containerType == "large_chest"
+        || containerType == "large_trapped_chest") {
+        error("Alpha r0 不支持末影箱或大型箱子。", "请选择末影箱、大型箱子和大型陷阱箱以外的容器。");
     }
     foreach (slots[]) {
         foreach (items[]) {

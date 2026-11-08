@@ -1,16 +1,7 @@
 locate.mcfunction
-execute if data entity @s Inventory[{Slot:0b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:0b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:1b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:1b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:2b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:2b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:3b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:3b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:4b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:4b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:5b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:5b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:6b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:6b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:7b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:7b}].components."minecraft:custom_data".xcshop.shopID
-execute if data entity @s Inventory[{Slot:8b}].components."minecraft:custom_data".xcshop run return run execute store result score @s __xcshop__ run data get entity @s Inventory[{Slot:8b}].components."minecraft:custom_data".xcshop.shopID
+execute if items entity @s player.cursor *[minecraft:custom_data~{xcshop:{}}] run return run function {{@namespace}}:read_cursor
 
-summon minecraft:item_display ~ ~ ~ {Tags:["xcshop.cursor_reader"],view_range:0f}
-item replace entity @n[tag=xcshop.cursor_reader] contents from entity @s player.cursor
-execute store result score @s __xcshop__ run data get entity @n[tag=xcshop.cursor_reader] item.components."minecraft:custom_data".xcshop.shopID
-kill @e[tag=xcshop.cursor_reader]
-return 1
+return run execute store result score @s __xcshop__ run data get entity @s Inventory[{components:{"minecraft:custom_data":{xcshop:{}}}}].components."minecraft:custom_data".xcshop.shopID
+
+scoreboard players set @s __xcshop__ 0
+return fail

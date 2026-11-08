@@ -88,8 +88,7 @@ try {
         assert.ok(summon.indexOf(deduplicate) < summon.indexOf('run summon marker'));
         const opened = read(`${runtime}opened/test.mcfunction`);
         const cleanup = 'execute as @e[type=minecraft:marker,tag=xcshop.shop] at @s '
-            + 'unless block ~ ~ ~ minecraft:barrel unless block ~ ~ ~ minecraft:chest '
-            + 'unless block ~ ~ ~ minecraft:trapped_chest unless block ~ ~ ~ #minecraft:shulker_boxes run kill @s';
+            + 'unless data block ~ ~ ~ components.minecraft:custom_data.xcshop.shop run kill @s';
         assert.ok(opened.includes(cleanup));
         assert.ok(opened.indexOf(cleanup) < opened.indexOf(`run function ${namespace}:shop/test/set`));
         assert.ok(!read(`${runtime}tick.mcfunction`).includes(cleanup));
