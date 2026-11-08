@@ -36,6 +36,7 @@ __pycache__/
 /kits-download-state.ini
 /window-state.ini
 /item-mappings.json
+/builder/xcshop-builder.exe
 /projects/
 /backgrounds/
 .xcshop-relay.json

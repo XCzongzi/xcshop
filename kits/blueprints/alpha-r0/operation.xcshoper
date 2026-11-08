@@ -31,15 +31,9 @@ else {
         content action actionText (operationPath + ".mcfunction")
         build action
     } else {
-        int lineStart = 0;
-        int lineEnd = 0;
-        while (lineEnd <= len(actionText)) {
-            if (lineEnd == len(actionText) || substr(actionText, lineEnd, 1) == "\n" || substr(actionText, lineEnd, 1) == "\r") {
-                string functionName = substr(actionText, lineStart, lineEnd - lineStart);
-                if (functionName != "") { build "operation-function.xcontent" }
-                lineStart = lineEnd + 1;
-            }
-            lineEnd++;
+        foreach (splitLines(actionText)) {
+            string functionName = @value;
+            if (functionName != "") { build "operation-function.xcontent" }
         }
     }
 }
