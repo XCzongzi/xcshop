@@ -325,7 +325,7 @@ Item {
         SettingsCard {
             width: parent.width
             title: "富文本编辑"
-            description: "使用与富文本编辑弹窗相同的背景，突出彩色文本，提高可读性。"
+            description: "此设置仅对浅色模式起效果"
             contentHeight: richTextBackgroundCheck.height
             XCCheckBox {
                 id: richTextBackgroundCheck

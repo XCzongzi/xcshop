@@ -388,6 +388,11 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME page_transitions_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME settings_sections_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME current_format_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME content_bar_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(content_bar_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/ContentBarUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "CONTENT_BAR_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 15)
     set_tests_properties(current_format_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/CurrentFormatUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "CURRENT_FORMAT_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
