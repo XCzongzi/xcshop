@@ -5,7 +5,7 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 
-function run(project, builder = path.join(root, 'builder/xcshop-builder-0.1.3.exe'), kits = path.join(root, 'kits')) {
+function run(project, builder = path.join(root, 'builder/xcshop-builder-1.0.0.exe'), kits = path.join(root, 'kits')) {
     project = path.resolve(project);
     builder = path.resolve(builder);
     kits = path.resolve(kits);

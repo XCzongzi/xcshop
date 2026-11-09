@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const builder = path.resolve(process.argv[2] || path.join(root, 'builder/xcshop-builder-0.1.0.exe'));
+const builder = path.resolve(process.argv[2] || path.join(root, 'builder/xcshop-builder-1.0.0.exe'));
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'xcshop-quantity-'));
 const project = path.join(temporary, 'project');
 const write = (name, data) => fs.writeFileSync(path.join(project, name), JSON.stringify(data));

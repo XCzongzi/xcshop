@@ -7,7 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const builder = path.resolve(process.argv[2] || path.join(root, 'builder/xcshop-builder-0.1.3.exe'));
+const builder = path.resolve(process.argv[2] || path.join(root, 'builder/xcshop-builder-1.0.0.exe'));
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'xcshop-namespace-'));
 const project = path.join(temporary, 'project');
 const schema = vm.createContext({});
