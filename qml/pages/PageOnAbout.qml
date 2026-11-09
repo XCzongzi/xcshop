@@ -23,7 +23,7 @@ BasePage {
     readonly property real headerOffset: Math.max(0, view.contentY - revealOffset)
     readonly property real pagePadding: width < 700 ? 24 : 48
     readonly property real columnWidth: Math.max(0, Math.min(880, width - pagePadding * 2))
-    readonly property string releaseDate: "2026-11-08"
+    readonly property string releaseDate: "2026-11-09"
     property bool expanded: false
     property string linkFeedback: ""
 
