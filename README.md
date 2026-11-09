@@ -51,7 +51,7 @@ Copyright © 2026 XCzongzi. 版权所有。
 - 源码仓库：[XCzongzi/xcshop](https://github.com/XCzongzi/xcshop)。
 - 问题反馈：[GitHub Issues](https://github.com/XCzongzi/xcshop/issues)。
 - 联系邮箱：[xczongzi@outlook.com](mailto:xczongzi@outlook.com)。
-- 正式版本下载页：尚未准备好，发布时补充。
+- 正式版本下载页：[https://xczongzi.net/projects/xcshop/](https://xczongzi.net/projects/xcshop/)
 
 ## 项目文档
 
