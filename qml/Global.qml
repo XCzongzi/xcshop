@@ -23,6 +23,7 @@ QtObject{
     property bool initializationCompleted: false
     property string editorChineseFont: "Microsoft YaHei"
     property string editorLatinFont: "Consolas"
+    property bool richTextContrastBackground: false
     property var customTextColors: []
     property var recentProjects: []
     readonly property int recentProjectLimit: 9
@@ -387,6 +388,7 @@ QtObject{
 
     function loadSettings(){
         initializationCompleted = false
+        richTextContrastBackground = false
         customTextColors = []
         reloadMinecraftResources()
         settingsPath = APP_DIRPATH + "/settings.json"
@@ -398,6 +400,7 @@ QtObject{
             if (typeof saved !== "object" || Array.isArray(saved))
                 return
             savedSettings = saved
+            richTextContrastBackground = saved.richTextContrastBackground === true
             customTextColors = normalizeTextColors(saved.customTextColors)
             initializationCompleted = saved.initializationCompleted === true
             editorChineseFont = typeof saved.editorChineseFont === "string" && saved.editorChineseFont.trim().length
@@ -437,6 +440,7 @@ QtObject{
         settings.animationSpeed = animationSpeed
         settings.editorChineseFont = editorChineseFont
         settings.editorLatinFont = editorLatinFont
+        settings.richTextContrastBackground = richTextContrastBackground
         settings.customTextColors = customTextColors
         settings.backgroundMode = backgroundMode
         settings.backgroundImage = backgroundImage

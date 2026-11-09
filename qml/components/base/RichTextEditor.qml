@@ -143,7 +143,7 @@ Item {
             anchors.fill: parent
             focused: editor.activeFocus
             idleOpacity: 0.50
-            color: root.compact
+            color: root.compact && !Global.richTextContrastBackground
                    ? Colors.changeA(Colors.isLight ? Qt.tint(Colors.input, "#33ffffff") : Colors.input,
                                     focused ? 0.72 : idleOpacity)
                    : Colors.isLight ? "#24262e" : Colors.changeA(Colors.input, focused ? 0.72 : idleOpacity)
@@ -160,7 +160,7 @@ Item {
             Controls.ScrollBar.vertical: XCScrollBar {
                 id: scrollBar
                 objectName: "richTextScrollBar"
-                visible: !root.singleLine
+                policy: root.singleLine ? Controls.ScrollBar.AlwaysOff : Controls.ScrollBar.AsNeeded
                 parent: editingFrame
                 anchors.top: parent.top
                 anchors.right: parent.right

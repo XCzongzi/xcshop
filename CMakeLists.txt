@@ -30,6 +30,8 @@ qt_policy(
 )
 
 set(CMAKE_AUTORCC ON)
+# Embed large GUI images directly into an object to keep compiler memory bounded.
+qt_add_big_resources(XCSHOP_GUI_RESOURCES gui.qrc)
 qt_add_executable(appxcshop
     src/MinecraftGameData.cpp
     src/MinecraftItemRenderer.cpp
@@ -42,7 +44,7 @@ qt_add_executable(appxcshop
     src/WindowStateController.cpp
     src/UpdateChecker.cpp
     header/UpdateChecker.h
-    gui.qrc
+    ${XCSHOP_GUI_RESOURCES}
     about.qrc
     gui_light.qrc
     container.qrc

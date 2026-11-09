@@ -322,6 +322,23 @@ Item {
             }
         }
 
+        SettingsCard {
+            width: parent.width
+            title: "富文本编辑"
+            description: "使用与富文本编辑弹窗相同的背景，突出彩色文本，提高可读性。"
+            contentHeight: richTextBackgroundCheck.height
+            XCCheckBox {
+                id: richTextBackgroundCheck
+                objectName: "richTextContrastBackgroundCheck"
+                text: "富文本高对比背景"
+                checked: Global.richTextContrastBackground
+                onToggled: function(value) {
+                    Global.richTextContrastBackground = value
+                    Global.saveSettings()
+                }
+            }
+        }
+
         SettingsFonts {}
     }
 }

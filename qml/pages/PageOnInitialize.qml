@@ -252,6 +252,16 @@ BasePage {
                     onLoaded: scroll.contentItem.contentY = 0
                 }
             }
+            XCText {
+                objectName: "initializationBackgroundHint"
+                anchors.bottom: navigation.top; anchors.bottomMargin: 12
+                width: parent.width
+                visible: root.displayedStep === "theme" && nextButton.visible && nextButton.enabled
+                onCenter: false; horizontalAlignment: Text.AlignRight
+                xcWrapMode: true; boldFont: false; xcFontSize: 12
+                textColor: Colors.banned
+                xcText: "稍后可在设置页中启用背景图片"
+            }
             Item {
                 id: feedback
                 anchors.bottom: navigation.top; anchors.bottomMargin: root.errorText.length ? 12 : 0
@@ -282,6 +292,7 @@ BasePage {
                         }
                     }
                     ActionButton {
+                        id: nextButton
                         objectName: "initializationNext"
                         visible: root.displayedStep !== "theme" || themePicker.expanded
                         text: root.displayedStep === "items" ? "完成" : root.displayedStep === "update" ? "继续设置" : "下一步"
@@ -350,7 +361,7 @@ BasePage {
                         id: templateInfo
                         x: 16; y: 14; width: parent.width - 32; spacing: 8
                         XCText { width: parent.width; onCenter: false; xcText: templateCard.modelData.name; xcFontSize: 14 }
-                        XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcText: "游戏版本  " + (templateCard.modelData.versions || []).join("、") + (templateCard.modelData.allowsNewer ? " 及更新版本（暂定）" : ""); xcFontSize: 12; boldFont: false; textColor: Colors.banned }
+                        XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcText: "游戏版本  " + (templateCard.modelData.versions || []).join("、") + (templateCard.modelData.allowsNewer ? " 及更新版本" : ""); xcFontSize: 12; boldFont: false; textColor: Colors.banned }
                         XCText { visible: !templateCard.modelData.valid || templateCard.modelData.dataVersion !== BuildKits.dataVersion; width: parent.width; onCenter: false; xcText: !templateCard.modelData.valid ? "模板依赖不完整" : "模板数据版本不兼容"; xcFontSize: 12; boldFont: false; textColor: Colors.warning }
                     }
                 }
