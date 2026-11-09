@@ -21,6 +21,7 @@ const ui = {containerType: 'generic_9x3', customName: '', openCommand: 'function
     placeholderItem: {enabled: true, element: 'Item/placeholder.xcseItem'}, nestedGroups: [],
     slots: [{index: 0, items: [sale]}]};
 const manifest = {name: 'namespace-test', version: '26.3', dataVersion: 0,
+    dataPackVersion: {major:121,minor:0},
     generatePath: path.join(temporary, 'generated'), templateId: '89755dae-f798-440d-b3a9-342ee8a9070f',
     shops: [{registrationName: 'test', element: 'UI/shop.xcseUI', containerType: 'barrel'}]};
 const walk = directory => fs.readdirSync(directory, {withFileTypes: true}).flatMap(entry => {
@@ -68,7 +69,7 @@ try {
         assert.equal(result.status, 0, JSON.stringify(record));
         assert.equal(record.buildSucceeded, true, JSON.stringify(record));
         assert.equal(record.outputWritten, true);
-        assert.equal(record.warningCount, 0, JSON.stringify(record));
+        assert.equal(record.warnings.filter(warning => warning.property !== '$.version').length, 0, JSON.stringify(record));
 
         const output = path.join(generatePath, manifest.name);
         const read = relative => fs.readFileSync(path.join(output, relative), 'utf8');

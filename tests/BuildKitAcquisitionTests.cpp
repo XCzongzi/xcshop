@@ -9,6 +9,7 @@
 #include <QDirIterator>
 #include <QDateTime>
 #include <QSettings>
+#include <QScopeGuard>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTemporaryDir>
@@ -18,8 +19,8 @@ const QString id = "89755dae-f798-440d-b3a9-342ee8a9070f";
 QByteArray descriptor() {
     return (id + "\n0\n\"26.3\"...\n../blueprints/main.xcshoper\n../materials/alpha\n[\"测试套件\"]\n").toUtf8();
 }
-void writeKit(QZipWriter &zip, const QString &prefix = "kits/") {
-    zip.addFile(prefix + "templates/中文 空格.xcshopT", descriptor());
+void writeKit(QZipWriter &zip, const QString &prefix = "kits/", const QByteArray &templateBytes = descriptor()) {
+    zip.addFile(prefix + "templates/中文 空格.xcshopT", templateBytes);
     zip.addFile(prefix + "blueprints/main.xcshoper", "build \"sell.xcontent\"\n");
     zip.addFile(prefix + "materials/alpha/sell.xcontent", "sell.mcfunction\nsay test\n");
 }
@@ -31,6 +32,11 @@ void makeZip(const QString &path, const QString &prefix = "kits/") {
 QByteArray read(const QString &path) {
     QFile file(path);
     return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+}
+bool write(const QString &path, const QByteArray &bytes) {
+    if (!QDir().mkpath(QFileInfo(path).absolutePath())) return false;
+    QFile file(path);
+    return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
 }
 class Feed : public QObject {
 public:
@@ -64,6 +70,179 @@ public:
 class BuildKitAcquisitionTests : public QObject {
     Q_OBJECT
 private slots:
+    void onlineTemplateVersions_data() {
+        QTest::addColumn<QByteArray>("newline");
+        QTest::addColumn<bool>("bom");
+        QTest::addColumn<QByteArray>("versions");
+        QTest::newRow("lf-explicit") << QByteArray("\n") << false << QByteArray("\"26.3\",\"26.4\"");
+        QTest::newRow("crlf-range") << QByteArray("\r\n") << false << QByteArray("\"26.3\",\"26.4\"...");
+        QTest::newRow("bom-cr") << QByteArray("\r") << true << QByteArray("\"26.3\",\"26.4\"");
+        QTest::newRow("bom-crlf") << QByteArray("\r\n") << true << QByteArray("\"26.3\",\"26.4\"...");
+    }
+    void onlineTemplateVersions() {
+        QFETCH(QByteArray, newline);
+        QFETCH(bool, bom);
+        QFETCH(QByteArray, versions);
+        QTemporaryDir temp;
+        const auto archive = temp.filePath("local.zip");
+        const auto base = descriptor() + "warning(\"保留检查代码\");\n";
+        const auto format = [&](QByteArray bytes) {
+            bytes.replace("\n", newline);
+            return bom ? QByteArray("\xef\xbb\xbf") + bytes : bytes;
+        };
+        const auto original = format(base);
+        { QZipWriter zip(archive); writeKit(zip, "kits/", original); zip.close(); }
+        Feed feed;
+        QVERIFY(feed.server.isListening());
+        BuildKitManager kits(feed.url(), temp.filePath("state.ini"), 1);
+        kits.setKitsPath(temp.filePath("target"));
+        kits.setPreferredTemplateId(id);
+        QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+        kits.acquire(archive);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+        QVERIFY2(done[0][0].toBool(), qPrintable(done[0][1].toString()));
+        const auto templatePath = kits.findTemplate(id)["path"].toString();
+        QCOMPARE(read(templatePath), original);
+
+        auto incoming = base;
+        incoming.replace("\"26.3\"...", versions);
+        { QZipWriter zip(archive); writeKit(zip, "kits/", incoming); zip.close(); }
+        feed.body = read(archive);
+        kits.acquire();
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 2, 10000);
+        QVERIFY2(done[1][0].toBool(), qPrintable(done[1][1].toString()));
+        const auto expected = format(incoming);
+        QCOMPARE(read(templatePath), expected);
+        QCOMPARE(kits.findTemplate(id)["versions"].toStringList(), (QStringList{"26.3", "26.4"}));
+        QCOMPARE(kits.findTemplate(id)["allowsNewer"].toBool(), versions.endsWith("..."));
+        QCOMPARE(kits.versionSupport(id, "26.4"), 0);
+        QCOMPARE(kits.versionSupport(id, "26.5"), versions.endsWith("...") ? 1 : -1);
+        QCOMPARE(kits.preferredTemplateId(), id);
+        QCOMPARE(read(kits.kitsPath() + "/materials/alpha/sell.xcontent"), QByteArray("sell.mcfunction\nsay test\n"));
+        // Repeating an online update also works with a different source BOM/newline style.
+        QTRY_COMPARE_WITH_TIMEOUT(kits.downloadCooldownSeconds(), 0, 3000);
+        kits.acquire();
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 3, 10000);
+        QVERIFY2(done[2][0].toBool(), qPrintable(done[2][1].toString()));
+        QCOMPARE(read(templatePath), expected);
+    }
+    void onlineTemplateVersionConflicts_data() {
+        QTest::addColumn<QString>("change");
+        for (const auto &change : {"body", "material", "id", "path", "invalid-version"})
+            QTest::newRow(change) << QString(change);
+    }
+    void onlineTemplateVersionConflicts() {
+        QFETCH(QString, change);
+        QTemporaryDir temp;
+        const auto archive = temp.filePath("kits.zip"); makeZip(archive);
+        Feed feed;
+        QVERIFY(feed.server.isListening());
+        BuildKitManager kits(feed.url(), temp.filePath("state.ini"), 1);
+        kits.setKitsPath(temp.filePath("target"));
+        QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+        kits.acquire(archive);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+        QVERIFY(done[0][0].toBool());
+        const auto templatePath = kits.findTemplate(id)["path"].toString();
+        const auto original = read(templatePath);
+        auto incoming = descriptor();
+        incoming.replace("\"26.3\"...", change == "invalid-version" ? "\"26.4\",\"26.3\"" : "\"26.4\"...");
+        if (change == "body") incoming.append("error(\"changed\");\n");
+        if (change == "id") incoming.replace(id.toUtf8(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        {
+            QZipWriter zip(archive);
+            zip.addFile(change == "path" ? "kits/templates/renamed.xcshopT" : "kits/templates/中文 空格.xcshopT", incoming);
+            zip.addFile("kits/blueprints/main.xcshoper", "build \"sell.xcontent\"\n");
+            zip.addFile("kits/materials/alpha/sell.xcontent", change == "material" ? "changed" : "sell.mcfunction\nsay test\n");
+            zip.addFile("kits/materials/alpha/new.xcontent", "new.mcfunction\nsay new\n");
+            zip.close();
+        }
+        feed.body = read(archive);
+        kits.acquire();
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 2, 10000);
+        QVERIFY2(!done[1][0].toBool(), qPrintable(change));
+        QCOMPARE(read(templatePath), original);
+        QVERIFY(!QFileInfo::exists(kits.kitsPath() + "/materials/alpha/new.xcontent"));
+        QVERIFY(!QFileInfo::exists(kits.kitsPath() + "/templates/renamed.xcshopT"));
+        QCOMPARE(kits.templates().size(), 1);
+        QCOMPARE(kits.versionSupport(id, "26.3"), 0);
+    }
+    void onlineTemplateVersionWriteFailure() {
+        QTemporaryDir temp;
+        const auto archive = temp.filePath("kits.zip");
+        const auto makeArchive = [&](bool update) {
+            auto first = descriptor();
+            if (update) first.replace("\"26.3\"...", "\"26.4\"...");
+            auto second = first;
+            second.replace(id.toUtf8(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            QZipWriter zip(archive);
+            zip.addFile("kits/templates/a.xcshopT", first);
+            zip.addFile("kits/templates/z.xcshopT", second);
+            zip.addFile("kits/blueprints/main.xcshoper", "build \"sell.xcontent\"\n");
+            zip.addFile("kits/materials/alpha/sell.xcontent", "sell.mcfunction\nsay test\n");
+            if (update) zip.addFile("kits/materials/alpha/new.xcontent", "new.mcfunction\nsay new\n");
+            zip.close();
+        };
+        makeArchive(false);
+        Feed feed;
+        QVERIFY(feed.server.isListening());
+        BuildKitManager kits(feed.url(), temp.filePath("state.ini"), 1);
+        kits.setKitsPath(temp.filePath("target"));
+        QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+        kits.acquire(archive);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+        QVERIFY(done[0][0].toBool());
+        const auto firstPath = kits.kitsPath() + "/templates/a.xcshopT";
+        const auto secondPath = kits.kitsPath() + "/templates/z.xcshopT";
+        const auto first = read(firstPath), second = read(secondPath);
+        const auto permissions = QFileInfo(secondPath).permissions();
+        const auto restore = qScopeGuard([&] { QFile::setPermissions(secondPath, permissions); });
+        QVERIFY(QFile::setPermissions(secondPath, QFile::ReadOwner | QFile::ReadUser));
+        makeArchive(true);
+        feed.body = read(archive);
+        kits.acquire();
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 2, 10000);
+        QVERIFY2(!done[1][0].toBool(), qPrintable(done[1][1].toString()));
+        QVERIFY(done[1][1].toString().contains("无法更新模板"));
+        QCOMPARE(read(firstPath), first);
+        QCOMPARE(read(secondPath), second);
+        QVERIFY(!QFileInfo::exists(kits.kitsPath() + "/materials/alpha/new.xcontent"));
+        QCOMPARE(kits.versionSupport(id, "26.3"), 0);
+    }
+    void localTemplateVersionConflict_data() {
+        QTest::addColumn<QString>("mode");
+        for (const auto &mode : {"zip", "directory", "direct"})
+            QTest::newRow(mode) << QString(mode);
+    }
+    void localTemplateVersionConflict() {
+        QFETCH(QString, mode);
+        QTemporaryDir temp;
+        const auto archive = temp.filePath("kits.zip"); makeZip(archive);
+        BuildKitManager kits;
+        kits.setKitsPath(temp.filePath("target"));
+        QSignalSpy done(&kits, &BuildKitManager::acquisitionFinished);
+        kits.acquire(archive);
+        QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
+        QVERIFY(done[0][0].toBool());
+        auto incoming = descriptor();
+        incoming.replace("\"26.3\"...", "\"26.4\"...");
+        if (mode == "zip") {
+            QZipWriter zip(archive); writeKit(zip, "kits/", incoming); zip.close();
+            kits.acquire(archive);
+        } else {
+            const auto source = temp.filePath("source");
+            QVERIFY(write(source + "/templates/中文 空格.xcshopT", incoming));
+            QVERIFY(write(source + "/blueprints/main.xcshoper", "build \"sell.xcontent\"\n"));
+            QVERIFY(write(source + "/materials/alpha/sell.xcontent", "sell.mcfunction\nsay test\n"));
+            if (mode == "direct") QVERIFY(!kits.importKit(source).isEmpty());
+            else kits.acquire(source);
+        }
+        if (mode != "direct") {
+            QTRY_COMPARE_WITH_TIMEOUT(done.size(), 2, 10000);
+            QVERIFY(!done[1][0].toBool());
+        }
+        QCOMPARE(read(kits.findTemplate(id)["path"].toString()), descriptor());
+    }
     void zipImport_data() {
         QTest::addColumn<QString>("prefix");
         QTest::newRow("wrapped") << QString("kits/");

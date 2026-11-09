@@ -134,7 +134,15 @@ BasePage {
             if (Object.prototype.hasOwnProperty.call(changes, key))
                 next[key] = changes[key]
         }
-        saveManifest(next, registeredShops)
+        if (next.version !== projectData.version || !next.dataPackVersion) {
+            var mapping = BuildKits.resolveDataPackVersion(String(next.version || ""))
+            if (!mapping.valid) {
+                showNotice("保存失败", mapping.error)
+                return false
+            }
+            next.dataPackVersion = { "major": mapping.major, "minor": mapping.minor }
+        }
+        return saveManifest(next, registeredShops)
     }
 
     function editProject() {

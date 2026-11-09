@@ -14,6 +14,7 @@ try {
     for (const type of ['UI', 'Item', 'Cost', 'Display'])
         fs.mkdirSync(path.join(project, type), {recursive: true});
     write('xcshop.json', {name: 'quantity-test', namespace: 'quantity_test', version: '26.3', dataVersion: 0,
+        dataPackVersion: {major:121,minor:0},
         generatePath: path.join(temporary, 'generated'), templateId: '89755dae-f798-440d-b3a9-342ee8a9070f',
         shops: [{registrationName: 'test', element: 'UI/shop.xcseUI', containerType: 'barrel'}]});
     write('UI/shop.xcseUI', {containerType: 'generic_9x3', customName: '', openCommand: '',
@@ -49,11 +50,12 @@ try {
         const record = JSON.parse(line.slice('XCSHOP_BUILD_RESULT '.length));
         assert.equal(result.status, 0, output);
         assert.equal(record.buildSucceeded, true, JSON.stringify(record));
-        assert.equal(record.warningCount, Number(expected), `${item}/${kind}/${mode}: ${JSON.stringify(record)}`);
+        const warnings = record.warnings.filter(warning => warning.property !== '$.version');
+        assert.equal(warnings.length, Number(expected), `${item}/${kind}/${mode}: ${JSON.stringify(record)}`);
         if (expected) {
-            assert.ok(record.warnings[0].reason.length);
-            assert.ok(record.warnings[0].solution.length);
-            assert.equal(record.warnings[0].terminatesBuild, false);
+            assert.ok(warnings[0].reason.length);
+            assert.ok(warnings[0].solution.length);
+            assert.equal(warnings[0].terminatesBuild, false);
         }
     }
     console.log(`Alpha r0 quantity warnings: ${cases.length} cases passed`);

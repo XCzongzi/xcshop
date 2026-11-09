@@ -133,6 +133,9 @@ Window {
                     var manifest = JSON.parse(file.read(project + "/xcshop.json"))
                     check(manifest.templateId === alpha && manifest.template === undefined, "legacy template identity written")
                     check(manifest.dataVersion === 0 && Array.isArray(manifest.shops), "manifest schema incorrect")
+                    var expectedPackVersion = BuildKits.resolveDataPackVersion(manifest.version)
+                    check(manifest.dataPackVersion.major === expectedPackVersion.major
+                          && manifest.dataPackVersion.minor === expectedPackVersion.minor, "stored data pack version")
                     check(JSON.parse(file.read(Global.settingsPath)).futureSetting === "preserved", "settings dropped unknown fields")
                     check(file.writeAtomic(project + "/Item/stone.xcseItem", JSON.stringify({
                         "item": "stone 2", "display": {"mode": "original", "element": ""},

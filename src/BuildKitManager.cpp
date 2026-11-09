@@ -1,4 +1,5 @@
 #include "BuildKitManager.h"
+#include "MinecraftDataPackVersions.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -9,6 +10,8 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QRegularExpression>
+#include <QSaveFile>
+#include <QSet>
 #include <QSettings>
 #include <QUrl>
 #include <algorithm>
@@ -164,6 +167,43 @@ QByteArray fileHash(const QString &path) {
     QCryptographicHash hash(QCryptographicHash::Sha256);
     return hash.addData(&file) ? hash.result() : QByteArray();
 }
+
+struct TemplateVersionUpdate {
+    QString path;
+    QByteArray before, after;
+};
+
+std::optional<TemplateVersionUpdate> templateVersionUpdate(const QString &source, const QString &target) {
+    QFile incoming(source), existing(target);
+    if (!incoming.open(QIODevice::ReadOnly) || !existing.open(QIODevice::ReadOnly)) return {};
+    const auto before = existing.readAll();
+    const auto normalize = [](QByteArray bytes) {
+        if (bytes.startsWith("\xef\xbb\xbf")) bytes.remove(0, 3);
+        return bytes.replace("\r\n", "\n").replace('\r', '\n');
+    };
+    auto incomingLines = normalize(incoming.readAll()).split('\n');
+    const auto existingLines = normalize(before).split('\n');
+    if (incomingLines.size() < 3 || existingLines.size() < 3) return {};
+    const auto versions = incomingLines[2];
+    incomingLines[2] = existingLines[2];
+    if (incomingLines != existingLines) return {};
+    // Locate the third line in the original bytes to retain the local BOM and line endings.
+    qsizetype start = 0;
+    for (int line = 0; line < 2; ++line) {
+        while (start < before.size() && before[start] != '\r' && before[start] != '\n') ++start;
+        if (start < before.size() && before[start++] == '\r' && start < before.size() && before[start] == '\n') ++start;
+    }
+    auto end = start;
+    while (end < before.size() && before[end] != '\r' && before[end] != '\n') ++end;
+    auto after = before;
+    after.replace(start, end - start, versions);
+    return TemplateVersionUpdate{target, before, after};
+}
+
+bool replaceFile(const QString &path, const QByteArray &bytes) {
+    QSaveFile file(path);
+    return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+}
 }
 
 BuildKitManager::BuildKitManager(QObject *parent)
@@ -204,6 +244,11 @@ BuildKitManager::~BuildKitManager() {
     m_acquisitionWatcher.waitForFinished();
 }
 QString BuildKitManager::defaultKitsPath() const { return QCoreApplication::applicationDirPath() + "/kits"; }
+QVariantMap BuildKitManager::resolveDataPackVersion(const QString &version) const {
+    return MinecraftDataPackVersions::resolve(
+        QDir(QCoreApplication::applicationDirPath()).filePath("minecraft-data-pack-versions.json"), version);
+}
+
 QString BuildKitManager::localPath(const QString &path) const {
     const QUrl url(path);
     const auto value = url.isLocalFile() ? url.toLocalFile() : path.trimmed();
@@ -357,7 +402,7 @@ void BuildKitManager::acquire(const QString &source) {
             progress(90, "正在校验并导入套件…");
             BuildKitManager worker;
             worker.setKitsPath(target);
-            return worker.importDirectory(root, cancel);
+            return worker.importDirectory(root, cancel, path.isEmpty());
         } catch (const std::exception &error) {
             return QString::fromUtf8(error.what());
         }
@@ -367,7 +412,8 @@ void BuildKitManager::cancelAcquisition() {
     if (m_cancel) m_cancel->store(true);
 }
 
-QString BuildKitManager::importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel) {
+QString BuildKitManager::importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel,
+                                        bool updateTemplateVersions) {
     const auto cancelled = [&] { return cancel && cancel->load(); };
     if (cancelled()) return "已取消获取套件。";
     const auto source = QFileInfo(localPath(sourceRoot)).canonicalFilePath();
@@ -387,14 +433,18 @@ QString BuildKitManager::importDirectory(const QString &sourceRoot, const BuildK
         return "待导入的套件无效：\n" + incoming.issues().join('\n');
     refresh();
     if (!m_templates.isEmpty() && !m_identityValid) return "当前套件目录的模板 ID 无效或重复，请先修复后再导入。";
+    QSet<QString> versionUpdatePaths;
     for (const auto &value : incoming.templates()) {
         const auto item = value.toMap();
         const auto existing = findTemplate(item["id"].toString());
         if (!existing.isEmpty() && existing["relativePath"] != item["relativePath"])
             return "模板 ID 已存在，不能以另一个文件名重复导入：" + item["name"].toString();
+        if (updateTemplateVersions && !existing.isEmpty())
+            versionUpdatePaths.insert(item["relativePath"].toString());
     }
-    // Validate the complete merge before writing. Existing, different files are never overwritten.
+    // Validate the complete merge before writing; online templates may differ only on line three.
     QStringList additions, directories;
+    QList<TemplateVersionUpdate> versionUpdates;
     QDirIterator files(source, QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden, QDirIterator::Subdirectories);
     while (files.hasNext()) {
         if (cancelled()) return "已取消获取套件。";
@@ -411,36 +461,58 @@ QString BuildKitManager::importDirectory(const QString &sourceRoot, const BuildK
         } else if (info.isFile()) {
             if (existing.exists()) {
                 const auto hash = fileHash(path);
-                if (!existing.isFile() || hash.isEmpty() || hash != fileHash(destination))
+                if (!existing.isFile() || hash.isEmpty())
                     return "同名文件内容不同，未覆盖任何文件：" + destination;
+                if (hash != fileHash(destination)) {
+                    const auto update = versionUpdatePaths.contains(relative)
+                        ? templateVersionUpdate(path, destination) : std::nullopt;
+                    if (!update) return "同名文件内容不同，未覆盖任何文件：" + destination;
+                    if (update->before != update->after) versionUpdates << *update;
+                }
             } else additions << relative;
         } else return "套件包含非普通文件：" + path;
     }
     std::sort(directories.begin(), directories.end(), [](const auto &a, const auto &b) { return a.size() < b.size(); });
+    std::sort(versionUpdates.begin(), versionUpdates.end(), [](const auto &a, const auto &b) { return a.path < b.path; });
     QStringList copied, created;
-    auto rollback = [&] {
+    QList<TemplateVersionUpdate> updated;
+    auto rollback = [&](QString error) {
+        QStringList unrestored;
+        for (auto it = updated.crbegin(); it != updated.crend(); ++it)
+            if (!replaceFile(it->path, it->before)) unrestored << it->path;
         for (const auto &file : copied) QFile::remove(file);
         for (auto it = created.crbegin(); it != created.crend(); ++it) QDir().rmdir(*it);
+        if (!unrestored.isEmpty()) error += "\n无法恢复以下模板的版本声明：\n" + unrestored.join('\n');
+        return error;
     };
     if (!QFileInfo::exists(target)) {
         if (!QDir().mkpath(target)) return "无法创建套件目录。";
         created << target;
     }
     for (const auto &directory : directories) {
-        if (cancelled()) { rollback(); return "已取消获取套件。"; }
-        if (!QDir().mkdir(directory)) { rollback(); return "无法创建目录：" + directory; }
+        if (cancelled()) return rollback("已取消获取套件。");
+        if (!QDir().mkdir(directory)) return rollback("无法创建目录：" + directory);
         created << directory;
     }
     for (const auto &relative : additions) {
-        if (cancelled()) { rollback(); return "已取消获取套件。"; }
+        if (cancelled()) return rollback("已取消获取套件。");
         const auto destination = QDir(target).filePath(relative);
         if (!QFile::copy(QDir(source).filePath(relative), destination)) {
-            rollback();
-            return "导入失败，已撤销本次新增文件：" + destination;
+            return rollback("导入失败，已撤销本次新增文件：" + destination);
         }
         copied << destination;
     }
-    if (cancelled()) { rollback(); return "已取消获取套件。"; }
+    for (const auto &update : versionUpdates) {
+        if (cancelled()) return rollback("已取消获取套件。");
+        QFile current(update.path);
+        if (!current.open(QIODevice::ReadOnly) || current.readAll() != update.before)
+            return rollback("模板在导入期间发生变化，已取消版本更新：" + update.path);
+        current.close();
+        if (!replaceFile(update.path, update.after))
+            return rollback("无法更新模板的版本声明：" + update.path);
+        updated << update;
+    }
+    if (cancelled()) return rollback("已取消获取套件。");
     refresh();
     return {};
 }

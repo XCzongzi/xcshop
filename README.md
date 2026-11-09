@@ -61,6 +61,7 @@ Copyright © 2026 XCzongzi. 版权所有。
 - [发布说明模板](docs/release/发布说明模板.md)
 - [素材与套件来源](docs/release/素材与套件来源.md)
 - [构建器接入](docs/构建器接入.md)
+- [Minecraft 数据包版本映射](docs/Minecraft数据包版本映射.md)
 - [Minecraft 物品资源导入](docs/Minecraft物品资源导入.md)
 - [界面组件复用](docs/界面组件复用.md)
 - [浅色主题与视觉验证](docs/浅色主题与视觉验证.md)

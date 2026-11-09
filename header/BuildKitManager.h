@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE QVariantList options(int requiredDataVersion = 0) const;
     // -1 unsupported, 0 explicitly supported, 1 newer and only tentatively supported.
     Q_INVOKABLE int versionSupport(const QString &id, const QString &version) const;
+    Q_INVOKABLE QVariantMap resolveDataPackVersion(const QString &version) const;
     Q_INVOKABLE QString importKit(const QString &sourceRoot);
     // Empty source downloads the official bundle; otherwise accepts ZIP or a kit root.
     Q_INVOKABLE void acquire(const QString &source = QString());
@@ -65,7 +66,8 @@ signals:
     void acquisitionFinished(bool success, const QString &message);
 private:
     void updateDownloadCooldown();
-    QString importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel = {});
+    QString importDirectory(const QString &sourceRoot, const BuildKitArchive::Cancellation &cancel = {},
+                            bool updateTemplateVersions = false);
     QString m_kitsPath, m_preferredTemplateId;
     QVariantList m_templates;
     QStringList m_issues;

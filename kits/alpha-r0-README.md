@@ -5,6 +5,8 @@
 
 模板 ID：`89755dae-f798-440d-b3a9-342ee8a9070f`。
 
+`pack.mcmeta` 的 `min_format`、`max_format` 通过只读全局 `@dataPackVersion.major/minor` 使用项目保存的数据包版本，不再固定为 121.0。需要支持该接口的构建器；已有项目若缺少 `dataPackVersion`，在编辑器项目设置中保存一次即可补齐。映射维护和项目格式见 [Minecraft 数据包版本映射](../docs/Minecraft数据包版本映射.md)。
+
 ## 文件
 
 - 模板：`templates/alpha-r0.xcshopT`

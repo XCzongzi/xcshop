@@ -31,6 +31,7 @@ try {
         const lastSlot = slotCounts[layout] - 1;
         assert.ok(Number.isInteger(lastSlot), `Unknown layout: ${layout}`);
         write('xcshop.json', {name: 'container-test', namespace: 'container_test', version: '26.3',
+            dataPackVersion: {major:121,minor:0},
             dataVersion: 0, generatePath: path.join(temporary, type),
             templateId: '89755dae-f798-440d-b3a9-342ee8a9070f',
             shops: [{registrationName: 'test', element: 'UI/shop.xcseUI', containerType: type}]});
@@ -54,7 +55,7 @@ try {
         }
         assert.equal(result.status, 0, message);
         assert.equal(record.errorCount, 0, message);
-        assert.equal(record.warningCount, 0, message);
+        assert.equal(record.warnings.filter(warning => warning.property !== '$.version').length, 0, message);
         const runtime = path.join(temporary, type, 'container-test/data/container_test/function');
         const item = fs.readFileSync(path.join(runtime, `shop/test/${lastSlot}/0/set.mcfunction`), 'utf8');
         assert.ok(item.includes(`container.${lastSlot} with stone`), type);

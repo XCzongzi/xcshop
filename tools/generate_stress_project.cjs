@@ -201,6 +201,7 @@ function generate(destination, profile = 'pressure', overrides = {}) {
 
     write('xcshop.json', {name: `超绝构建压力测试-${profile}`, namespace: 'xcshop_stress',
         version: '26.3', dataVersion: 0, templateId: '89755dae-f798-440d-b3a9-342ee8a9070f',
+        dataPackVersion: {major:121,minor:0},
         generatePath: './generated', outputFolder: 'xcshop-stress-pack', shops: registrations});
     const summary = {profile, ...options, sourceFiles: files.size,
         elements: Object.fromEntries(['UI', 'Item', 'Cost', 'Display'].map(type => [type,

@@ -2,10 +2,10 @@ pack.mcmeta
 {
   "pack": {
     "description": {
-      "text": "UI商店模板：末影箱（个人）+ 普通箱子（共享）",
+      "text": "xcshop Alpha r0",
       "color": "gold"
     },
-    "min_format": [121, 0],
-    "max_format": [121, 0]
+    "min_format": [{{@dataPackVersion.major}}, {{@dataPackVersion.minor}}],
+    "max_format": [{{@dataPackVersion.major}}, {{@dataPackVersion.minor}}]
   }
 }

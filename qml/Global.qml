@@ -282,6 +282,16 @@ QtObject{
         return ""
     }
 
+    function templateVersionOptions(template) {
+        if (!template.valid) return []
+        var explicitVersions = template.versions || []
+        var options = explicitVersions.map(function(id) { return { id: id, extended: false } })
+        if (!template.allowsNewer || !explicitVersions.length) return options
+        return options.concat(GameVersions.versions.filter(function(version) {
+            return BuildKits.versionSupport(template.id, version) === 1
+        }).map(function(version) { return { id: version, extended: true } }))
+    }
+
     function collectBuildProblems(projectData, registeredShops) {
         var result = []
         if (!projectData.name || !String(projectData.name).trim().length)

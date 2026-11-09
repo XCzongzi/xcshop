@@ -5,14 +5,16 @@ import xcshop
 PopupFrame {
     id: root
     dialogWidth: 650
-    dialogHeight: root.selectedTemplate.allowsNewer ? 452 : 422
+    dialogHeight: 422
 
     title: "项目设置"
     property var projectData: ({})
     property string projectLocation: ""
     property var templateOptions: []
     property string validationMessage: ""
+    property var pendingChanges: null
     readonly property var selectedTemplate: BuildKits.findTemplate(templateChoice.value)
+    readonly property var versionOptions: Global.templateVersionOptions(selectedTemplate)
 
     function fieldValue(key, fallback) {
         if (!projectData || projectData[key] === undefined || projectData[key] === null)
@@ -20,41 +22,23 @@ PopupFrame {
         return String(projectData[key])
     }
 
-    function versionsForTemplate(templateValue) {
-        for (var i = 0; i < templateOptions.length; ++i) {
-            if (String(templateOptions[i].value) === String(templateValue)) {
-                var versions = templateOptions[i].versions || []
-                var values = []
-                for (var j = 0; j < versions.length; ++j)
-                    values.push({ "value": String(versions[j]), "label": String(versions[j]) })
-                var current = fieldValue("version", "")
-                if (String(templateValue).toLowerCase() === fieldValue("templateId", "").toLowerCase()
-                        && versions.indexOf(current) < 0 && BuildKits.versionSupport(templateValue, current) >= 0)
-                    values.push({ "value": current, "label": current + "（未明确支持）" })
-                return values
-            }
-        }
-        var current = fieldValue("version", "")
-        return current.length ? [{ "value": current, "label": current }] : []
-    }
-
     function syncFields() {
         nameField.text = fieldValue("name", "")
         namespaceField.text = fieldValue("namespace", "")
         outputField.text = fieldValue("generatePath", "")
         templateChoice.value = fieldValue("templateId", "").toLowerCase()
-        versionChoice.options = versionsForTemplate(templateChoice.value)
         versionChoice.value = fieldValue("version", "")
-        customVersion.text = ""
         validationMessage = ""
     }
 
     onAboutToOpen: {
+        GameVersions.reload()
         syncFields()
         Qt.callLater(function() { nameField.forceActiveFocus() })
     }
 
     function submit() {
+        if (versionWarning.visible || closing) return
         var name = nameField.text.trim()
         var namespaceName = namespaceField.text.trim()
         var outputPath = outputField.text.trim()
@@ -67,9 +51,9 @@ PopupFrame {
             validationMessage = "命名空间只能包含小写字母、数字、下划线、点和连字符，且不能是 . 或 .."
             return
         }
-        var version = selectedTemplate.allowsNewer && customVersion.text.trim().length
-                ? customVersion.text.trim() : versionChoice.value
-        if (!templateChoice.value.length || !version.length || !selectedTemplate.valid) {
+        var version = versionChoice.value
+        if (!templateChoice.value.length || !selectedTemplate.valid
+                || !versionOptions.some(function(option) { return option.id === version })) {
             validationMessage = "请选择构建模板和目标版本"
             return
         }
@@ -77,25 +61,60 @@ PopupFrame {
             validationMessage = "模板与项目数据版本不匹配，不能仅通过改写版本号迁移项目"
             return
         }
-        if (BuildKits.versionSupport(templateChoice.value, version) < 0) {
-            validationMessage = "该模板不支持输入的目标版本"
-            return
-        }
         if (!outputPath.length) {
             validationMessage = "请选择数据包生成位置"
             return
         }
 
-        close({
+        var packVersion = projectData.dataPackVersion
+        if (version !== fieldValue("version", "") || !packVersion) {
+            var mapping = BuildKits.resolveDataPackVersion(version)
+            if (!mapping.valid) {
+                validationMessage = mapping.error
+                return
+            }
+            packVersion = { "major": mapping.major, "minor": mapping.minor }
+        }
+        var changes = {
             "name": name,
             "namespace": namespaceName,
             "generatePath": outputPath,
             "templateId": templateChoice.value,
-            "version": version
-        })
+            "version": version,
+            "dataPackVersion": packVersion
+        }
+        var selectionChanged = version !== fieldValue("version", "")
+                || templateChoice.value !== fieldValue("templateId", "").toLowerCase()
+        if (selectionChanged && versionOptions.some(function(option) { return option.id === version && option.extended })) {
+            pendingChanges = changes
+            versionWarning.open()
+            return
+        }
+        close(changes)
     }
 
     Keys.onEscapePressed: close(null)
+
+    PopupNotice {
+        id: versionWarning
+        objectName: "projectVersionWarning"
+        parent: root
+        anchors.fill: parent
+        z: 2
+        visible: false
+        manageVisibility: true
+        title: "版本兼容性提示"
+        content: "该版本并未明确受到模板的支持，因此生成的数据包在该版本可能无法正常工作。但也未被证实必然会失效。\n是否确认接着更改？"
+        doubleButton: true
+        onClosed: function(result) {
+            var changes = root.pendingChanges
+            root.pendingChanges = null
+            if (result === 1 && changes)
+                root.close(changes)
+            else
+                root.forceActiveFocus()
+        }
+    }
 
     XCFolderDialog {
         id: outputDialog
@@ -141,10 +160,8 @@ PopupFrame {
                 options: root.templateOptions
                 onValueActivated: function(value) {
                     templateChoice.value = value
-                    versionChoice.options = root.versionsForTemplate(value)
-                    versionChoice.value = versionChoice.options.length
-                            ? String(versionChoice.options[0].value) : ""
-                    customVersion.text = ""
+                    var versions = root.selectedTemplate.versions || []
+                    versionChoice.value = versions.length ? versions[versions.length - 1] : ""
                     root.validationMessage = ""
                 }
             }
@@ -156,23 +173,16 @@ PopupFrame {
                 id: versionChoice
                 objectName: "projectVersionChoice"
                 anchors.fill: parent
-                onValueActivated: function(value) { versionChoice.value = value; customVersion.text = ""; root.validationMessage = "" }
+                options: root.versionOptions.map(function(option) { return { value: option.id, label: option.id } })
+                onValueActivated: function(value) { versionChoice.value = value; root.validationMessage = "" }
             }
         }
-    }
-
-    XCTextField {
-        id: customVersion
-        x: 24; y: 219; width: parent.width - 48; height: 32
-        visible: !!root.selectedTemplate.allowsNewer
-        placeholderText: "可选：输入模板允许尝试的较新版本（构建器将提示兼容性警告）"
-        onTextEdited: root.validationMessage = ""
     }
 
     XCText {
         id: outputLabel
         x: 24
-        y: root.selectedTemplate.allowsNewer ? 269 : 239
+        y: 239
         xcText: "数据包生成父目录（文件夹名称可在总览的构建栏设置）"
         xcFontSize: 11
         boldFont: false
@@ -183,7 +193,7 @@ PopupFrame {
     XCTextField {
         id: outputField
         x: 24
-        y: root.selectedTemplate.allowsNewer ? 290 : 260
+        y: 260
         width: parent.width - 126
         height: 36
         placeholderText: "选择生成目录"
@@ -206,7 +216,7 @@ PopupFrame {
 
     XCText {
         x: 24
-        y: root.selectedTemplate.allowsNewer ? 339 : 309
+        y: 309
         width: parent.width - 48
         xcText: root.validationMessage
         visible: root.validationMessage.length > 0

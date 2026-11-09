@@ -9,6 +9,7 @@
 #include "BuildKitManager.h"
 #include "BuildManager.h"
 #include "UpdateChecker.h"
+#include "MinecraftVersionCatalog.h"
 #include <QTimer>
 #ifdef XCSHOP_UI_TESTS
 #include "../tests/UiTestInput.h"
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
     BuildKitManager buildKits;
     BuildManager builder;
     UpdateChecker updates;
+    MinecraftVersionCatalog gameVersions;
     UpdateChecker *activeUpdates = &updates;
 #ifdef XCSHOP_UI_TESTS
     std::unique_ptr<QTemporaryDir> updateTestDirectory;
@@ -65,6 +67,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("BuildKits", &buildKits);
     engine.rootContext()->setContextProperty("Builder", &builder);
     engine.rootContext()->setContextProperty("Updates", activeUpdates);
+    engine.rootContext()->setContextProperty("GameVersions", &gameVersions);
 #ifdef XCSHOP_UI_TESTS
     if (updateFeed) engine.rootContext()->setContextProperty("UpdateFixture", updateFeed.get());
 #endif
@@ -134,6 +137,12 @@ int main(int argc, char *argv[])
     engine.loadFromModule("xcshop", "Main");
 
     // Test entry points use isolated local fixtures instead of the public feed.
+#ifdef XCSHOP_UI_TESTS
+    if (app.arguments().size() == 1)
+#endif
+        if (!engine.rootObjects().isEmpty())
+            QTimer::singleShot(0, &gameVersions, &MinecraftVersionCatalog::checkForUpdates);
+
 #ifdef XCSHOP_UI_TESTS
     if (app.arguments().size() == 1)
 #endif

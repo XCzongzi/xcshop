@@ -117,8 +117,7 @@ Item {
                         required property var modelData
                         width: catalogColumn.width
                         height: 40
-                        text: modelData.name + "  ·  " + (modelData.versions || []).join(", ")
-                              + (modelData.allowsNewer ? " …" : "")
+                        text: modelData.name
                               + (!modelData.valid ? "  [无效]" : modelData.dataVersion !== BuildKits.dataVersion ? "  [数据版本不兼容]" : "")
                               + (modelData.id === BuildKits.preferredTemplateId ? "  [新项目默认]" : "")
                         textSize: 12; radius: 7; widthBorderSize: 10
@@ -131,9 +130,22 @@ Item {
                     width: parent.width
                     spacing: 10
                     visible: !!root.selectedTemplate.path
-                    XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: "ID：" + (root.selectedTemplate.id || "") + "\n数据版本：" + root.selectedTemplate.dataVersion + "\n文件：" + (root.selectedTemplate.path || "") }
+                    XCText {
+                        width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false
+                        xcText: "ID：" + (root.selectedTemplate.id || "")
+                                + "\n数据版本：" + root.selectedTemplate.dataVersion
+                                + "\n支持版本：" + (root.selectedTemplate.versions || []).join("、")
+                                + (root.selectedTemplate.allowsNewer ? " 或更新的版本" : "")
+                    }
+                    Rectangle { width: parent.width; height: 1; color: Colors.changeA(Colors.outline, 0.12) }
                     XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; xcText: (root.selectedTemplate.introduction || []).join("\n\n") || "暂无介绍" }
-                    XCText { width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned; xcText: "蓝图：" + (root.selectedTemplate.blueprintPath || "无效引用") + "\n材料包：" + (root.selectedTemplate.materialsPath || "无效引用") + "\n材料 / 列表文件：" + (root.selectedTemplate.materialCount || 0) }
+                    XCText {
+                        width: parent.width; onCenter: false; xcWrapMode: true; xcFontSize: 12; boldFont: false; textColor: Colors.banned
+                        xcText: "模板位置：" + (root.selectedTemplate.path || "")
+                                + "\n蓝图：" + (root.selectedTemplate.blueprintPath || "无效引用")
+                                + "\n材料包：" + (root.selectedTemplate.materialsPath || "无效引用")
+                                + "\n材料 / 列表文件：" + (root.selectedTemplate.materialCount || 0)
+                    }
                     Flow {
                         width: parent.width; spacing: 8
                         SettingsActionButton {

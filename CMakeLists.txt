@@ -34,6 +34,10 @@ qt_add_executable(appxcshop
     src/MinecraftGameData.cpp
     src/MinecraftItemRenderer.cpp
     src/BuildKitManager.cpp
+    src/MinecraftDataPackVersions.cpp
+    header/MinecraftDataPackVersions.h
+    src/MinecraftVersionCatalog.cpp
+    header/MinecraftVersionCatalog.h
     src/BuildManager.cpp
     src/WindowStateController.cpp
     src/UpdateChecker.cpp
@@ -263,6 +267,13 @@ add_custom_command(TARGET appxcshop POST_BUILD
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/SeedBuildKits.cmake")
 
 include(GNUInstallDirs)
+# Ship the editable table beside the editor, including builds where only JSON changed.
+add_custom_target(sync_data_pack_versions
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/minecraft-data-pack-versions.json"
+        "$<TARGET_FILE_DIR:appxcshop>/minecraft-data-pack-versions.json")
+add_dependencies(appxcshop sync_data_pack_versions)
+install(FILES minecraft-data-pack-versions.json DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS appxcshop
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -286,6 +297,7 @@ if(XCSHOP_BUILD_TESTS)
         set(XCSHOP_TEST_ZIP_LIBRARY Qt6::GuiPrivate)
     endif()
     qt_add_executable(build_kit_acquisition_tests tests/BuildKitAcquisitionTests.cpp
+        src/MinecraftDataPackVersions.cpp
         src/BuildKitManager.cpp header/BuildKitManager.h)
     target_link_libraries(build_kit_acquisition_tests PRIVATE Qt6::Test Qt6::Network Qt6::Concurrent
         xcshop_kit_archive ${XCSHOP_TEST_ZIP_LIBRARY})
@@ -295,7 +307,13 @@ if(XCSHOP_BUILD_TESTS)
         src/UpdateChecker.cpp header/UpdateChecker.h)
     target_link_libraries(update_checker_tests PRIVATE Qt6::Network Qt6::Test)
     add_test(NAME update_checker_tests COMMAND update_checker_tests)
+    qt_add_executable(minecraft_version_catalog_tests tests/MinecraftVersionCatalogTests.cpp
+        tests/UpdateFeedFixture.h src/MinecraftVersionCatalog.cpp header/MinecraftVersionCatalog.h
+        src/MinecraftDataPackVersions.cpp)
+    target_link_libraries(minecraft_version_catalog_tests PRIVATE Qt6::Network Qt6::Test)
+    add_test(NAME minecraft_version_catalog_tests COMMAND minecraft_version_catalog_tests)
     qt_add_executable(editor_backend_tests tests/EditorBackendTests.cpp
+        src/MinecraftDataPackVersions.cpp
         src/BuildKitManager.cpp header/BuildKitManager.h src/BuildManager.cpp header/BuildManager.h)
     target_link_libraries(editor_backend_tests PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent xcshop_kit_archive)
     qt_add_executable(builder_protocol_fixture tests/BuilderProtocolFixture.cpp)
@@ -354,6 +372,11 @@ if(XCSHOP_BUILD_TESTS)
     add_test(NAME light_theme_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME background_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
     add_test(NAME build_kits_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    add_test(NAME creation_versions_ui_smoke COMMAND appxcshop --light-theme-ui-smoke)
+    set_tests_properties(creation_versions_ui_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/CreationVersionsUiSmoke.qml"
+        FAIL_REGULAR_EXPRESSION "CREATION_VERSIONS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"
+        TIMEOUT 25)
     set_tests_properties(build_kits_ui_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;XCSHOP_THEME_TEST_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/BuildKitsUiSmoke.qml"
         FAIL_REGULAR_EXPRESSION "BUILD_KITS_UI_SMOKE_FAILED;ReferenceError;TypeError;Binding loop;Cannot assign"

@@ -20,6 +20,11 @@ BasePage {
     readonly property int currentTemplate: templateItems.findIndex(function(t) { return t.id === root.currentTemplateId })
     readonly property var selectedTemplate: currentTemplate >= 0 ? templateItems[currentTemplate] : ({})
     property string currentVersion: ""
+    readonly property var versionOptions: Global.templateVersionOptions(selectedTemplate)
+    readonly property bool selectedVersionExtended: versionOptions.some(function(version) {
+        return version.id === root.currentVersion && version.extended
+    })
+    property bool creationConfirmationPending: false
     readonly property string templateIntroduction: (selectedTemplate.introduction || []).join("\n\n")
     readonly property string templateStatus: templateItems.length ? "来自设置中的构建套件 · " + templateItems.length + " 个可用模板"
                                                                 : "没有可用模板，请在设置 → 构建套件中配置或导入本地套件"
@@ -42,7 +47,7 @@ BasePage {
                                       && generatePathValue.trim().length > 0
                                       && currentTemplate >= 0
                                       && currentVersion.length > 0
-                                      && BuildKits.versionSupport(currentTemplateId, currentVersion) >= 0
+                                      && versionOptions.some(function(version) { return version.id === root.currentVersion })
 
     Behavior on visualContentOffset {
         NumberAnimation { duration: 160 / Global.animationSpeed; easing.type: Easing.OutCubic }
@@ -53,6 +58,7 @@ BasePage {
         input_generatePath.setContext(DESKTOP_DIRPATH)
         BuildKits.refresh()
         setTemplate()
+        GameVersions.reload()
     }
 
     function setTemplate() {
@@ -65,7 +71,6 @@ BasePage {
         currentTemplateId = index >= 0 && index < templateItems.length ? templateItems[index].id : ""
         var versions = selectedTemplate.versions || []
         currentVersion = versions.length ? versions[versions.length - 1] : ""
-        customVersionField.text = ""
     }
 
     Connections {
@@ -96,9 +101,33 @@ BasePage {
     }
 
     function createProject() {
-        if (!canCreate || projectCreationSucceeded)
+        if (!canCreate || projectCreationSucceeded || creationConfirmationPending)
             return
 
+        if (selectedVersionExtended) {
+            var templateId = currentTemplateId
+            var version = currentVersion
+            creationConfirmationPending = true
+            pageEvent("Popup.show", {
+                "component": Constants.popupNotice,
+                "properties": {
+                    "title": "版本兼容性提示",
+                    "content": "该版本并未明确受到模板的支持，因此生成的数据包在该版本可能无法正常工作。但也未被证实必然会失效。\n是否确认接着创建？",
+                    "doubleButton": true
+                },
+                "callback": function(result) {
+                    root.creationConfirmationPending = false
+                    if (result === 1 && root.currentTemplateId === templateId && root.currentVersion === version)
+                        root.finishCreatingProject()
+                }
+            })
+            return
+        }
+        finishCreatingProject()
+    }
+
+    function finishCreatingProject() {
+        if (!canCreate || projectCreationSucceeded) return
         projectCreationSucceeded = false
         var name = projectNameValue.trim()
         var location = storagePathValue.trim() + "/" + name
@@ -106,11 +135,17 @@ BasePage {
             showProjectResult("创建失败", "目标位置已存在同名文件或目录，为避免覆盖原有数据，请更换项目名称或存储位置。")
             return
         }
+        var packVersion = BuildKits.resolveDataPackVersion(currentVersion)
+        if (!packVersion.valid) {
+            showProjectResult("创建失败", packVersion.error)
+            return
+        }
         var projectInfo = {
             "name": name,
             "namespace": namespaceValue.trim(),
             "generatePath": generatePathValue.trim(),
             "version": currentVersion,
+            "dataPackVersion": { "major": packVersion.major, "minor": packVersion.minor },
             "dataVersion": BuildKits.dataVersion,
             "templateId": currentTemplateId,
             "shops": []
@@ -287,7 +322,7 @@ BasePage {
                 hoverEffectsEnabled: true
                 backdropSource: root.backdropSource
                 width: parent.width
-                height: 318
+                height: selectionArea.y + selectionArea.height + 20
 
                 XCText { x: 20; y: 18; xcText: "生成模板"; onCenter: false; xcFontSize: 18 }
                 XCText {
@@ -306,7 +341,7 @@ BasePage {
                     x: 20
                     y: 72
                     width: parent.width - 40
-                    height: 226
+                    height: Math.max(226, introductionColumn.implicitHeight + 24)
                     radius: 9
                     color: Colors.changeA(Colors.background, 0.28)
                     border.width: 1
@@ -326,7 +361,7 @@ BasePage {
                             ListView {
                                 id: templateList
                                 width: parent.width
-                                height: 178
+                                height: Math.max(0, selectionRow.height - y)
                                 clip: true
                                 spacing: 6
                                 model: root.templateItems
@@ -351,13 +386,14 @@ BasePage {
                         Rectangle { width: 1; height: parent.height; color: Colors.changeA(Colors.outline, 0.09) }
 
                         Column {
+                            id: introductionColumn
                             width: selectionRow.columnUnit * 2
                             spacing: 8
                             XCText { xcText: "模板介绍"; onCenter: false; xcFontSize: 13 }
                             XCText {
                                 width: parent.width
-                                height: 178
                                 xcText: root.templateIntroduction
+                                elide: Text.ElideNone
                                 onCenter: false
                                 xcWrapMode: true
                                 xcFontSize: 12
@@ -375,34 +411,28 @@ BasePage {
                             ListView {
                                 id: versionList
                                 width: parent.width
-                                height: root.selectedTemplate.allowsNewer ? 132 : 178
+                                height: Math.max(0, selectionRow.height - y)
                                 clip: true
                                 spacing: 6
-                                model: root.currentTemplate >= 0 && root.currentTemplate < root.templateItems.length
-                                       ? root.templateItems[root.currentTemplate].versions : []
+                                model: root.versionOptions
                                 delegate: TextButton {
                                     required property int index
                                     required property var model
+                                    readonly property var versionOption: (model && model.modelData) || ({id: "", extended: false})
+                                    objectName: "creationVersion_" + versionOption.id
                                     width: versionList.width
                                     height: 38
                                     radius: 7
-                                    text: model.modelData
+                                    text: versionOption.id
+                                    textColor: versionOption.extended ? Colors.changeA(Colors.text, 0.55) : Colors.text
                                     textSize: 13
                                     widthBorderSize: 10
                                     buttonColor: Colors.changeA(Colors.background, 0.30)
                                     firedColor: Colors.changeA(Colors.pressed, 0.88)
                                     pressedColor: Colors.changeA(Colors.border, 0.72)
-                                    btnSelected: root.currentVersion === model.modelData
-                                    onClicked: { customVersionField.text = ""; root.currentVersion = model.modelData }
+                                    btnSelected: root.currentVersion === versionOption.id
+                                    onClicked: root.currentVersion = versionOption.id
                                 }
-                            }
-                            XCTextField {
-                                id: customVersionField
-                                visible: !!root.selectedTemplate.allowsNewer
-                                width: parent.width
-                                height: 32
-                                placeholderText: "或输入较新版本"
-                                onTextEdited: root.currentVersion = text.trim()
                             }
                         }
                     }

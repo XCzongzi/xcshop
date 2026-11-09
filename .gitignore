@@ -33,6 +33,7 @@ __pycache__/
 # Local application data
 /settings.json
 /update-state.ini
+/minecraft-version-state.ini
 /kits-download-state.ini
 /window-state.ini
 /item-mappings.json

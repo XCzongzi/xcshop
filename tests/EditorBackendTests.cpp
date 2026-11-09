@@ -1,5 +1,6 @@
 #include "BuildKitManager.h"
 #include "BuildManager.h"
+#include "MinecraftDataPackVersions.h"
 #include <QtTest>
 #include <QTemporaryDir>
 #include <QJsonDocument>
@@ -28,6 +29,54 @@ static bool makeManifest(const QString &root, const QString &mode = "success") {
 class EditorBackendTests : public QObject {
     Q_OBJECT
 private slots:
+    void dataPackVersionMapping() {
+        QTemporaryDir temp;
+        const auto path = temp.filePath("minecraft-data-pack-versions.json");
+        // Intentionally unordered: latest must use numeric game ordering.
+        const QByteArray mapping = R"({"schemaVersion":1,"versions":{
+            "26.3":{"major":121,"minor":0},"1.13":{"major":4,"minor":0},
+            "26.1.2":{"major":101,"minor":1},"1.21.11":{"major":94,"minor":1},
+            "26.10":{"major":130,"minor":2}}})";
+        QVERIFY(writeFile(path, mapping));
+        auto result = MinecraftDataPackVersions::resolve(path, "1.13");
+        QVERIFY(result["valid"].toBool());
+        QCOMPARE(result["major"].toInt(), 4);
+        QVERIFY(!result["fallback"].toBool());
+        result = MinecraftDataPackVersions::resolve(path, "26.1.2");
+        QCOMPARE(result["major"].toInt(), 101);
+        QCOMPARE(result["minor"].toInt(), 1);
+        for (const auto &version : {"26.11", "27.1"}) {
+            result = MinecraftDataPackVersions::resolve(path, version);
+            QVERIFY(result["valid"].toBool());
+            QVERIFY(result["fallback"].toBool());
+            QCOMPARE(result["sourceVersion"].toString(), "26.10");
+            QCOMPARE(result["major"].toInt(), 130);
+            QCOMPARE(result["minor"].toInt(), 2);
+        }
+        for (const auto &version : {"1.12.2", "1.20.4", "26.2", "26.3.0", "26.4-snapshot-1", "26w12a", "Fabulously Optimized-26.3"})
+            QVERIFY2(!MinecraftDataPackVersions::resolve(path, version)["valid"].toBool(), version);
+        for (const auto &bytes : {QByteArray("bad json"), QByteArray("{}"),
+                QByteArray(R"({"schemaVersion":2,"versions":{"26.3":{"major":121,"minor":0}}})"),
+                QByteArray(R"({"schemaVersion":1,"versions":{}})"),
+                QByteArray(R"({"schemaVersion":1,"versions":{"26.3":{"major":121,"minor":0.5}}})"),
+                QByteArray(R"({"schemaVersion":1,"versions":{"26.3":{"major":0,"minor":0}}})"),
+                QByteArray(R"({"schemaVersion":1,"versions":{"26.3":{"major":121,"minor":-1}}})"),
+                QByteArray(R"({"schemaVersion":1,"versions":{"26.3":{"major":2147483648,"minor":0}}})")}) {
+            QVERIFY(writeFile(path, bytes));
+            QVERIFY(!MinecraftDataPackVersions::resolve(path, "27.1")["valid"].toBool());
+        }
+        QVERIFY(!MinecraftDataPackVersions::resolve(temp.filePath("missing.json"), "26.3")["valid"].toBool());
+        // The distributed table is independent of the process working directory.
+        const auto cwd = QDir::currentPath();
+        QVERIFY(QDir::setCurrent(temp.path()));
+        BuildKitManager kits;
+        result = kits.resolveDataPackVersion("26.3");
+        QVERIFY(QDir::setCurrent(cwd));
+        QVERIFY2(result["valid"].toBool(), qPrintable(result["error"].toString()));
+        QCOMPARE(result["major"].toInt(), 121);
+        QCOMPARE(kits.resolveDataPackVersion("1.21.11")["minor"].toInt(), 1);
+    }
+
     void catalog() {
         QTemporaryDir temp;
         QVERIFY(temp.isValid());
