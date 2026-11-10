@@ -12,10 +12,10 @@
       "body": "xcshop 是一款面向 Minecraft Java 版的商店数据包可视化编辑器，可通过图形界面组织商店内容，并调用独立构建器校验、生成数据包。\r\n\r\n本版本主要功能：\r\n- 支持商店布局、商品、代价和展示文本编辑。\r\n- 支持容器槽位、操作、宏参数及富文本样式配置。\r\n- 提供物品图标、界面和提示文本预览。\r\n- 支持构建套件管理，展示构建日志、错误与警告。\r\n- 支持从本地游戏或在线入口导入物品资源。\r\n- 提供深浅主题、自定义背景和编辑字体设置。\r\n发布包内置 1.0.0 版本构建器、Alpha r0 套件及物品图标，并已包含运行所需依赖。\r\n\r\n下载与使用\r\n\r\n可下载本页 Assets 中的 Windows x64 压缩包，或使用速度通常比 GitHub 更快的备用下载入口：\r\n\r\n [备用下载：xcshop v1.0.0](https://xczongzi.net/projects/xcshop/releases/v1.0.0)\r\n\r\n完整解压后运行 appxcshop.exe，请保留程序旁的依赖文件及资源目录，并将程序放在有写入权限的位置。\r\n\r\n遇到问题可前往 [GitHub Issues](https://github.com/XCzongzi/xcshop/issues) 反馈，附上版本信息、复现步骤及错误日志。",
       "assets": [
         {
-          "name": "xcshop-1.0.0.zip",
+          "name": "xcshop-v1.0.0.zip",
           "size": 74705502,
           "content_type": "application/x-zip-compressed",
-          "browser_download_url": "https://github.com/XCzongzi/xcshop/releases/download/v1.0.0/xcshop-1.0.0.zip",
+          "browser_download_url": "https://github.com/XCzongzi/xcshop/releases/download/v1.0.0/xcshop-v1.0.0.zip",
           "digest": "sha256:a5f01d5e92ccabf8877bf81768065a16a9d6ef7b25471dea987396dba2d15029"
         }
       ]
