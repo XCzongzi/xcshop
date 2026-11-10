@@ -1,0 +1,55 @@
+1fe54658-3cc3-4480-b943-f68d412fa421
+0
+"1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2"
+../blueprints/alpha-r1/main.xcshoper
+../materials/alpha-r1-1.21.5-26.2
+[
+    "欢迎使用 Alpha r1 模板，此模板为标准商店模板，提供对普通方块容器的支持。\nAlpha r1 支持 Minecraft Java 1.21.5 至 26.2 的正式版本，26.3 及以后可能的版本请使用 Alpha r0。\nAlpha r1 沿用了 Alpha r0的特性，只是在数据包的格式上相较于新版本较于过时，因此在性能上与r0相差不大。",
+    "注册你的商店后，在游戏中通过\"/function [命名空间]:_summon/[注册名]\" 来加载它，加载时将会在玩家站立的位置生成一个商店容器。\nAlpha r1 为每一商店都设置了独立的ID，并会在玩家每次打开它时依靠ID定位此商店。\n因此商店容器不能被手动放置，否则商店无法被正常加载。如果需要修改商店方块的状态，请使用调试棒。",
+    "Alpha r1 会在商店容器位置生成一个marker，并在每次打开商店时清理当前维度中已加载、容器注册数据已丢失的marker。\n如果需要进一步清理失效标记，请输入\"/function [命名空间]:clear_marker\"；未加载区块中的marker需要在加载后再次清理。",
+    "Alpha r1 支持布局输入器，通过指令\"function [命名空间]:input/[注册名]/[输入器名]\"来获取玩家最后一次打开的商店中布局的输入。",
+    "Alpha r1 模板存在以下受限的特性：",
+    "   1. Alpha r1 不支持末影箱、大型箱子或大型陷阱箱；",
+    "   2. Alpha r1 的栏位为非动态更新，因此无法在计分板分数发生变化时立即更新栏位的物品；但在每次商店内交互后可以对计分板分数的变化进行响应；",
+    "   3. Alpha r1 在物品操作组以栏位筛选为条件时，对于同一栏位仅会执行第一个触发器；",
+    "   4. 请使用目标游戏版本支持的物品、组件和指令；模板不会自动将新版内容转换为旧版格式。"
+]
+foreach (Shop[]) {
+    if (containerType == "ender_chest" || containerType == "large_chest"
+        || containerType == "large_trapped_chest") {
+        error("Alpha r1 不支持末影箱或大型箱子。", "请选择末影箱、大型箱子和大型陷阱箱以外的容器。");
+    }
+    foreach (slots[]) {
+        foreach (items[]) {
+            if (count < 1) { error("商品数量必须大于 0。"); }
+            foreach (operations[]) {
+                if (@parent[0].count == 1 && trigger.mode.kind == "take_item"
+                    && trigger.mode.filter.kind == "quantity") {
+                    warning("商品数量为 1 时使用了数量筛选。",
+                        "单个商品无法区分整组与部分取得，部分数量筛选可能永远无法触发；请检查数量或改用无筛选。"
+                    );
+                }
+                if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot"
+                    && (int(trigger.mode.filter.slot) < 0 || int(trigger.mode.filter.slot) > 35)) {
+                    error("玩家物品栏槽位超出 0 到 35。", "请选择快捷栏或背包中的有效槽位。");
+                }
+                if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "quantity"
+                    && trigger.mode.filter.mode == "custom"
+                    && (int(trigger.mode.filter.amount) < 1 || int(trigger.mode.filter.amount) > 2147483647)) {
+                    error("自定义触发数量必须是正的 32 位整数。");
+                }
+                foreach (cost[]) {
+                    if (int(amount) < 0 || int(amount) > 2147483647) {
+                        error("代价数量超出 0 到 2147483647。", "请使用 Minecraft 指令允许的非负 32 位整数。");
+                    }
+                }
+            }
+        }
+    }
+    foreach (layoutInputGroups[]) {
+        if (int(defaultValue) < -2147483648 || int(defaultValue) > 2147483647) { error("布局默认值超出 32 位计分板整数范围。"); }
+        foreach (connections[]) {
+            if (int(value) < -2147483648 || int(value) > 2147483647) { error("布局匹配值超出 32 位计分板整数范围。"); }
+        }
+    }
+}

@@ -1,0 +1,2 @@
+{{productPath}}/sell.mcfunction
+execute {{eventClause}}if function {{@namespace}}:{{operationPath}} run return 1

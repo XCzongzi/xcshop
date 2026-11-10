@@ -1,0 +1,4 @@
+foreach (jsonArrayTexts(additionalCostDisplayText)) {
+    string loreLine = @value;
+    build "product-lore.xcontent"
+}

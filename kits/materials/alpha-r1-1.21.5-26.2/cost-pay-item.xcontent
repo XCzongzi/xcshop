@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+clear @s {{type.value}} {{amount}}

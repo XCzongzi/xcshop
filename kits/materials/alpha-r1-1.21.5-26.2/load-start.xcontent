@@ -1,0 +1,6 @@
+load.mcfunction
+scoreboard objectives add __xcshop__ dummy
+scoreboard players set #temp __xcshop__ 0
+scoreboard players set #item_record __xcshop__ 0
+scoreboard players set #items_per_slot __xcshop__ 0
+execute unless score #shop_max_id __xcshop__ matches 1.. run scoreboard players set #shop_max_id __xcshop__ 1

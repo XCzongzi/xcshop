@@ -1,0 +1,9 @@
+string blankFeedback = "";
+content startFeedback blankFeedback (feedbackPath)
+build startFeedback
+if (feedbackText != "") {
+    string feedbackJson = json(feedbackText);
+    if (startsWith(trim(feedbackText), "{") || startsWith(trim(feedbackText), "[")) { feedbackJson = feedbackText; }
+    build "feedback-text.xcontent"
+}
+if (feedbackSound != "") { build "feedback-sound.xcontent" }

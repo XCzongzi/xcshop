@@ -12,7 +12,7 @@
 - 从本地游戏或在线入口导入基础 Minecraft 物品资料和图标，切换已有资源版本。
 - 使用深浅主题、自定义背景和编辑字体。
 
-Minecraft 版本适配由所选套件、构建器和资源格式共同决定。当前编辑器项目数据版本为 `0`；内置 Alpha r0 套件面向 Java 26.3，并有其自身的容器限制。项目数据版本不等于 Minecraft 的游戏版本或 `DataVersion`。详细边界见[构建器接入](docs/构建器接入.md)和[物品资源导入](docs/Minecraft物品资源导入.md)。
+Minecraft 版本适配由所选套件、构建器和资源格式共同决定。当前编辑器项目数据版本为 `0`；内置 Alpha r0 套件面向 Java 26.3，新增的 [Alpha r1](kits/alpha-r1-README.md) 面向 Java 1.21.5–26.2，两者均有各自声明的容器限制。项目数据版本不等于 Minecraft 的游戏版本或 `DataVersion`。详细边界见[构建器接入](docs/构建器接入.md)和[物品资源导入](docs/Minecraft物品资源导入.md)。
 
 ## 使用发布包
 

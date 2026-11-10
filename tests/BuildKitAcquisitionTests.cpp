@@ -482,7 +482,16 @@ private slots:
         kits.acquire(QStringLiteral(XCSHOP_SOURCE_DIR) + "/kits.zip");
         QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 10000);
         QVERIFY2(done[0][0].toBool(), qPrintable(done[0][1].toString()));
-        QVERIFY(!kits.options().isEmpty());
+        QCOMPARE(kits.options(0).size(), 2);
+        const QString r1 = "1fe54658-3cc3-4480-b943-f68d412fa421";
+        QVERIFY(kits.findTemplate(r1)["valid"].toBool());
+        QCOMPARE(kits.findTemplate(r1)["versions"].toStringList().size(), 11);
+        QVERIFY(!kits.findTemplate(r1)["allowsNewer"].toBool());
+        for (const auto &version : {"1.21.5", "1.21.8", "1.21.9", "1.21.11", "26.1.2", "26.2"})
+            QCOMPARE(kits.versionSupport(r1, version), 0);
+        for (const auto &version : {"1.21.4", "26.3", "26.4", "26.2-snapshot-1"})
+            QCOMPARE(kits.versionSupport(r1, version), -1);
+        QCOMPARE(kits.versionSupport("89755dae-f798-440d-b3a9-342ee8a9070f", "26.3"), 0);
     }
 };
 QTEST_GUILESS_MAIN(BuildKitAcquisitionTests)

@@ -1,0 +1,10 @@
+pack.mcmeta
+{
+  "pack": {
+    "description": {
+      "text": "xcshop Alpha r1",
+      "color": "gold"
+    },
+    "pack_format": {{@dataPackVersion.major}}
+  }
+}

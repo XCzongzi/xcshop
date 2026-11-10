@@ -1,0 +1,2 @@
+_summon/{{shopName}}.mcfunction
+data modify block ~ ~ ~ CustomName set value {{customNameJson}}

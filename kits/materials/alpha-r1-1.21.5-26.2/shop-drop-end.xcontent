@@ -1,0 +1,2 @@
+{{shopPath}}/drop.mcfunction
+function {{@namespace}}:{{shopPath}}/set

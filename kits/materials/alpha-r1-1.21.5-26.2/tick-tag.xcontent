@@ -1,0 +1,6 @@
+tick.json
+{
+  "values": [
+    "{{@namespace}}:tick"
+  ]
+}

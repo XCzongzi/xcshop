@@ -1,0 +1,37 @@
+build "shop-route.xcontent"
+build "drop-route.xcontent"
+build "summon.xcontent"
+if (customName != "") {
+    string customNameJson = json(customName);
+    if (startsWith(trim(customName), "{") || startsWith(trim(customName), "[")) { customNameJson = customName; }
+    build "custom-name.xcontent"
+}
+build "summon-end.xcontent"
+build "opened.xcontent"
+content onOpen openCommand ("opened/" + shopName + ".mcfunction")
+build onOpen
+cd . "advancement"
+build "opened-advancement.xcontent"
+cd . "function"
+foreach (slots[]) {
+    int slotNumber = index;
+    if (items.length > 0) { build "slot-clear.xcontent" }
+    build "modifier-slot.xcontent"
+    foreach (items[]) {
+        int productNumber = @index;
+        string productPath = shopPath + "/" + slotNumber + "/" + productNumber;
+        string filterClause = "";
+        foreach (filters[]) {
+            filterClause += "if score " + target + " " + scoreboard + " matches " + score + " ";
+        }
+        build "item.xcshoper"
+    }
+}
+build "shop-set-end.xcontent"
+build "shop-sell-end.xcontent"
+build "shop-drop-end.xcontent"
+foreach (layoutInputGroups[]) {
+    string inputName = id;
+    string inputPath = "input/" + shopName + "/" + id;
+    build "input.xcshoper"
+}

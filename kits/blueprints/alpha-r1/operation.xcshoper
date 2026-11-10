@@ -1,0 +1,41 @@
+string blank = "";
+content start blank (operationPath + ".mcfunction")
+build start
+string failureCommand = "return fail";
+if (failHint) { failureCommand = "return run function " + @namespace + ":" + productPath + "/failure"; }
+if (trigger.mode.kind == "take_item" && trigger.mode.filter.kind == "slot") {
+    build "slot-restore.xcontent"
+}
+foreach (cost[]) {
+    if (type.kind == "item_count") { build "cost-check-item.xcontent" }
+    else if (type.kind == "experience_level") { build "cost-check-level.xcontent" }
+    else if (type.kind == "scoreboard") {
+        build "cost-check-score.xcontent"
+    } else {
+        string rejectedCondition = "if" + substr(type.value, 6);
+        if (startsWith(type.value, "if")) { rejectedCondition = "unless" + substr(type.value, 2); }
+        build "cost-check-condition.xcontent"
+    }
+}
+foreach (cost[]) {
+    if (!type.filter) {
+        if (type.kind == "item_count") { build "cost-pay-item.xcontent" }
+        else if (type.kind == "experience_level") { build "cost-pay-level.xcontent" }
+        else if (type.kind == "scoreboard") { build "cost-pay-score.xcontent" }
+    }
+}
+if (trigger.execute.kind == "grant_item") { build "operation-grant.xcontent" }
+else {
+    string actionText = trigger.execute.value;
+    if (trigger.execute.kind == "command") {
+        content action actionText (operationPath + ".mcfunction")
+        build action
+    } else {
+        foreach (splitLines(actionText)) {
+            string functionName = @value;
+            if (functionName != "") { build "operation-function.xcontent" }
+        }
+    }
+}
+if (successHint) { build "operation-success.xcontent" }
+build "operation-end.xcontent"

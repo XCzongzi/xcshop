@@ -1,0 +1,6 @@
+read_cursor.mcfunction
+summon minecraft:item_display ~ ~ ~ {Tags:["xcshop.cursor_reader"],view_range:0f}
+item replace entity @n[tag=xcshop.cursor_reader] contents from entity @s player.cursor
+execute store result score @s __xcshop__ run data get entity @n[tag=xcshop.cursor_reader] item.components."minecraft:custom_data".xcshop.shopID
+kill @e[tag=xcshop.cursor_reader]
+return 1

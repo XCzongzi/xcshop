@@ -1,0 +1,2 @@
+{{productPath}}/set.mcfunction
+data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:custom_data" set value {xcshop: {xcshop: 1b, shop: {{shopJson}}, item: "{{slotNumber}}:{{productNumber}}"}}

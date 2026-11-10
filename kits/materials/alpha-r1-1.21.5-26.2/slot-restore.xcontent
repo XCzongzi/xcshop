@@ -1,0 +1,3 @@
+{{operationPath}}.mcfunction
+item replace entity @s container.{{trigger.mode.filter.slot}} from block ~ ~ ~ container.{{slotNumber}}
+item replace block ~ ~ ~ container.{{slotNumber}} with air

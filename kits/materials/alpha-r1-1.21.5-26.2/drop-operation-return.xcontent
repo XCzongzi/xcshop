@@ -1,0 +1,2 @@
+{{shopPath}}/drop.mcfunction
+execute {{eventClause}}if function {{@namespace}}:{{operationPath}} run return run function {{@namespace}}:{{shopPath}}/set

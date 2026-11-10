@@ -1,0 +1,2 @@
+{{shopPath}}/sell.mcfunction
+function {{@namespace}}:{{productPath}}/sell

@@ -1,0 +1,2 @@
+{{shopPath}}/set.mcfunction
+item replace block ~ ~ ~ container.{{slotNumber}} with air

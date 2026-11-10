@@ -1,0 +1,7 @@
+locate.mcfunction
+execute if items entity @s player.cursor *[minecraft:custom_data~{xcshop:{}}] run return run function {{@namespace}}:read_cursor
+
+return run execute store result score @s __xcshop__ run data get entity @s Inventory[{components:{"minecraft:custom_data":{xcshop:{}}}}].components."minecraft:custom_data".xcshop.shopID
+
+scoreboard players set @s __xcshop__ 0
+return fail

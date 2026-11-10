@@ -59,23 +59,32 @@ __pycache__/
 !/assets/minecraft/gui/item_lore/background.png
 !/assets/minecraft/gui/item_lore/frame.png
 
-# Publish only the bundled Alpha r0 kit sources.
+# Publish only the bundled Alpha kit sources.
 /kits/*
 !/kits/alpha-r0-README.md
+!/kits/alpha-r1-README.md
 !/kits/templates/
 /kits/templates/*
 !/kits/templates/alpha-r0.xcshopT
+!/kits/templates/alpha-r1.xcshopT
 !/kits/blueprints/
 /kits/blueprints/*
 !/kits/blueprints/alpha-r0/
 /kits/blueprints/alpha-r0/*
 !/kits/blueprints/alpha-r0/*.xcshoper
+!/kits/blueprints/alpha-r1/
+/kits/blueprints/alpha-r1/*
+!/kits/blueprints/alpha-r1/*.xcshoper
 !/kits/materials/
 /kits/materials/*
 !/kits/materials/alpha-r0-26.3/
 /kits/materials/alpha-r0-26.3/*
 !/kits/materials/alpha-r0-26.3/*.xcontent
 !/kits/materials/alpha-r0-26.3/*.xclist
+!/kits/materials/alpha-r1-1.21.5-26.2/
+/kits/materials/alpha-r1-1.21.5-26.2/*
+!/kits/materials/alpha-r1-1.21.5-26.2/*.xcontent
+!/kits/materials/alpha-r1-1.21.5-26.2/*.xclist
 
 # Editable design source kept locally.
 /assets/gui/typeBar/UI.psd

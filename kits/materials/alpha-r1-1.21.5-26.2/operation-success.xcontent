@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+function {{@namespace}}:{{productPath}}/success

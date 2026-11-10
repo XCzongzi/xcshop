@@ -1,0 +1,2 @@
+{{operationPath}}.mcfunction
+execute {{rejectedCondition}} run {{failureCommand}}

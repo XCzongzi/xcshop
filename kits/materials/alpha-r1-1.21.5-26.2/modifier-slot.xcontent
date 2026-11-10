@@ -1,0 +1,2 @@
+{{shopPath}}/modifier.mcfunction
+data modify block ~ ~ ~ Items[{Slot:{{slotNumber}}b}].components."minecraft:custom_data".xcshop.shopID set from block ~ ~ ~ components.minecraft:custom_data.xcshop.id

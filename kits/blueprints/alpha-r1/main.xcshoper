@@ -1,0 +1,19 @@
+if (@dataPackVersion.major < 82) { build "pack-legacy.xcontent" }
+else { build "pack.xcontent" }
+cd "minecraft" "tags/function"
+build "load-tag.xcontent"
+build "tick-tag.xcontent"
+cd . "function"
+build "runtime.xclist"
+build "load-start.xcontent"
+string declaredObjectives = "|__xcshop__|__xcshop.drop__|";
+build "objectives.xcshoper"
+foreach (Shop[]) {
+    string shopName = registrationName;
+    string shopJson = json(registrationName);
+    string shopPath = "shop/" + registrationName;
+    build "shop.xcshoper"
+}
+build "load-end.xcontent"
+build "shop-end.xcontent"
+build "drop-end.xcontent"

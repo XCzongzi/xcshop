@@ -1,0 +1,6 @@
+load.json
+{
+  "values": [
+    "{{@namespace}}:load"
+  ]
+}
